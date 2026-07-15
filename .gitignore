@@ -1,0 +1,21 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+
+# Node (Module 5+)
+node_modules/
+.next/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
