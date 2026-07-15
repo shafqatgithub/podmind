@@ -573,3 +573,45 @@ GraphQL Gateway (Future)
 Next Document
 
 07-AI-Prompt-Library.md
+
+Endpoint:
+POST /research/generate
+
+Description:
+Generate AI-powered podcast research.
+
+Authentication:
+Required
+
+Permissions:
+Authenticated User
+
+Request Body:
+{
+  "project_id": "...",
+  "topic": "...",
+  "provider": "auto"
+}
+
+Success Response:
+{
+  "success": true,
+  "data": { ... }
+}
+
+Validation Rules:
+- topic: required, max 500 chars
+- project_id: UUID
+
+Error Codes:
+400
+401
+404
+429
+500
+
+Business Rules:
+- Deduct AI credits
+- Save result
+- Log AI usage
+- Cache response if applicable
