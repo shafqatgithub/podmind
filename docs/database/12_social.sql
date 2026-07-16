@@ -388,3 +388,13 @@ Ready For
 
 =========================================================
 */
+
+---------------------------------------------------------
+-- SOCIAL PLATFORMS (lookup — seeded in 32_seed.sql)
+---------------------------------------------------------
+
+CREATE TABLE public.social_platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

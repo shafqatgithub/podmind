@@ -44,17 +44,17 @@ CREATE INDEX IF NOT EXISTS idx_projects_status
 ON public.projects(status);
 
 CREATE INDEX IF NOT EXISTS idx_projects_owner
-ON public.projects(created_by);
+ON public.projects(owner_id);
 
 ---------------------------------------------------------
 -- RESEARCH
 ---------------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS idx_research_project
-ON public.research(project_id);
+ON public.research_sessions(project_id);
 
 CREATE INDEX IF NOT EXISTS idx_research_status
-ON public.research(status);
+ON public.research_sessions(status);
 
 ---------------------------------------------------------
 -- GUESTS
@@ -85,14 +85,14 @@ ON public.scripts(project_id);
 ---------------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS idx_seo_project
-ON public.seo(project_id);
+ON public.seo_projects(project_id);
 
 ---------------------------------------------------------
 -- SOCIAL
 ---------------------------------------------------------
 
-CREATE INDEX IF NOT EXISTS idx_social_project
-ON public.social_posts(project_id);
+CREATE INDEX IF NOT EXISTS idx_social_campaign
+ON public.social_posts(campaign_id);
 
 ---------------------------------------------------------
 -- AI REQUESTS
@@ -111,15 +111,15 @@ ON public.ai_requests(created_at DESC);
 -- AI MEMORY
 ---------------------------------------------------------
 
-CREATE INDEX IF NOT EXISTS idx_ai_memory_project
-ON public.ai_memory(project_id);
+CREATE INDEX IF NOT EXISTS idx_ai_memories_project
+ON public.ai_memories(project_id);
 
 ---------------------------------------------------------
 -- KNOWLEDGE
 ---------------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS idx_knowledge_project
-ON public.knowledge(project_id);
+ON public.knowledge_bases(project_id);
 
 ---------------------------------------------------------
 -- EXPORTS
@@ -180,18 +180,18 @@ USING GIN (
 );
 
 CREATE INDEX IF NOT EXISTS idx_research_fts
-ON public.research
+ON public.research_sessions
 USING GIN (
-    to_tsvector('english', COALESCE(title,'') || ' ' || COALESCE(content,''))
+    to_tsvector('english', COALESCE(title,'') || ' ' || COALESCE(topic,''))
 );
 
 CREATE INDEX IF NOT EXISTS idx_guests_fts
 ON public.guests
 USING GIN (
     to_tsvector('english',
-        COALESCE(name,'') || ' ' ||
+        COALESCE(full_name,'') || ' ' ||
         COALESCE(company,'') || ' ' ||
-        COALESCE(bio,'')
+        COALESCE(biography,'')
     )
 );
 
@@ -219,7 +219,7 @@ CREATE INDEX IF NOT EXISTS idx_project_user_status
 
 ON public.projects(
 
-    created_by,
+    owner_id,
 
     status,
 

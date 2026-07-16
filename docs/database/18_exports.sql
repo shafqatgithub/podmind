@@ -17,6 +17,10 @@ CREATE TABLE public.export_jobs (
 
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
+    organization_id UUID
+        REFERENCES public.organizations(id)
+        ON DELETE CASCADE,
+
     project_id UUID
         REFERENCES public.projects(id)
         ON DELETE CASCADE,
@@ -305,3 +309,13 @@ Ready For
 
 =========================================================
 */
+
+---------------------------------------------------------
+-- EXPORT FORMATS (lookup — seeded in 32_seed.sql)
+---------------------------------------------------------
+
+CREATE TABLE public.export_formats (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

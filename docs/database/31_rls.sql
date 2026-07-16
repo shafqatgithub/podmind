@@ -117,7 +117,11 @@ FOR ALL
 
 USING (
 
-public.is_organization_member(organization_id)
+public.is_organization_member(
+    (SELECT w.organization_id
+       FROM public.workspaces w
+      WHERE w.id = workspace_id)
+)
 
 );
 
@@ -127,11 +131,11 @@ public.is_organization_member(organization_id)
 
 DROP POLICY IF EXISTS research_access
 
-ON public.research;
+ON public.research_sessions;
 
 CREATE POLICY research_access
 
-ON public.research
+ON public.research_sessions
 
 FOR ALL
 
@@ -145,7 +149,7 @@ FROM public.projects p
 
 WHERE p.id = project_id
 
-AND public.is_organization_member(p.organization_id)
+AND public.is_organization_member((SELECT w.organization_id FROM public.workspaces w WHERE w.id = p.workspace_id))
 
 )
 
@@ -175,7 +179,7 @@ FROM public.projects
 
 WHERE projects.id = guests.project_id
 
-AND public.is_organization_member(projects.organization_id)
+AND public.is_organization_member((SELECT w.organization_id FROM public.workspaces w WHERE w.id = projects.workspace_id))
 
 )
 
@@ -205,7 +209,7 @@ FROM public.projects
 
 WHERE projects.id = outlines.project_id
 
-AND public.is_organization_member(projects.organization_id)
+AND public.is_organization_member((SELECT w.organization_id FROM public.workspaces w WHERE w.id = projects.workspace_id))
 
 )
 
@@ -235,7 +239,7 @@ FROM public.projects
 
 WHERE projects.id = scripts.project_id
 
-AND public.is_organization_member(projects.organization_id)
+AND public.is_organization_member((SELECT w.organization_id FROM public.workspaces w WHERE w.id = projects.workspace_id))
 
 )
 
@@ -247,11 +251,11 @@ AND public.is_organization_member(projects.organization_id)
 
 DROP POLICY IF EXISTS knowledge_access
 
-ON public.knowledge;
+ON public.knowledge_bases;
 
 CREATE POLICY knowledge_access
 
-ON public.knowledge
+ON public.knowledge_bases
 
 FOR ALL
 
@@ -263,9 +267,9 @@ SELECT 1
 
 FROM public.projects
 
-WHERE projects.id = knowledge.project_id
+WHERE projects.id = knowledge_bases.project_id
 
-AND public.is_organization_member(projects.organization_id)
+AND public.is_organization_member((SELECT w.organization_id FROM public.workspaces w WHERE w.id = projects.workspace_id))
 
 )
 
@@ -277,17 +281,17 @@ AND public.is_organization_member(projects.organization_id)
 
 DROP POLICY IF EXISTS ai_memory_access
 
-ON public.ai_memory;
+ON public.ai_memories;
 
 CREATE POLICY ai_memory_access
 
-ON public.ai_memory
+ON public.ai_memories
 
 FOR ALL
 
 USING (
 
-public.is_organization_member(organization_id)
+user_id = auth.uid()
 
 );
 

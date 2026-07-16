@@ -395,3 +395,13 @@ Ready For
 
 =========================================================
 */
+
+---------------------------------------------------------
+-- PROJECT TYPES (lookup — seeded in 32_seed.sql)
+---------------------------------------------------------
+
+CREATE TABLE public.project_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

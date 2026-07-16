@@ -76,3 +76,11 @@ alter default privileges in schema public
   grant all on sequences to authenticated, anon, service_role;
 alter default privileges in schema public
   grant execute on functions to authenticated, anon, service_role;
+
+-- auth.role() — Supabase par maujood hota hai; JWT ka role claim deta hai.
+create or replace function auth.role()
+returns text
+language sql stable
+as $$
+  select coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), 'anon')
+$$;

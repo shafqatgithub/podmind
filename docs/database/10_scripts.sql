@@ -39,7 +39,7 @@ CREATE TABLE public.scripts (
 
     script_style script_style DEFAULT 'interview',
 
-    content LONGTEXT,
+    content TEXT,
 
     word_count INTEGER DEFAULT 0,
 

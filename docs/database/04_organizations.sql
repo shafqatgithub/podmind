@@ -300,3 +300,15 @@ Ready For
 05_workspaces.sql
 =========================================================
 */
+
+---------------------------------------------------------
+-- PROFILES: CURRENT ORGANIZATION POINTER
+-- (RLS helper current_organization_id() and 28_indexes
+--  depend on this column; added here because organizations
+--  must exist before the FK can be created.)
+---------------------------------------------------------
+
+ALTER TABLE public.profiles
+    ADD COLUMN organization_id UUID
+        REFERENCES public.organizations(id)
+        ON DELETE SET NULL;

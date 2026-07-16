@@ -13,24 +13,28 @@ BEGIN;
 -- AUTO UPDATE updated_at
 ---------------------------------------------------------
 
+DROP TRIGGER IF EXISTS trg_profiles_updated ON public.profiles;
 CREATE TRIGGER trg_profiles_updated
 BEFORE UPDATE
 ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_organizations_updated ON public.organizations;
 CREATE TRIGGER trg_organizations_updated
 BEFORE UPDATE
 ON public.organizations
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_workspaces_updated ON public.workspaces;
 CREATE TRIGGER trg_workspaces_updated
 BEFORE UPDATE
 ON public.workspaces
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_projects_updated ON public.projects;
 CREATE TRIGGER trg_projects_updated
 BEFORE UPDATE
 ON public.projects
@@ -41,18 +45,21 @@ EXECUTE FUNCTION public.update_updated_at();
 -- AUTO SLUG
 ---------------------------------------------------------
 
+DROP TRIGGER IF EXISTS trg_projects_slug ON public.projects;
 CREATE TRIGGER trg_projects_slug
 BEFORE INSERT
 ON public.projects
 FOR EACH ROW
 EXECUTE FUNCTION public.auto_slug();
 
+DROP TRIGGER IF EXISTS trg_templates_slug ON public.templates;
 CREATE TRIGGER trg_templates_slug
 BEFORE INSERT
 ON public.templates
 FOR EACH ROW
 EXECUTE FUNCTION public.auto_slug();
 
+DROP TRIGGER IF EXISTS trg_marketplace_slug ON public.marketplace_items;
 CREATE TRIGGER trg_marketplace_slug
 BEFORE INSERT
 ON public.marketplace_items
@@ -63,18 +70,21 @@ EXECUTE FUNCTION public.auto_slug();
 -- AUDIT LOGS
 ---------------------------------------------------------
 
+DROP TRIGGER IF EXISTS trg_projects_audit ON public.projects;
 CREATE TRIGGER trg_projects_audit
 AFTER INSERT OR UPDATE OR DELETE
 ON public.projects
 FOR EACH ROW
 EXECUTE FUNCTION public.audit_trigger();
 
+DROP TRIGGER IF EXISTS trg_billing_audit ON public.organization_subscriptions;
 CREATE TRIGGER trg_billing_audit
 AFTER INSERT OR UPDATE OR DELETE
 ON public.organization_subscriptions
 FOR EACH ROW
 EXECUTE FUNCTION public.audit_trigger();
 
+DROP TRIGGER IF EXISTS trg_api_keys_audit ON public.api_keys;
 CREATE TRIGGER trg_api_keys_audit
 AFTER INSERT OR UPDATE OR DELETE
 ON public.api_keys
@@ -109,6 +119,7 @@ RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_ai_credit_usage ON public.ai_credit_transactions;
 CREATE TRIGGER trg_ai_credit_usage
 AFTER INSERT
 ON public.ai_credit_transactions
@@ -136,6 +147,7 @@ RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_template_download ON public.template_downloads;
 CREATE TRIGGER trg_template_download
 AFTER INSERT
 ON public.template_downloads
@@ -170,6 +182,7 @@ RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_marketplace_download ON public.marketplace_downloads;
 CREATE TRIGGER trg_marketplace_download
 AFTER INSERT
 ON public.marketplace_downloads
@@ -198,6 +211,7 @@ RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_notification_read ON public.notifications;
 CREATE TRIGGER trg_notification_read
 BEFORE UPDATE
 ON public.notifications
@@ -233,6 +247,7 @@ RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_template_rating ON public.template_ratings;
 CREATE TRIGGER trg_template_rating
 AFTER INSERT OR UPDATE
 ON public.template_ratings
@@ -281,6 +296,7 @@ RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_marketplace_rating ON public.marketplace_reviews;
 CREATE TRIGGER trg_marketplace_rating
 AFTER INSERT OR UPDATE
 ON public.marketplace_reviews

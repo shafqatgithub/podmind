@@ -19,6 +19,7 @@ CREATE TABLE public.profiles (
         REFERENCES auth.users(id)
         ON DELETE CASCADE,
 
+    email CITEXT,
     full_name TEXT,
 
     username CITEXT UNIQUE,
@@ -157,7 +158,7 @@ CREATE TABLE public.user_devices (
 -- API KEYS
 ---------------------------------------------------------
 
-CREATE TABLE public.api_keys (
+CREATE TABLE public.user_api_keys (
 
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -198,7 +199,7 @@ CREATE INDEX idx_devices_user
 ON public.user_devices(user_id);
 
 CREATE INDEX idx_api_keys_user
-ON public.api_keys(user_id);
+ON public.user_api_keys(user_id);
 
 ---------------------------------------------------------
 -- AUTO UPDATE updated_at
@@ -240,7 +241,7 @@ CREATE TRIGGER trg_api_keys_updated
 
 BEFORE UPDATE
 
-ON public.api_keys
+ON public.user_api_keys
 
 FOR EACH ROW
 
@@ -256,9 +257,14 @@ RETURNS TRIGGER AS $$
 
 BEGIN
 
-INSERT INTO public.profiles(id)
+INSERT INTO public.profiles(id, email, full_name, avatar_url)
 
-VALUES(NEW.id);
+VALUES(
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.raw_user_meta_data ->> 'name'),
+    NEW.raw_user_meta_data ->> 'avatar_url'
+);
 
 RETURN NEW;
 
@@ -288,7 +294,7 @@ ALTER TABLE public.login_history ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.user_devices ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_api_keys ENABLE ROW LEVEL SECURITY;
 
 ---------------------------------------------------------
 -- PROFILES POLICY
@@ -352,7 +358,7 @@ USING (auth.uid() = user_id);
 
 CREATE POLICY "Users manage own api keys"
 
-ON public.api_keys
+ON public.user_api_keys
 
 FOR ALL
 

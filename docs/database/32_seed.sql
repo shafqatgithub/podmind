@@ -14,7 +14,7 @@ BEGIN;
 ---------------------------------------------------------
 
 INSERT INTO public.subscription_plans
-(name, slug, price_monthly, price_yearly, ai_credits, max_users, max_projects)
+(name, slug, monthly_price, yearly_price, ai_credits, max_team_members, max_projects)
 VALUES
 ('Free', 'free', 0, 0, 5000, 1, 3),
 ('Starter', 'starter', 19, 190, 50000, 5, 25),
@@ -28,17 +28,17 @@ ON CONFLICT DO NOTHING;
 ---------------------------------------------------------
 
 INSERT INTO public.ai_providers
-(name, provider_key, is_active)
+(name, slug, provider_type, is_active)
 VALUES
-('OpenAI','openai',TRUE),
-('Google Gemini','gemini',TRUE),
-('Anthropic Claude','claude',TRUE),
-('Mistral AI','mistral',TRUE),
-('xAI Grok','grok',TRUE),
-('DeepSeek','deepseek',TRUE),
-('OpenRouter','openrouter',TRUE),
-('Azure OpenAI','azure-openai',FALSE),
-('AWS Bedrock','bedrock',FALSE)
+('OpenAI','openai','openai',TRUE),
+('Google Gemini','gemini','google',TRUE),
+('Anthropic Claude','claude','anthropic',TRUE),
+('Mistral AI','mistral','mistral',TRUE),
+('xAI Grok','grok','grok',TRUE),
+('DeepSeek','deepseek','deepseek',TRUE),
+('OpenRouter','openrouter','custom',TRUE),
+('Azure OpenAI','azure-openai','custom',FALSE),
+('AWS Bedrock','bedrock','custom',FALSE)
 ON CONFLICT DO NOTHING;
 
 ---------------------------------------------------------
@@ -46,16 +46,19 @@ ON CONFLICT DO NOTHING;
 ---------------------------------------------------------
 
 INSERT INTO public.ai_models
-(provider_key, model_name, model_type, context_window)
-VALUES
-('openai','gpt-5','chat',400000),
-('openai','gpt-5-mini','chat',400000),
-('gemini','gemini-2.5-pro','chat',1000000),
-('gemini','gemini-2.5-flash','chat',1000000),
-('claude','claude-opus','chat',200000),
-('claude','claude-sonnet','chat',200000),
-('grok','grok-4','chat',256000),
-('deepseek','deepseek-chat','chat',128000)
+(provider_id, model_name, context_window)
+SELECT p.id, v.model_name, v.context_window
+FROM (VALUES
+    ('openai','gpt-5',400000),
+    ('openai','gpt-5-mini',400000),
+    ('gemini','gemini-2.5-pro',1000000),
+    ('gemini','gemini-2.5-flash',1000000),
+    ('claude','claude-opus',200000),
+    ('claude','claude-sonnet',200000),
+    ('grok','grok-4',256000),
+    ('deepseek','deepseek-chat',128000)
+) AS v(slug, model_name, context_window)
+JOIN public.ai_providers p ON p.slug = v.slug
 ON CONFLICT DO NOTHING;
 
 ---------------------------------------------------------
@@ -63,18 +66,18 @@ ON CONFLICT DO NOTHING;
 ---------------------------------------------------------
 
 INSERT INTO public.ai_agents
-(name, slug, description)
+(name, slug, description, role)
 VALUES
-('Research Agent','research-agent','Finds deep podcast research'),
-('Guest Finder','guest-finder','Discovers expert guests'),
-('Outline Agent','outline-agent','Creates episode outlines'),
-('Script Writer','script-writer','Writes podcast scripts'),
-('SEO Agent','seo-agent','Optimizes SEO'),
-('Social Agent','social-agent','Creates social content'),
-('AI Chat','ai-chat','General assistant'),
-('Knowledge Agent','knowledge-agent','Retrieves knowledge'),
-('Analytics Agent','analytics-agent','Analyzes performance'),
-('Workflow Agent','workflow-agent','Automates podcast workflow')
+('Research Agent','research-agent','Finds deep podcast research','researcher'),
+('Guest Finder','guest-finder','Discovers expert guests','guest_finder'),
+('Outline Agent','outline-agent','Creates episode outlines','outliner'),
+('Script Writer','script-writer','Writes podcast scripts','script_writer'),
+('SEO Agent','seo-agent','Optimizes SEO','seo_optimizer'),
+('Social Agent','social-agent','Creates social content','social_creator'),
+('AI Chat','ai-chat','General assistant','assistant'),
+('Knowledge Agent','knowledge-agent','Retrieves knowledge','knowledge'),
+('Analytics Agent','analytics-agent','Analyzes performance','analyst'),
+('Workflow Agent','workflow-agent','Automates podcast workflow','workflow')
 ON CONFLICT DO NOTHING;
 
 ---------------------------------------------------------
@@ -101,15 +104,15 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.template_categories
 (name,slug)
 VALUES
-('Podcast'),
-('Interview'),
-('Business'),
-('Technology'),
-('Education'),
-('Marketing'),
-('Comedy'),
-('News'),
-('Storytelling')
+('Podcast','podcast'),
+('Interview','interview'),
+('Business','business'),
+('Technology','technology'),
+('Education','education'),
+('Marketing','marketing'),
+('Comedy','comedy'),
+('News','news'),
+('Storytelling','storytelling')
 ON CONFLICT DO NOTHING;
 
 ---------------------------------------------------------

@@ -325,3 +325,16 @@ COMMENT ON TYPE subscription_plan IS 'Subscription plans';
 COMMENT ON TYPE export_format IS 'Supported export formats';
 
 COMMIT;
+
+---------------------------------------------------------
+-- MEMORY TYPE (used by 14_ai_memory.sql)
+---------------------------------------------------------
+
+CREATE TYPE memory_type AS ENUM (
+    'fact',
+    'preference',
+    'context',
+    'instruction',
+    'summary',
+    'insight'
+);
