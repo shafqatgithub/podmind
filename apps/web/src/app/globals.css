@@ -1,0 +1,13 @@
+@import "@fontsource-variable/inter";
+@import "@podmind/ui/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+}
