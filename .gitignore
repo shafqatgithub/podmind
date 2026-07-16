@@ -19,3 +19,7 @@ node_modules/
 
 # OS / editor
 .DS_Store
+
+# Turborepo / pnpm
+.turbo/
+dist/
