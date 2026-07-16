@@ -488,7 +488,7 @@ Next.js
 
 Backend
 
-FastAPI
+NestJS
 
 Language
 

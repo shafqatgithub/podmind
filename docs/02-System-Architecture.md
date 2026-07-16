@@ -155,9 +155,9 @@ Error Boundaries
 
 Technology
 
-FastAPI
+NestJS
 
-Python
+TypeScript (Node.js)
 
 REST APIs
 

@@ -1,0 +1,4 @@
+{
+  "extends": "@podmind/config/typescript/react-library",
+  "include": ["src", "tailwind-preset.ts"]
+}

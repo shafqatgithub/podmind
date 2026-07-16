@@ -1,3 +1,7 @@
+> **SUPERSEDED (2026-07-16):** This was the MVP-1 architecture document.
+> The 00–37 numbered documents in /docs are now the single source of truth.
+> Backend is **NestJS** per explicit owner decision (see 02-System-Architecture.md).
+
 # PodMind AI — System Architecture
 
 > **Research Less. Create More.**
