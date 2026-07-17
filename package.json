@@ -2,7 +2,10 @@
   "name": "podmind",
   "private": true,
   "packageManager": "pnpm@9.15.9",
-  "engines": { "node": ">=20", "pnpm": ">=9" },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -12,6 +15,7 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "turbo": "^2.3.3"
+    "turbo": "^2.3.3",
+    "next": "^15.1.3"
   }
 }
