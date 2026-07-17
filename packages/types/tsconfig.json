@@ -1,5 +1,10 @@
 {
   "extends": "@podmind/config/typescript/base",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
   "include": ["src"]
 }

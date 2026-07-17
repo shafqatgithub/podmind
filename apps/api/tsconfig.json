@@ -1,0 +1,9 @@
+{
+  "extends": "@podmind/config/typescript/nestjs",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "types": ["node", "jest"]
+  },
+  "include": ["src", "test"]
+}

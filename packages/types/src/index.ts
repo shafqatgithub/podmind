@@ -3,5 +3,5 @@
  * Database Row/Insert/enum types are generated from the live schema;
  * hand-written domain types live beside them here.
  */
-export * from "./database.js";
-export * from "./api.js";
+export * from "./database";
+export * from "./api";
