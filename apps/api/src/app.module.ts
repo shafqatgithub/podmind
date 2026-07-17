@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { randomUUID } from "node:crypto";
@@ -8,6 +8,8 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { EnvelopeInterceptor } from "./common/interceptors/envelope.interceptor";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { UsersModule } from "./users/users.module";
+import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
 
 @Module({
   imports: [
@@ -28,8 +30,11 @@ import { HealthModule } from "./health/health.module";
     }),
     DatabaseModule,
     HealthModule,
+    UsersModule,
   ],
   providers: [
+    SupabaseAuthGuard,
+    { provide: APP_GUARD, useExisting: SupabaseAuthGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: EnvelopeInterceptor },
   ],

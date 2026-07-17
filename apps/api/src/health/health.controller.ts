@@ -6,11 +6,13 @@ import {
 } from "@nestjs/terminus";
 import { Pool } from "pg";
 import { PG_POOL } from "../database/database.module";
+import { Public } from "../auth/supabase-auth.guard";
 
 /**
  * Liveness (/api/v1/health) — process is up, no dependencies.
  * Readiness (/api/v1/health/ready) — database answers SELECT 1.
  */
+@Public()
 @Controller("health")
 export class HealthController {
   constructor(

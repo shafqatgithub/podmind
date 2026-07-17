@@ -24,6 +24,8 @@ import {
   Users,
 } from "lucide-react";
 import { Button, cn } from "@podmind/ui";
+import { LogOut } from "lucide-react";
+import { signOutAction } from "@/lib/auth/actions";
 
 const PRIMARY_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -64,7 +66,51 @@ function ThemeToggle() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export interface ShellUser {
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+function UserMenu({ user }: { user: ShellUser }) {
+  const initial = (user.name ?? user.email).charAt(0).toUpperCase();
+  return (
+    <div className="flex items-center gap-3">
+      <div className="hidden text-right sm:block">
+        <p className="text-sm font-medium leading-tight">{user.name ?? "Podcaster"}</p>
+        <p className="text-xs text-muted-foreground">{user.email}</p>
+      </div>
+      {user.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={user.avatarUrl}
+          alt=""
+          className="h-8 w-8 rounded-full border border-border"
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600/20 text-sm font-semibold text-primary-300"
+        >
+          {initial}
+        </div>
+      )}
+      <form action={signOutAction}>
+        <Button type="submit" variant="ghost" size="icon" aria-label="Sign out">
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: ShellUser;
+}) {
   const pathname = usePathname();
 
   return (
@@ -100,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
-          Stage 3 · Frontend foundation
+          PodMind AI
         </div>
       </aside>
 
@@ -112,8 +158,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Mic2 className="h-5 w-5 text-primary-400" aria-hidden />
             <span className="font-semibold">PodMind</span>
           </Link>
-          <div className="flex flex-1 items-center justify-end gap-2">
+          <div className="flex flex-1 items-center justify-end gap-4">
             <ThemeToggle />
+            <UserMenu user={user} />
           </div>
         </header>
 
