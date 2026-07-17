@@ -23,9 +23,10 @@ import {
   Sun,
   Users,
 } from "lucide-react";
-import { Button, cn } from "@podmind/ui";
+import { Button, Skeleton, cn } from "@podmind/ui";
 import { LogOut } from "lucide-react";
-import { signOutAction } from "@/lib/auth/actions";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const PRIMARY_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -72,8 +73,51 @@ export interface ShellUser {
   avatarUrl: string | null;
 }
 
-function UserMenu({ user }: { user: ShellUser }) {
+/** Client-side session: pages stay static; middleware guards the route. */
+function useShellUser(): { user: ShellUser | null; loading: boolean } {
+  const [user, setUser] = React.useState<ShellUser | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    const map = (u: { email?: string; user_metadata: Record<string, unknown> } | null) =>
+      u
+        ? {
+            email: u.email ?? "",
+            name: (u.user_metadata.full_name as string | undefined) ?? null,
+            avatarUrl: (u.user_metadata.avatar_url as string | undefined) ?? null,
+          }
+        : null;
+
+    void supabase.auth.getUser().then(({ data }) => {
+      setUser(map(data.user));
+      setLoading(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(map(session?.user ?? null));
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  return { user, loading };
+}
+
+function UserMenu() {
+  const { user, loading } = useShellUser();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = React.useState(false);
+
+  if (loading) return <Skeleton className="h-8 w-8 rounded-full" />;
+  if (!user) return null;
+
   const initial = (user.name ?? user.email).charAt(0).toUpperCase();
+  const signOut = async () => {
+    setSigningOut(true);
+    await createClient().auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
+
   return (
     <div className="flex items-center gap-3">
       <div className="hidden text-right sm:block">
@@ -82,11 +126,7 @@ function UserMenu({ user }: { user: ShellUser }) {
       </div>
       {user.avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={user.avatarUrl}
-          alt=""
-          className="h-8 w-8 rounded-full border border-border"
-        />
+        <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full border border-border" />
       ) : (
         <div
           aria-hidden
@@ -95,22 +135,20 @@ function UserMenu({ user }: { user: ShellUser }) {
           {initial}
         </div>
       )}
-      <form action={signOutAction}>
-        <Button type="submit" variant="ghost" size="icon" aria-label="Sign out">
-          <LogOut className="h-4 w-4" />
-        </Button>
-      </form>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Sign out"
+        loading={signingOut}
+        onClick={() => void signOut()}
+      >
+        {!signingOut && <LogOut className="h-4 w-4" />}
+      </Button>
     </div>
   );
 }
 
-export function AppShell({
-  children,
-  user,
-}: {
-  children: React.ReactNode;
-  user: ShellUser;
-}) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
@@ -160,7 +198,7 @@ export function AppShell({
           </Link>
           <div className="flex flex-1 items-center justify-end gap-4">
             <ThemeToggle />
-            <UserMenu user={user} />
+            <UserMenu />
           </div>
         </header>
 
