@@ -42,19 +42,31 @@ function StatusText({ state }: { state: AuthActionState }) {
 
 function OAuthButtons() {
   const [pending, setPending] = React.useState<"google" | "github" | null>(null);
+  const [oauthError, setOauthError] = React.useState<string | null>(null);
 
   const signInWith = async (provider: "google" | "github") => {
     const supabase = createClient();
-    if (!supabase) return;
+    if (!supabase) {
+      setOauthError("Authentication is not configured yet.");
+      return;
+    }
+    setOauthError(null);
     setPending(provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setPending(null);
+    if (error) {
+      setPending(null);
+      const label = provider === "google" ? "Google" : "GitHub";
+      setOauthError(
+        `${label} sign-in is not enabled yet — use email, or ask the workspace owner to enable it in Supabase.`,
+      );
+    }
   };
 
   return (
+    <div className="flex flex-col gap-2">
     <div className="grid grid-cols-2 gap-3">
       <Button
         type="button"
@@ -72,6 +84,12 @@ function OAuthButtons() {
       >
         GitHub
       </Button>
+    </div>
+    {oauthError ? (
+      <p role="alert" className="text-sm text-error-400">
+        {oauthError}
+      </p>
+    ) : null}
     </div>
   );
 }
@@ -126,7 +144,7 @@ export function LoginForm() {
           </div>
           {urlError && !state.error ? (
             <p role="alert" className="text-sm text-error-400">
-              Sign-in link failed — please try again.
+              That verification link was already used or expired. If your account is verified, just sign in below.
             </p>
           ) : null}
           <StatusText state={state} />

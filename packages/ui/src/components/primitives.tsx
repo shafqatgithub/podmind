@@ -22,8 +22,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary-600 text-neutral-50 hover:bg-primary-500 active:bg-primary-700",
-        secondary: "bg-surface text-foreground border border-border hover:bg-hover active:bg-active",
+        primary: "bg-primary-500 text-white hover:bg-primary-600 hover:shadow-glow-blue active:bg-primary-700",
+        secondary: "bg-transparent text-foreground border border-purple-500 hover:bg-purple-500/15 active:bg-purple-500/25",
         ghost: "text-foreground hover:bg-hover active:bg-active",
         destructive: "bg-error-600 text-neutral-50 hover:bg-error-500 active:bg-error-700",
         outline: "border border-border bg-transparent text-foreground hover:bg-hover",
@@ -68,7 +68,10 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-lg border border-border bg-card text-foreground shadow-sm", className)}
+      className={cn(
+        "rounded-lg border border-primary-500/20 bg-card/80 text-foreground shadow-soft backdrop-blur-[20px]",
+        className,
+      )}
       {...props}
     />
   ),

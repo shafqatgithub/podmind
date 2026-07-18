@@ -1,4 +1,6 @@
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
 @import "@podmind/ui/styles.css";
 
 @tailwind base;
@@ -7,7 +9,14 @@
 
 @layer base {
   html {
-    @apply bg-background text-foreground antialiased;
-    font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+
+  code, pre, kbd {
+    @apply font-mono;
   }
 }

@@ -7,10 +7,10 @@ import { PageHeader } from "@/components/common/page-header";
 import { EmptyState } from "@/components/common/empty-state";
 
 const STATS = [
-  { label: "Projects", value: 0, icon: FolderKanban },
-  { label: "Research sessions", value: 0, icon: Search },
-  { label: "AI credits used", value: 0, icon: Sparkles },
-  { label: "Episodes analyzed", value: 0, icon: BarChart3 },
+  { label: "Projects", value: 0, icon: FolderKanban, color: "text-primary-400" },
+  { label: "Research sessions", value: 0, icon: Search, color: "text-purple-400" },
+  { label: "AI credits used", value: 0, icon: Sparkles, color: "text-cyan-400" },
+  { label: "Episodes analyzed", value: 0, icon: BarChart3, color: "text-primary-400" },
 ] as const;
 
 export default function DashboardPage() {
@@ -22,7 +22,7 @@ export default function DashboardPage() {
       />
 
       <Reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {STATS.map(({ label, value, icon: Icon }) => (
+        {STATS.map(({ label, value, icon: Icon, color }) => (
           <Item key={label}>
             <Card>
               <CardContent className="flex items-center justify-between p-5">
@@ -32,7 +32,7 @@ export default function DashboardPage() {
                     <CountUp value={value} />
                   </p>
                 </div>
-                <Icon className="h-5 w-5 text-primary-400" aria-hidden />
+                <Icon className={`h-5 w-5 ${color}`} aria-hidden />
               </CardContent>
             </Card>
           </Item>

@@ -33,7 +33,7 @@ function Waveform() {
       {heights.map((h, i) => (
         <span
           key={i}
-          className="w-1 rounded-full bg-gradient-to-t from-primary-600 to-primary-400 motion-safe:animate-level origin-bottom"
+          className="w-1 rounded-full bg-gradient-to-t from-cyan-400 via-primary-500 to-purple-500 motion-safe:animate-level origin-bottom"
           style={{ height: h, animationDelay: `${i * 90}ms` }}
         />
       ))}
@@ -47,8 +47,9 @@ export default function LandingPage() {
       <main className="relative mx-auto flex min-h-screen max-w-6xl flex-col overflow-x-clip px-6">
         {/* Aurora backdrop */}
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-40 left-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-primary-600/20 blur-[120px] motion-safe:animate-aurora" />
-          <div className="absolute top-64 -left-40 h-[360px] w-[360px] rounded-full bg-success-600/10 blur-[100px] motion-safe:animate-aurora [animation-delay:2s]" />
+          <div className="absolute top-40 -right-32 h-[320px] w-[320px] rounded-full bg-cyan-400/15 blur-[100px] motion-safe:animate-aurora [animation-delay:4s]" />
+          <div className="absolute -top-40 left-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-primary-500/25 blur-[120px] motion-safe:animate-aurora" />
+          <div className="absolute top-64 -left-40 h-[360px] w-[360px] rounded-full bg-purple-500/20 blur-[100px] motion-safe:animate-aurora [animation-delay:2s]" />
         </div>
 
         {/* Header */}
@@ -78,7 +79,7 @@ export default function LandingPage() {
           <Item>
             <h1 className="max-w-3xl text-balance text-5xl font-bold tracking-tight sm:text-6xl">
               Research Less.{" "}
-              <span className="bg-gradient-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent">
+              <span className="bg-hero-glow bg-clip-text text-transparent">
                 Create More.
               </span>
             </h1>
@@ -109,7 +110,7 @@ export default function LandingPage() {
         <Reveal as="section" amount={0.1} className="grid gap-4 pb-24 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <LiftCard key={title}>
-              <Card className="h-full transition-colors hover:border-primary-600/40 hover:bg-hover">
+              <Card className="h-full transition-colors hover:border-primary-500/50 hover:shadow-glow-blue/60 hover:bg-hover">
                 <CardContent className="flex flex-col gap-3 p-6">
                   <Icon className="h-5 w-5 text-primary-400" aria-hidden />
                   <h3 className="font-semibold">{title}</h3>

@@ -1,39 +1,46 @@
 /* ============================================================
-   PodMind theme variables — 05-Design-System.md
-   Dark = primary theme (doc §4); .light overrides for secondary.
+   PodMind brand theme — owner-approved palette (2026-07-18)
+   Blue #2D8CFF · Purple #7B3FF2 · Cyan #38BDF8 · Violet #A855F7
+   BG #050816 / #0B1020 / #111827 · Text #FFF / #CBD5E1 / #94A3B8
    All values are HSL triplets consumed by the Tailwind preset.
    ============================================================ */
 
 :root {
-  /* Primary (violet) 50–900 */
-  --primary-50: 250 100% 97%;  --primary-100: 251 91% 95%;
-  --primary-200: 251 95% 92%;  --primary-300: 252 95% 85%;
-  --primary-400: 255 92% 76%;  --primary-500: 258 90% 66%;
-  --primary-600: 262 83% 58%;  --primary-700: 263 70% 50%;
-  --primary-800: 263 69% 42%;  --primary-900: 264 67% 35%;
+  /* Primary — Electric Blue (#2D8CFF = 500, #1D4ED8 = 600 hover) */
+  --primary-50: 214 100% 97%;  --primary-100: 214 95% 93%;
+  --primary-200: 213 97% 87%;  --primary-300: 212 96% 78%;
+  --primary-400: 213 94% 68%;  --primary-500: 213 100% 59%;
+  --primary-600: 224 76% 48%;  --primary-700: 226 71% 40%;
+  --primary-800: 226 69% 33%;  --primary-900: 224 64% 27%;
 
-  /* Success (green) */
+  /* Brand Purple (#7B3FF2 = 500) & Bright Violet (#A855F7 = 400) */
+  --purple-300: 270 95% 75%;   --purple-400: 271 91% 65%;
+  --purple-500: 260 87% 60%;   --purple-600: 258 80% 50%;
+  --purple-700: 257 72% 42%;
+
+  /* Accent Cyan (#38BDF8 = 400) */
+  --cyan-300: 199 95% 74%;     --cyan-400: 198 93% 60%;
+  --cyan-500: 199 89% 48%;     --cyan-600: 200 98% 39%;
+
+  /* Status scales */
   --success-50: 138 76% 97%;   --success-100: 141 84% 93%;
   --success-200: 141 79% 85%;  --success-300: 142 77% 73%;
   --success-400: 142 69% 58%;  --success-500: 142 71% 45%;
   --success-600: 142 76% 36%;  --success-700: 142 72% 29%;
   --success-800: 143 64% 24%;  --success-900: 144 61% 20%;
 
-  /* Warning (yellow) */
   --warning-50: 55 92% 95%;    --warning-100: 55 97% 88%;
   --warning-200: 53 98% 77%;   --warning-300: 50 98% 64%;
   --warning-400: 48 96% 53%;   --warning-500: 45 93% 47%;
   --warning-600: 41 96% 40%;   --warning-700: 35 92% 33%;
   --warning-800: 32 81% 29%;   --warning-900: 28 73% 26%;
 
-  /* Error (red) */
   --error-50: 0 86% 97%;       --error-100: 0 93% 94%;
   --error-200: 0 96% 89%;      --error-300: 0 94% 82%;
   --error-400: 0 91% 71%;      --error-500: 0 84% 60%;
   --error-600: 0 72% 51%;      --error-700: 0 74% 42%;
   --error-800: 0 70% 35%;      --error-900: 0 63% 31%;
 
-  /* Neutral (gray) 50–950 */
   --neutral-50: 210 40% 98%;   --neutral-100: 210 40% 96%;
   --neutral-200: 214 32% 91%;  --neutral-300: 213 27% 84%;
   --neutral-400: 215 20% 65%;  --neutral-500: 215 16% 47%;
@@ -41,23 +48,25 @@
   --neutral-800: 217 33% 17%;  --neutral-900: 222 47% 11%;
   --neutral-950: 229 84% 5%;
 
-  --radius: 10px;
+  /* Rounded corners 16–20px (cards = radius+4 = 20px) */
+  --radius: 16px;
 }
 
-/* ---------- Dark (primary theme) ---------- */
+/* ---------- Dark (primary theme) — owner backgrounds ---------- */
 :root, .dark {
-  --background: 229 84% 5%;          /* neutral-950 */
-  --surface: 222 47% 11%;            /* neutral-900 */
-  --card: 222 44% 13%;
-  --border: 217 33% 20%;
-  --input: 217 33% 17%;
-  --hover: 217 33% 21%;
-  --active: 215 28% 25%;
+  --background: 229 63% 5%;          /* #050816 */
+  --surface: 226 49% 8%;             /* #0B1020 */
+  --card: 221 39% 11%;               /* #111827 */
+  --border: 216 56% 21%;             /* blue @20% over card */
+  --input: 221 39% 13%;
+  --hover: 220 36% 16%;
+  --active: 219 34% 20%;
   --disabled: 215 19% 35%;
-  --focus: 258 90% 66%;              /* primary-500 */
-  --overlay: 229 84% 3%;
-  --foreground: 210 40% 98%;         /* neutral-50 */
-  --muted-foreground: 215 20% 65%;   /* neutral-400 */
+  --focus: 213 100% 59%;             /* Electric Blue */
+  --overlay: 229 63% 3%;
+  --foreground: 0 0% 100%;           /* #FFFFFF */
+  --secondary-foreground: 213 27% 84%; /* #CBD5E1 */
+  --muted-foreground: 215 20% 65%;   /* #94A3B8 */
   color-scheme: dark;
 }
 
@@ -66,14 +75,15 @@
   --background: 0 0% 100%;
   --surface: 210 40% 98%;
   --card: 0 0% 100%;
-  --border: 214 32% 91%;
+  --border: 213 60% 88%;
   --input: 214 32% 94%;
   --hover: 210 40% 96%;
   --active: 214 32% 91%;
   --disabled: 213 27% 84%;
-  --focus: 262 83% 58%;              /* primary-600 */
+  --focus: 224 76% 48%;
   --overlay: 222 47% 11%;
-  --foreground: 229 84% 5%;
+  --foreground: 229 63% 5%;
+  --secondary-foreground: 215 25% 27%;
   --muted-foreground: 215 16% 47%;
   color-scheme: light;
 }
