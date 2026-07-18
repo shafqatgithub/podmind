@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+"use client";
+
 import { BarChart3, FolderKanban, Search, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@podmind/ui";
+import { CountUp, Item, Reveal } from "@/components/motion/motion";
 import { PageHeader } from "@/components/common/page-header";
 import { EmptyState } from "@/components/common/empty-state";
-
-export const metadata: Metadata = { title: "Dashboard" };
 
 const STATS = [
   { label: "Projects", value: 0, icon: FolderKanban },
@@ -21,19 +21,23 @@ export default function DashboardPage() {
         description="Your podcast production at a glance."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center justify-between p-5">
-              <div>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
-              </div>
-              <Icon className="h-5 w-5 text-primary-400" aria-hidden />
-            </CardContent>
-          </Card>
+          <Item key={label}>
+            <Card>
+              <CardContent className="flex items-center justify-between p-5">
+                <div>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">
+                    <CountUp value={value} />
+                  </p>
+                </div>
+                <Icon className="h-5 w-5 text-primary-400" aria-hidden />
+              </CardContent>
+            </Card>
+          </Item>
         ))}
-      </div>
+      </Reveal>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>

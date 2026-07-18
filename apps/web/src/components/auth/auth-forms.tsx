@@ -44,8 +44,9 @@ function OAuthButtons() {
   const [pending, setPending] = React.useState<"google" | "github" | null>(null);
 
   const signInWith = async (provider: "google" | "github") => {
-    setPending(provider);
     const supabase = createClient();
+    if (!supabase) return;
+    setPending(provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },

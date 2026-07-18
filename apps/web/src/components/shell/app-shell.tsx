@@ -24,6 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@podmind/ui";
+import { m, LazyMotion, domAnimation } from "framer-motion";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -80,6 +81,10 @@ function useShellUser(): { user: ShellUser | null; loading: boolean } {
 
   React.useEffect(() => {
     const supabase = createClient();
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     const map = (u: { email?: string; user_metadata: Record<string, unknown> } | null) =>
       u
         ? {
@@ -113,7 +118,7 @@ function UserMenu() {
   const initial = (user.name ?? user.email).charAt(0).toUpperCase();
   const signOut = async () => {
     setSigningOut(true);
-    await createClient().auth.signOut();
+    await createClient()?.auth.signOut();
     router.push("/login");
     router.refresh();
   };
@@ -160,6 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="font-semibold tracking-tight">PodMind AI</span>
         </Link>
 
+        <LazyMotion features={domAnimation} strict>
         <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 px-3 py-2">
           {PRIMARY_NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -169,19 +175,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-colors",
+                  "relative flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                   active
-                    ? "bg-primary-600/15 text-primary-300"
+                    ? "text-primary-300"
                     : "text-muted-foreground hover:bg-hover hover:text-foreground",
                 )}
               >
-                <Icon className="h-4 w-4" aria-hidden />
-                {label}
+                {active && (
+                  <m.span
+                    layoutId="nav-active"
+                    aria-hidden
+                    className="absolute inset-0 rounded bg-primary-600/15"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <Icon className="relative z-10 h-4 w-4" aria-hidden />
+                <span className="relative z-10">{label}</span>
               </Link>
             );
           })}
         </nav>
+        </LazyMotion>
 
         <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
           PodMind AI

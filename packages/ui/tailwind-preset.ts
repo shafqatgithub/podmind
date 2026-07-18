@@ -52,6 +52,20 @@ export const podmindPreset: Config = {
           "sans-serif",
         ],
       },
+      keyframes: {
+        level: {
+          "0%, 100%": { transform: "scaleY(0.35)" },
+          "50%": { transform: "scaleY(1)" },
+        },
+        aurora: {
+          "0%, 100%": { opacity: "0.7", transform: "translateY(0) scale(1)" },
+          "50%": { opacity: "1", transform: "translateY(12px) scale(1.06)" },
+        },
+      },
+      animation: {
+        level: "level 1.6s ease-in-out infinite",
+        aurora: "aurora 9s ease-in-out infinite",
+      },
       borderRadius: {
         DEFAULT: "var(--radius)",
         lg: "calc(var(--radius) + 4px)",
