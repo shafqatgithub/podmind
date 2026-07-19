@@ -9,6 +9,7 @@ import { EnvelopeInterceptor } from "./common/interceptors/envelope.interceptor"
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { UsersModule } from "./users/users.module";
+import { AiModule } from "./ai/ai.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
 
 @Module({
@@ -31,6 +32,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     DatabaseModule,
     HealthModule,
     UsersModule,
+    AiModule,
   ],
   providers: [
     SupabaseAuthGuard,
