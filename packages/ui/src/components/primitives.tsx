@@ -189,3 +189,31 @@ export function Spinner({ className, ...props }: React.SVGAttributes<SVGSVGEleme
     </svg>
   );
 }
+
+/* ------------------------------------------------------------------ */
+
+const FIELD_BASE = cn(
+  "flex w-full rounded border border-border bg-input px-3 py-2 text-sm text-foreground",
+  "placeholder:text-muted-foreground",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  "disabled:cursor-not-allowed disabled:opacity-50",
+  "aria-[invalid=true]:border-error-500",
+);
+
+export const Textarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(({ className, rows = 3, ...props }, ref) => (
+  <textarea ref={ref} rows={rows} className={cn(FIELD_BASE, "resize-y", className)} {...props} />
+));
+Textarea.displayName = "Textarea";
+
+export const Select = React.forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement>
+>(({ className, children, ...props }, ref) => (
+  <select ref={ref} className={cn(FIELD_BASE, "h-10 cursor-pointer pr-8", className)} {...props}>
+    {children}
+  </select>
+));
+Select.displayName = "Select";

@@ -9,8 +9,10 @@ export {
   CardTitle,
   Input,
   Label,
+  Select,
   Skeleton,
   Spinner,
+  Textarea,
   type BadgeProps,
   type ButtonProps,
 } from "./components/primitives";
