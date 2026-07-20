@@ -32,6 +32,22 @@ async function bootstrap(): Promise<void> {
 
   const port = config.get("PORT", { infer: true });
   await app.listen(port, "0.0.0.0");
+
+  // Deploy logs must answer "is it up, and on which port?" without guesswork.
+  app
+    .get(Logger)
+    .log(
+      `PodMind API listening on 0.0.0.0:${port} (env PORT=${process.env.PORT ?? "unset"}, NODE_ENV=${config.get("NODE_ENV", { infer: true })})`,
+    );
 }
 
-void bootstrap();
+void bootstrap().catch((error: unknown) => {
+  // Without this, a boot failure exits silently and the platform only
+  // reports an unhealthy container with no cause.
+  // eslint-disable-next-line no-console
+  console.error(
+    "FATAL: PodMind API failed to start:",
+    error instanceof Error ? (error.stack ?? error.message) : error,
+  );
+  process.exit(1);
+});
