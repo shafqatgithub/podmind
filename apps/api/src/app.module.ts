@@ -38,6 +38,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     AiModule,
     TenancyModule,
     ProjectsModule,
+    ResearchModule,
   ],
   providers: [
     SupabaseAuthGuard,
