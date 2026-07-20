@@ -453,7 +453,10 @@ export function ResearchWorkspace() {
           err.code === "INSUFFICIENT_CREDITS"
             ? "You are out of AI credits for this month."
             : err.code === "AI_UNAVAILABLE"
-              ? "No AI provider is configured yet — add a provider API key to the backend to run research."
+              ? // The server names the actual cause (no key configured, key
+                // rejected, provider down). Showing our own guess instead
+                // hides the one detail that makes this fixable.
+                `Research could not run — ${err.message}`
               : err.message,
         );
       } else {
