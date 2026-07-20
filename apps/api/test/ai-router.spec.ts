@@ -105,6 +105,7 @@ describe("AI Router", () => {
 
   /* ------------------------------------------ integration with a real DB */
   describe("routing, credits and telemetry (live schema)", () => {
+    let moduleRef: Awaited<ReturnType<ReturnType<typeof Test.createTestingModule>["compile"]>>;
     let router: AiRouterService;
     let credits: CreditsService;
     let pool: Pool;
@@ -115,7 +116,7 @@ describe("AI Router", () => {
     const ownerId = randomUUID();
 
     beforeAll(async () => {
-      const moduleRef = await Test.createTestingModule({
+      moduleRef = await Test.createTestingModule({
         imports: [
           ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
           DatabaseModule,
@@ -182,6 +183,22 @@ describe("AI Router", () => {
       anthropic.calls = 0;
       openai.calls = 0;
       google.calls = 0;
+    });
+
+    it("resolves documented model families to real provider API identifiers", async () => {
+      const catalog = moduleRef.get(ModelCatalog);
+      const opus = await catalog.resolve("anthropic", "claude-opus");
+      const sonnet = await catalog.resolve("anthropic", "claude-sonnet");
+
+      // ai_models.model_name is sent verbatim as the provider's `model`
+      // field. Anthropic rejects shorthand names, so the catalog must hold
+      // versioned identifiers while the routing rules keep using families.
+      expect(opus?.modelName).toMatch(/^claude-opus-\d/);
+      expect(sonnet?.modelName).toMatch(/^claude-sonnet-\d/);
+
+      // OpenAI and Google identifiers are already API-valid.
+      expect((await catalog.resolve("openai", "gpt-5"))?.modelName).toBe("gpt-5");
+      expect((await catalog.resolve("google", "gemini-pro"))?.modelName).toMatch(/^gemini-/);
     });
 
     it("routes a research task to the preferred provider and charges credits", async () => {

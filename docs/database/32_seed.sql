@@ -53,8 +53,8 @@ FROM (VALUES
     ('openai','gpt-5-mini',400000),
     ('gemini','gemini-2.5-pro',1000000),
     ('gemini','gemini-2.5-flash',1000000),
-    ('claude','claude-opus',200000),
-    ('claude','claude-sonnet',200000),
+    ('claude','claude-opus-4-8',1000000),
+    ('claude','claude-sonnet-5',1000000),
     ('grok','grok-4',256000),
     ('deepseek','deepseek-chat',128000)
 ) AS v(slug, model_name, context_window)
