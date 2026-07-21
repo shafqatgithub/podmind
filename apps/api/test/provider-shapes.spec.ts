@@ -107,6 +107,9 @@ describe("Provider request shapes", () => {
         expect(body).not.toHaveProperty("max_tokens");
         // Reasoning models accept only the default temperature.
         expect(body).not.toHaveProperty("temperature");
+        // Without a cap, reasoning consumes the whole budget and the
+        // response comes back empty.
+        expect(body.reasoning_effort).toBe("low");
       },
     );
 
@@ -115,6 +118,7 @@ describe("Provider request shapes", () => {
       expect(body.max_tokens).toBe(4000);
       expect(body.temperature).toBe(0.4);
       expect(body).not.toHaveProperty("max_completion_tokens");
+      expect(body).not.toHaveProperty("reasoning_effort");
     });
 
     it("requests strict JSON when asked", () => {

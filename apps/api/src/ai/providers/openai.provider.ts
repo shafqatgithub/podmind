@@ -39,7 +39,15 @@ export class OpenAiProvider extends BaseHttpProvider {
         model: options.model,
         messages: options.messages,
         ...(reasoning
-          ? { max_completion_tokens: maxTokens }
+          ? {
+              max_completion_tokens: maxTokens,
+              // Reasoning is billed against the same budget as the answer.
+              // Left at the default, GPT-5 consumed the entire allowance
+              // thinking and returned nothing across several live runs. The
+              // work here is structured extraction, where a low effort still
+              // produces a strong briefing and guarantees room for output.
+              reasoning_effort: "low",
+            }
           : { max_tokens: maxTokens, temperature: options.temperature ?? 0.7 }),
         ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
       },
