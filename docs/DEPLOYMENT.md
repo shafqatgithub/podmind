@@ -64,6 +64,19 @@ A `NOT_FOUND` on the third call means an **older build is still running**.
 - **"Redeploy" replays the same commit.** To ship new code, push a commit or
   use Deploy on the latest commit — redeploying an old deployment rebuilds
   that old code, which looks like the fix silently not working.
+- **Changing a variable redeploys the last *successful* build, not the latest
+  commit.** If a build failed, every subsequent variable change quietly ships
+  the older working image again. New routes appear to 404 long after the fix
+  was pushed. Confirm the commit hash on the active deployment before
+  concluding that code is broken.
+- **Rotating the database password breaks the running service.** The API keeps
+  serving `/health` (liveness has no dependencies) while `/health/ready`
+  reports the database down and every data route returns 500. Update
+  `DATABASE_URL` and redeploy.
+- **Install once.** Nixpacks runs its own install phase; a second install in
+  the build command with different flags makes pnpm wipe `node_modules` and
+  prompt, which fails non-interactively with `Command "turbo" not found`. See
+  `nixpacks.toml`.
 - **Service names are cosmetic.** A service called `@podmind/web` can be
   running the API; what matters is the start command in `railway.json`.
 
