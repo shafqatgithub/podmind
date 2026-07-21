@@ -1,8 +1,9 @@
-import { ConfigService } from "@nestjs/config";
+import type { ConfigService } from "@nestjs/config";
 import { OpenAiProvider } from "../src/ai/providers/openai.provider";
 import { AnthropicProvider } from "../src/ai/providers/anthropic.provider";
 import { GoogleProvider } from "../src/ai/providers/google.provider";
 import type { CompletionOptions } from "../src/ai/providers/provider.types";
+import type { Env } from "../src/config/env";
 
 /**
  * Provider request shapes.
@@ -14,8 +15,9 @@ import type { CompletionOptions } from "../src/ai/providers/provider.types";
  * after GPT-5 renamed the field and stopped accepting a custom temperature.
  */
 
-function configWith(values: Record<string, string>): ConfigService {
-  return { get: (key: string) => values[key] } as unknown as ConfigService;
+/** Minimal ConfigService stand-in typed to the app's env shape. */
+function configWith(values: Record<string, string>) {
+  return { get: (key: string) => values[key] } as unknown as ConfigService<Env, true>;
 }
 
 /** buildRequest is protected; tests exercise it as the adapter's contract. */
