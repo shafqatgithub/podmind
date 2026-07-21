@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@podmind/ui";
 import { m, LazyMotion, domAnimation } from "framer-motion";
-import { LogOut } from "lucide-react";
+import { LogOut, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -35,6 +35,7 @@ const PRIMARY_NAV = [
   { href: "/research", label: "Research", icon: Search },
   { href: "/guests", label: "Guests", icon: Users },
   { href: "/scripts", label: "Scripts", icon: FileText },
+  { href: "/chat", label: "AI Chat", icon: MessageSquare },
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },

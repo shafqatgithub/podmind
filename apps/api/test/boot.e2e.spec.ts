@@ -53,6 +53,12 @@ const EXPECTED_ROUTES = [
   "GET /api/v1/research",
   "GET /api/v1/research/:id",
   "DELETE /api/v1/research/:id",
+  "POST /api/v1/chat/conversations",
+  "GET /api/v1/chat/conversations",
+  "GET /api/v1/chat/conversations/:id",
+  "PATCH /api/v1/chat/conversations/:id",
+  "DELETE /api/v1/chat/conversations/:id",
+  "POST /api/v1/chat/conversations/:id/messages",
 ];
 
 describe("Application boot contract", () => {

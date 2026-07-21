@@ -11,6 +11,7 @@ import { HealthModule } from "./health/health.module";
 import { UsersModule } from "./users/users.module";
 import { AiModule } from "./ai/ai.module";
 import { ResearchModule } from "./research/research.module";
+import { ChatModule } from "./chat/chat.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
@@ -39,6 +40,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     TenancyModule,
     ProjectsModule,
     ResearchModule,
+    ChatModule,
   ],
   providers: [
     SupabaseAuthGuard,
