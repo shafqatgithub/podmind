@@ -3,6 +3,7 @@ import { AiRouterService } from "../ai/routing/ai-router.service";
 import type { AiMessage } from "../ai/providers/provider.types";
 import type { TenantContext } from "../tenancy/tenancy.service";
 import { ChatRepository, type ConversationRow } from "./chat.repository";
+import { KnowledgeService } from "../knowledge/knowledge.service";
 import type {
   CreateConversationDto,
   ListConversationsQueryDto,
@@ -24,6 +25,7 @@ export class ChatService {
   constructor(
     private readonly repository: ChatRepository,
     private readonly router: AiRouterService,
+    private readonly knowledge: KnowledgeService,
   ) {}
 
   async createConversation(tenant: TenantContext, dto: CreateConversationDto) {
@@ -149,6 +151,24 @@ export class ChatService {
         parts.push(
           "Research already completed for this project (reference it when relevant):",
           ...research.map((r) => `- ${r.title}${r.summary ? `: ${r.summary}` : ""}`),
+        );
+      }
+    }
+
+    // Retrieval-augmented: the most relevant passages from the user's own
+    // uploaded documents, selected by the question being asked. Retrieval
+    // never fails the turn — without embeddings configured it returns
+    // nothing and the assistant answers from context alone.
+    if (conversation.project_id) {
+      const passages = await this.knowledge.retrieveForContext(
+        tenant,
+        conversation.project_id,
+        newMessage,
+      );
+      if (passages.length) {
+        parts.push(
+          "Relevant passages from the user's own documents. Prefer these over general knowledge, and cite the document title when you use one:",
+          ...passages.map((p) => `- [${p.document_title}] ${p.chunk_text}`),
         );
       }
     }

@@ -4,6 +4,7 @@ import { BaseHttpProvider } from "./base-http.provider";
 import {
   type CompletionOptions,
   type CompletionResult,
+  type EmbeddingResult,
   ProviderError,
   type ProviderSlug,
 } from "./provider.types";
@@ -83,6 +84,65 @@ export class OpenAiProvider extends BaseHttpProvider {
       completionTokens: body.usage?.completion_tokens ?? 0,
       model: body.model ?? fallbackModel,
       provider: this.slug,
+    };
+  }
+
+  /**
+   * Embeddings for knowledge search. The schema stores vector(1536), which is
+   * the native width of text-embedding-3-small, so no truncation is needed.
+   */
+  async embed(inputs: string[], dimensions: number): Promise<EmbeddingResult> {
+    if (!this.isConfigured()) {
+      throw new ProviderError(this.slug, "openai has no API key configured", false);
+    }
+
+    const response = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        input: inputs,
+        dimensions,
+      }),
+    });
+
+    if (!response.ok) {
+      const status = response.status;
+      throw new ProviderError(
+        this.slug,
+        status === 401 || status === 403
+          ? "openai rejected the API key"
+          : `openai embeddings returned HTTP ${status}`,
+        ![400, 401, 403, 404, 422].includes(status),
+        status,
+      );
+    }
+
+    const body = (await response.json()) as {
+      model?: string;
+      data?: { embedding?: number[]; index?: number }[];
+      usage?: { total_tokens?: number };
+    };
+    const data = body.data;
+    if (!Array.isArray(data) || data.length !== inputs.length) {
+      throw new ProviderError(this.slug, "Unexpected embeddings response from OpenAI", false);
+    }
+
+    // Order is not guaranteed by the contract; sort by the returned index.
+    const vectors = [...data]
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .map((d) => d.embedding ?? []);
+    if (vectors.some((v) => v.length !== dimensions)) {
+      throw new ProviderError(this.slug, "Embedding width did not match the schema", false);
+    }
+
+    return {
+      vectors,
+      model: body.model ?? "text-embedding-3-small",
+      totalTokens: body.usage?.total_tokens ?? 0,
     };
   }
 }

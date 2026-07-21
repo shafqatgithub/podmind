@@ -59,6 +59,11 @@ const EXPECTED_ROUTES = [
   "PATCH /api/v1/chat/conversations/:id",
   "DELETE /api/v1/chat/conversations/:id",
   "POST /api/v1/chat/conversations/:id/messages",
+  "GET /api/v1/knowledge/status",
+  "GET /api/v1/knowledge/documents",
+  "POST /api/v1/knowledge/documents",
+  "DELETE /api/v1/knowledge/documents/:id",
+  "POST /api/v1/knowledge/search",
 ];
 
 describe("Application boot contract", () => {

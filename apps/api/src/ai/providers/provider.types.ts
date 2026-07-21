@@ -66,9 +66,18 @@ export class ProviderError extends Error {
   }
 }
 
+export interface EmbeddingResult {
+  /** One vector per input, in the same order. */
+  vectors: number[][];
+  model: string;
+  totalTokens: number;
+}
+
 export interface AiProvider {
   readonly slug: ProviderSlug;
   /** False when no API key is configured — the Router skips it in selection. */
   isConfigured(): boolean;
   complete(options: CompletionOptions): Promise<CompletionResult>;
+  /** Optional: only providers with an embeddings API implement this. */
+  embed?(inputs: string[], dimensions: number): Promise<EmbeddingResult>;
 }

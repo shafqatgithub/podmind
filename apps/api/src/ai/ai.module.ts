@@ -6,6 +6,7 @@ import { ProviderRegistry } from "./providers/provider.registry";
 import { ModelCatalog } from "./routing/model-catalog";
 import { AiRouterService } from "./routing/ai-router.service";
 import { CreditsService } from "./credits/credits.service";
+import { EmbeddingService } from "./embeddings/embedding.service";
 import { AiController } from "./ai.controller";
 
 /**
@@ -21,8 +22,9 @@ import { AiController } from "./ai.controller";
     ProviderRegistry,
     ModelCatalog,
     CreditsService,
+    EmbeddingService,
     AiRouterService,
   ],
-  exports: [AiRouterService, CreditsService, ProviderRegistry],
+  exports: [AiRouterService, CreditsService, EmbeddingService, ProviderRegistry],
 })
 export class AiModule {}
