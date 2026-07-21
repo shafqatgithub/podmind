@@ -48,7 +48,7 @@ import {
   type ResearchResult,
 } from "@/lib/api/research";
 import { EmptyState } from "@/components/common/empty-state";
-import { Item, Reveal } from "@/components/motion/motion";
+import { Appear, Item } from "@/components/motion/motion";
 
 /* --------------------------------------------------------- progress */
 
@@ -399,8 +399,10 @@ export function ResearchWorkspace() {
     try {
       const page = await researchApi.list({ limit: 25 });
       setSessions(page.items);
+      return page.items;
     } catch {
       // History is secondary; the run form stays usable regardless.
+      return [];
     }
   }, []);
 
@@ -420,7 +422,17 @@ export function ResearchWorkspace() {
       } catch {
         // Provider list is advisory; Auto routing still works without it.
       }
-      await loadSessions();
+      const existing = await loadSessions();
+      // Reopen the most recent session so returning to the page (or a
+      // refresh) shows the last briefing instead of an empty form.
+      const latest = existing[0];
+      if (latest) {
+        try {
+          setDetail(await researchApi.get(latest.id, controller.signal));
+        } catch {
+          // Non-fatal: the form is still usable without the last result.
+        }
+      }
     })();
     return () => controller.abort();
   }, [loadSessions]);
@@ -616,7 +628,7 @@ export function ResearchWorkspace() {
         {loadingDetail ? <Skeleton className="h-64 rounded-lg" /> : null}
 
         {detail && !running ? (
-          <Reveal className="flex flex-col gap-4">
+          <Appear className="flex flex-col gap-4">
             {detail.results.map((result) => (
               <Item key={result.id}>
                 <ResultView result={result} />
@@ -640,7 +652,7 @@ export function ResearchWorkspace() {
                 </Card>
               </Item>
             ) : null}
-          </Reveal>
+          </Appear>
         ) : null}
 
         {!detail && !running && !loadingDetail && projects.length === 0 && !projectsLoading ? (

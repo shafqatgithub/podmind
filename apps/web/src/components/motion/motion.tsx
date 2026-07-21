@@ -79,6 +79,28 @@ export function Item({
   );
 }
 
+/**
+ * Stagger container that animates on mount rather than on scroll.
+ *
+ * Reveal is right for page content the reader scrolls to. It is wrong for
+ * content that appears *because* the user just acted: gating that behind a
+ * viewport threshold can leave a freshly generated result invisible until
+ * the page is scrolled, which reads as "nothing happened".
+ */
+export function Appear({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <m.div className={className} variants={stagger} initial="hidden" animate="visible">
+      {children}
+    </m.div>
+  );
+}
+
 /** Hover Lift (doc §29): subtle raise + spring press for cards. */
 export function LiftCard({
   children,
