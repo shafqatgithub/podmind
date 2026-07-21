@@ -37,6 +37,10 @@ export const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+
+  // Injected by Railway. Surfaced on /health so the running build can be
+  // identified without guessing which commit the platform actually shipped.
+  RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

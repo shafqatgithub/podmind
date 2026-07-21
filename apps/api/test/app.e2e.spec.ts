@@ -32,6 +32,9 @@ describe("API foundation (e2e)", () => {
       error: null,
       version: "v1",
     });
+    // Identifies the running build; "unknown" when not set by the platform.
+    expect(typeof res.body.data.commit).toBe("string");
+    expect(new Date(res.body.data.started_at).toString()).not.toBe("Invalid Date");
     expect(typeof res.body.request_id).toBe("string");
     expect(new Date(res.body.timestamp).toString()).not.toBe("Invalid Date");
   });
