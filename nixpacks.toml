@@ -1,0 +1,13 @@
+# Nixpacks build configuration.
+#
+# Nixpacks runs its own install phase before the build command. Leaving that
+# phase at its default and then re-installing with different flags inside the
+# build command makes pnpm see a mismatched store, wipe node_modules and
+# prompt — which in a non-interactive builder fails with the modules already
+# removed ("Command \"turbo\" not found").
+#
+# So the install happens exactly once, here, with the flags it actually needs:
+# Railway sets NODE_ENV=production, under which pnpm omits devDependencies —
+# and both turbo and the Nest CLI that compile the API are devDependencies.
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile --prod=false"]
