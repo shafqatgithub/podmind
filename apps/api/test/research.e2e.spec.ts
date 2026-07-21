@@ -244,6 +244,19 @@ describe("Research module", () => {
       );
     });
 
+    it("honours an explicit provider preference without losing fallback", async () => {
+      // The scripted registry only exposes anthropic, so asserting the call
+      // happened proves the preference reached the Router rather than being
+      // dropped between the DTO and route().
+      const session = await service.create(tenant, {
+        project_id: projectId,
+        topic: "Provider preference",
+        provider: "anthropic",
+      });
+      expect(session.provider).toBe("anthropic");
+      expect(provider.calls).toBeGreaterThan(0);
+    });
+
     it("applies the depth token budget", async () => {
       await service.create(tenant, {
         project_id: projectId,

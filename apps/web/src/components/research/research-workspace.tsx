@@ -38,6 +38,7 @@ import {
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { projectsApi, type Project } from "@/lib/api/projects";
+import { aiApi, PROVIDER_LABELS, type AiStatus } from "@/lib/api/ai";
 import {
   RESEARCH_DEPTHS,
   researchApi,
@@ -390,6 +391,7 @@ export function ResearchWorkspace() {
   const [detail, setDetail] = React.useState<ResearchSessionDetail | null>(null);
   const [running, setRunning] = React.useState(false);
   const [depth, setDepth] = React.useState<ResearchDepth>("standard");
+  const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = React.useState(false);
 
@@ -413,6 +415,11 @@ export function ResearchWorkspace() {
       } finally {
         setProjectsLoading(false);
       }
+      try {
+        setAiStatus(await aiApi.status(controller.signal));
+      } catch {
+        // Provider list is advisory; Auto routing still works without it.
+      }
       await loadSessions();
     })();
     return () => controller.abort();
@@ -424,6 +431,7 @@ export function ResearchWorkspace() {
     const project_id = String(form.get("project_id") ?? "");
     const topic = String(form.get("topic") ?? "").trim();
     const objective = String(form.get("objective") ?? "").trim();
+    const provider = String(form.get("provider") ?? "");
 
     if (!project_id) {
       setError("Choose a project first.");
@@ -443,6 +451,7 @@ export function ResearchWorkspace() {
         topic,
         depth,
         ...(objective ? { objective } : {}),
+        ...(provider ? { provider: provider as "openai" | "anthropic" | "google" } : {}),
       });
       const full = await researchApi.get(session.id);
       setDetail(full);
@@ -543,6 +552,23 @@ export function ResearchWorkspace() {
                   </Select>
                   <p className="text-xs text-muted-foreground">
                     {RESEARCH_DEPTHS.find((d) => d.value === depth)?.hint}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <Label htmlFor="provider">AI provider</Label>
+                  <Select id="provider" name="provider" defaultValue="">
+                    <option value="">Auto — best model for research</option>
+                    {(aiStatus?.providers ?? []).map((p) => (
+                      <option key={p.slug} value={p.slug} disabled={!p.configured}>
+                        {PROVIDER_LABELS[p.slug] ?? p.slug}
+                        {p.configured ? "" : " — no API key"}
+                      </option>
+                    ))}
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Auto follows the documented routing rules. Choosing a provider puts it
+                    first; PodMind still falls back to the others if it fails.
                   </p>
                 </div>
 

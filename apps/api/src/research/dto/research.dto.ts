@@ -14,6 +14,10 @@ import { Transform } from "class-transformer";
 export const RESEARCH_DEPTHS = ["quick", "standard", "deep"] as const;
 export type ResearchDepthValue = (typeof RESEARCH_DEPTHS)[number];
 
+/** Providers a user may prefer. Subset of the ai_provider enum with adapters. */
+export const SELECTABLE_PROVIDERS = ["openai", "anthropic", "google"] as const;
+export type SelectableProvider = (typeof SELECTABLE_PROVIDERS)[number];
+
 const toBoolean = ({ value }: { value: unknown }) =>
   value === true || value === "true" || value === "1";
 
@@ -39,6 +43,15 @@ export class CreateResearchDto {
   @IsOptional()
   @IsIn(RESEARCH_DEPTHS)
   depth?: ResearchDepthValue;
+
+  /**
+   * Preferred provider (documented Router factor "Organization Preferences").
+   * It is hoisted to the front of the plan, not a hard override, so a request
+   * still succeeds if that provider is unavailable.
+   */
+  @IsOptional()
+  @IsIn(SELECTABLE_PROVIDERS)
+  provider?: SelectableProvider;
 }
 
 /** GET /api/v1/research — list sessions. */

@@ -103,6 +103,7 @@ export class ResearchService {
         jsonMode: true,
         maxTokens: DEPTH_MAX_TOKENS[depth],
         temperature: 0.4,
+        preferredProvider: dto.provider ?? null,
       });
     } catch (err) {
       // Do not leave an empty session behind; credits are already refunded

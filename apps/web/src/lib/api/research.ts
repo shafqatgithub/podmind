@@ -91,6 +91,8 @@ export interface CreateResearchInput {
   title?: string;
   objective?: string;
   depth?: ResearchDepth;
+  /** Preferred provider; hoisted in the route plan, fallback still applies. */
+  provider?: "openai" | "anthropic" | "google";
 }
 
 export interface ResearchRunResponse extends ResearchSession {
