@@ -18,15 +18,29 @@ export class OpenAiProvider extends BaseHttpProvider {
     super(config.get("OPENAI_API_KEY", { infer: true }));
   }
 
+  /**
+   * GPT-5 and the o-series are reasoning models: they renamed `max_tokens`
+   * to `max_completion_tokens` and reject any `temperature` other than the
+   * default. Sending the legacy parameters is a hard 400, so the payload is
+   * shaped per model family.
+   */
+  private static isReasoningModel(model: string): boolean {
+    return /^(gpt-5|o\d)/.test(model);
+  }
+
   protected buildRequest(options: CompletionOptions) {
+    const reasoning = OpenAiProvider.isReasoningModel(options.model);
+    const maxTokens = options.maxTokens ?? 4096;
+
     return {
       url: "https://api.openai.com/v1/chat/completions",
       headers: { authorization: `Bearer ${this.apiKey}` },
       body: {
         model: options.model,
         messages: options.messages,
-        max_tokens: options.maxTokens ?? 4096,
-        temperature: options.temperature ?? 0.7,
+        ...(reasoning
+          ? { max_completion_tokens: maxTokens }
+          : { max_tokens: maxTokens, temperature: options.temperature ?? 0.7 }),
         ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
       },
     };

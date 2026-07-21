@@ -80,6 +80,19 @@ export const LONG_CONTEXT_ROUTE: RouteCandidate[] = [
   { provider: "anthropic", family: "claude-sonnet" },
 ];
 
+/**
+ * Last-resort candidate appended to every plan.
+ *
+ * The documented chains lead with premium models, which are exactly the ones
+ * gated behind paid quota — a live run failed all three candidates with
+ * "credit balance too low", "quota exceeded, limit: 0" and nothing left to
+ * try. Gemini Flash is the doc's "Fast Responses" tier and is reachable on
+ * free quota, so ending every chain with it turns a total failure into a
+ * degraded but useful answer. It is only ever reached once every preferred
+ * model has already failed.
+ */
+export const LAST_RESORT: RouteCandidate = { provider: "google", family: "gemini-flash" };
+
 /** Above this prompt size the long-context chain takes over. */
 export const LONG_CONTEXT_CHAR_THRESHOLD = 120_000;
 
@@ -105,6 +118,11 @@ export function buildRoutePlan(
       const [preferred] = plan.splice(index, 1);
       if (preferred) plan.unshift(preferred);
     }
+  }
+
+  // Safety net last, and only if the chain does not already end there.
+  if (!plan.some((c) => c.provider === LAST_RESORT.provider && c.family === LAST_RESORT.family)) {
+    plan.push(LAST_RESORT);
   }
   return plan;
 }

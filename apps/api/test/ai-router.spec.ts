@@ -65,7 +65,24 @@ describe("AI Router", () => {
         "anthropic:claude-opus",
         "openai:gpt-5",
         "google:gemini-pro",
+        // Safety net: only reached once every documented candidate failed.
+        "google:gemini-flash",
       ]);
+    });
+
+    it("guarantees every task chain includes a reachable last-resort model", () => {
+      for (const task of Object.keys(TASK_ROUTES) as (keyof typeof TASK_ROUTES)[]) {
+        const plan = buildRoutePlan(task, 500);
+        // Chains that already lead with the fast tier keep their order; the
+        // rest gain it as a final fallback. Either way it is always present.
+        expect(plan).toContainEqual({ provider: "google", family: "gemini-flash" });
+      }
+    });
+
+    it("does not duplicate the last resort when a chain already uses it", () => {
+      const plan = buildRoutePlan("seo", 100);
+      const flash = plan.filter((c) => c.family === "gemini-flash");
+      expect(flash).toHaveLength(1);
     });
 
     it("routes script writing to GPT-5 first", () => {
@@ -88,7 +105,7 @@ describe("AI Router", () => {
     it("hoists an organization's preferred provider without losing fallbacks", () => {
       const plan = buildRoutePlan("research", 500, "google");
       expect(plan[0]?.provider).toBe("google");
-      expect(plan).toHaveLength(TASK_ROUTES.research.length);
+      expect(plan).toHaveLength(TASK_ROUTES.research.length + 1); // + safety net
       expect(plan.map((c) => c.provider)).toEqual(
         expect.arrayContaining(["anthropic", "openai", "google"]),
       );
