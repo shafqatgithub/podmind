@@ -65,7 +65,21 @@ export abstract class BaseHttpProvider implements AiProvider {
         );
       }
 
-      return this.parseResponse(await response.json(), options.model);
+      const result = this.parseResponse(await response.json(), options.model);
+
+      // A completion with no visible text is a failed attempt, not a result.
+      // Reasoning models can spend the entire token budget on internal
+      // reasoning and return nothing; treating that as success would save an
+      // empty record and charge the user for it. Terminal, so the Router
+      // moves straight to the next provider instead of paying twice.
+      if (result.text.trim().length === 0) {
+        throw new ProviderError(
+          this.slug,
+          `${this.slug} returned an empty completion (the token budget was consumed before any output was produced)`,
+          false,
+        );
+      }
+      return result;
     } catch (err) {
       if (err instanceof ProviderError) throw err;
       if (err instanceof Error && err.name === "AbortError") {

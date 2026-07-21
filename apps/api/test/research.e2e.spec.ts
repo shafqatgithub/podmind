@@ -263,14 +263,14 @@ describe("Research module", () => {
         topic: "Quick topic",
         depth: "quick",
       });
-      expect(provider.lastOptions?.maxTokens).toBe(2000);
+      expect(provider.lastOptions?.maxTokens).toBe(8000);
 
       await service.create(tenant, {
         project_id: projectId,
         topic: "Deep topic",
         depth: "deep",
       });
-      expect(provider.lastOptions?.maxTokens).toBe(8000);
+      expect(provider.lastOptions?.maxTokens).toBe(32000);
     });
 
     it("keeps the work when the model returns prose instead of JSON", async () => {

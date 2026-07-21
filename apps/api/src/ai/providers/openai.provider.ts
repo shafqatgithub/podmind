@@ -49,13 +49,26 @@ export class OpenAiProvider extends BaseHttpProvider {
   protected parseResponse(data: unknown, fallbackModel: string): CompletionResult {
     const body = data as {
       model?: string;
-      choices?: { message?: { content?: string } }[];
+      choices?: { message?: { content?: string }; finish_reason?: string }[];
       usage?: { prompt_tokens?: number; completion_tokens?: number };
     };
-    const text = body.choices?.[0]?.message?.content;
+    const choice = body.choices?.[0];
+    const text = choice?.message?.content;
     if (typeof text !== "string") {
       throw new ProviderError(this.slug, "Unexpected response shape from OpenAI", false);
     }
+
+    // Reasoning models bill reasoning against the completion budget, so a
+    // 'length' finish with no text means the budget ran out before output.
+    // Naming that beats a generic empty-response error.
+    if (choice?.finish_reason === "length" && text.trim().length === 0) {
+      throw new ProviderError(
+        this.slug,
+        "OpenAI hit the token limit during reasoning and produced no output — raise max tokens for this task",
+        false,
+      );
+    }
+
     return {
       text,
       promptTokens: body.usage?.prompt_tokens ?? 0,

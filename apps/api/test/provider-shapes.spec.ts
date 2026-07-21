@@ -2,7 +2,8 @@ import type { ConfigService } from "@nestjs/config";
 import { OpenAiProvider } from "../src/ai/providers/openai.provider";
 import { AnthropicProvider } from "../src/ai/providers/anthropic.provider";
 import { GoogleProvider } from "../src/ai/providers/google.provider";
-import type { CompletionOptions } from "../src/ai/providers/provider.types";
+import type { CompletionOptions, CompletionResult } from "../src/ai/providers/provider.types";
+import { BaseHttpProvider } from "../src/ai/providers/base-http.provider";
 import type { Env } from "../src/config/env";
 
 /**
@@ -36,6 +37,63 @@ const baseOptions: CompletionOptions = {
   maxTokens: 4000,
   temperature: 0.4,
 };
+
+describe("Empty completions", () => {
+  /**
+   * A reasoning model can spend its whole budget thinking and return no
+   * text. Counting that as success stored an empty research result and
+   * still charged the user, so adapters must reject it.
+   */
+  class StubProvider extends BaseHttpProvider {
+    readonly slug = "openai" as const;
+    constructor(private readonly payload: unknown) {
+      super("test-key");
+    }
+    protected buildRequest() {
+      return { url: "https://example.test", headers: {}, body: {} };
+    }
+    protected parseResponse(): CompletionResult {
+      return {
+        text: (this.payload as { text: string }).text,
+        promptTokens: 10,
+        completionTokens: 2000,
+        model: "gpt-5",
+        provider: "openai",
+      };
+    }
+  }
+
+  const okResponse = {
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve("{}"),
+  } as unknown as Response;
+
+  beforeEach(() => {
+    global.fetch = jest.fn().mockResolvedValue(okResponse) as unknown as typeof fetch;
+  });
+
+  it("rejects a completion with no visible text", async () => {
+    const provider = new StubProvider({ text: "   " });
+    await expect(
+      provider.complete({ model: "gpt-5", messages: [{ role: "user", content: "hi" }] }),
+    ).rejects.toMatchObject({
+      name: "ProviderError",
+      retryable: false,
+      message: expect.stringContaining("empty completion"),
+    });
+  });
+
+  it("accepts a completion that has text", async () => {
+    const provider = new StubProvider({ text: '{"ok":true}' });
+    const result = await provider.complete({
+      model: "gpt-5",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(result.text).toBe('{"ok":true}');
+  });
+});
 
 describe("Provider request shapes", () => {
   describe("OpenAI", () => {

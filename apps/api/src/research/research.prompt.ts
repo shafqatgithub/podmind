@@ -126,9 +126,17 @@ export function buildResearchMessages(input: ResearchPromptInput): AiMessage[] {
   ];
 }
 
-/** Token budget per depth — deep research needs room to be thorough. */
+/**
+ * Token budget per depth.
+ *
+ * These must leave room for *reasoning* tokens, not just visible output:
+ * GPT-5 and the o-series bill internal reasoning against the completion
+ * budget. A live run with a 2000-token budget spent all of it reasoning and
+ * returned an empty completion, so the budgets below are sized for the
+ * reasoning plus the structured briefing the prompt asks for.
+ */
 export const DEPTH_MAX_TOKENS: Record<ResearchDepth, number> = {
-  quick: 2000,
-  standard: 4000,
-  deep: 8000,
+  quick: 8000,
+  standard: 16000,
+  deep: 32000,
 };
