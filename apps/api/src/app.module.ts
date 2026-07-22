@@ -13,6 +13,7 @@ import { AiModule } from "./ai/ai.module";
 import { ResearchModule } from "./research/research.module";
 import { ChatModule } from "./chat/chat.module";
 import { KnowledgeModule } from "./knowledge/knowledge.module";
+import { AnalyticsModule } from "./analytics/analytics.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
@@ -43,6 +44,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     ResearchModule,
     ChatModule,
     KnowledgeModule,
+    AnalyticsModule,
   ],
   providers: [
     SupabaseAuthGuard,

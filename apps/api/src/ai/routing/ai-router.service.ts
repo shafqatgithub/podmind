@@ -215,10 +215,10 @@ export class AiRouterService {
     const completionTokens = input.result?.completionTokens ?? 0;
     const { rows } = await this.pool.query<{ id: string }>(
       `insert into public.ai_requests
-         (project_id, conversation_id, provider_id, model_id, task,
+         (organization_id, project_id, conversation_id, provider_id, model_id, task,
           prompt_tokens, completion_tokens, total_tokens,
           estimated_cost, latency_ms, success, error_message, metadata)
-       values ($1,$2,$3,$4,$5::ai_task,$6,$7,$8,$9,$10,$11,$12,$13)
+       values ($14,$1,$2,$3,$4,$5::ai_task,$6,$7,$8,$9,$10,$11,$12,$13)
        returning id`,
       [
         input.request.projectId ?? null,
@@ -233,7 +233,11 @@ export class AiRouterService {
         input.latencyMs,
         input.success,
         input.errorMessage ?? null,
+        // Also kept in metadata: analytics reads the indexed column, while
+        // the metadata copy keeps historical rows and any external consumer
+        // working unchanged.
         JSON.stringify({ organization_id: input.request.organizationId }),
+        input.request.organizationId,
       ],
     );
     return rows[0]!.id;
