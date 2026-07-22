@@ -65,6 +65,7 @@ const EXPECTED_ROUTES = [
   "DELETE /api/v1/knowledge/documents/:id",
   "POST /api/v1/knowledge/search",
   "GET /api/v1/analytics/overview",
+  "GET /api/v1/dashboard",
 ];
 
 describe("Application boot contract", () => {

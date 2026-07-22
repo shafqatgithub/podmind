@@ -44,21 +44,44 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   /** Shows a spinner and disables interaction. */
   loading?: boolean;
+  /**
+   * Render the single child with the button's styling instead of a <button>.
+   * Use for links, where nesting an <a> inside a <button> is invalid.
+   */
+  asChild?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, loading = false, disabled, children, ...props }, ref) => (
-    <button
-      ref={ref}
-      className={cn(buttonVariants({ variant, size }), className)}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      {...props}
-    >
-      {loading && <Spinner className="h-4 w-4" />}
-      {children}
-    </button>
-  ),
+  (
+    { className, variant, size, loading = false, disabled, children, asChild = false, ...props },
+    ref,
+  ) => {
+    const classes = cn(buttonVariants({ variant, size }), className);
+
+    // asChild renders the single child element with the button's styling
+    // instead of a <button>. Needed for navigation: a <button> wrapping an
+    // <a> is invalid HTML and breaks keyboard and middle-click behaviour.
+    if (asChild && React.isValidElement(children)) {
+      const child = children as React.ReactElement<{ className?: string }>;
+      return React.cloneElement(child, {
+        className: cn(classes, child.props.className),
+        ...props,
+      });
+    }
+
+    return (
+      <button
+        ref={ref}
+        className={classes}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        {...props}
+      >
+        {loading && <Spinner className="h-4 w-4" />}
+        {children}
+      </button>
+    );
+  },
 );
 Button.displayName = "Button";
 
