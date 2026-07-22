@@ -39,6 +39,7 @@ import {
   type OutlineStyle,
 } from "@/lib/api/outlines";
 import { EmptyState } from "@/components/common/empty-state";
+import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 
 function GeneratingCard({ minutes }: { minutes: number }) {
@@ -95,6 +96,7 @@ function OutlineView({ outline }: { outline: OutlineDetail }) {
               </Badge>
             ) : null}
             <Badge className="bg-neutral-500/15 text-neutral-300">v{outline.version}</Badge>
+            <ExportMenu kind="outlines" id={outline.id} className="ml-auto" />
             {meta.provider ? (
               <span className="text-xs text-muted-foreground">
                 {meta.provider} · {meta.model}

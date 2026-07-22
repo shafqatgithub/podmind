@@ -48,6 +48,7 @@ import {
   type ResearchResult,
 } from "@/lib/api/research";
 import { EmptyState } from "@/components/common/empty-state";
+import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 
 /* --------------------------------------------------------- progress */
@@ -629,6 +630,11 @@ export function ResearchWorkspace() {
 
         {detail && !running ? (
           <Appear className="flex flex-col gap-4">
+            <Item>
+              <div className="flex items-center justify-end">
+                <ExportMenu kind="research" id={detail.id} />
+              </div>
+            </Item>
             {detail.results.map((result) => (
               <Item key={result.id}>
                 <ResultView result={result} />

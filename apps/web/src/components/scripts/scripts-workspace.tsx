@@ -44,6 +44,7 @@ import {
   type ScriptTone,
 } from "@/lib/api/scripts";
 import { EmptyState } from "@/components/common/empty-state";
+import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 
 function readabilityLabel(score: number): { label: string; className: string } {
@@ -90,10 +91,13 @@ function ScriptView({ script }: { script: ScriptDetail }) {
                 {readabilityLabel(meta.readability).label}
               </Badge>
             ) : null}
-            <Button size="sm" variant="secondary" className="ml-auto" onClick={() => void copy()}>
-              {copied ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? "Copied" : "Copy script"}
-            </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => void copy()}>
+                {copied ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+              <ExportMenu kind="scripts" id={script.id} />
+            </div>
           </div>
 
           <h2 className="font-display text-xl font-bold">{script.title}</h2>
