@@ -78,6 +78,10 @@ const EXPECTED_ROUTES = [
   "GET /api/v1/exports/scripts/:id",
   "GET /api/v1/exports/outlines/:id",
   "GET /api/v1/exports/research/:id",
+  "POST /api/v1/fact-checks",
+  "GET /api/v1/fact-checks",
+  "GET /api/v1/fact-checks/:id",
+  "DELETE /api/v1/fact-checks/:id",
 ];
 
 describe("Application boot contract", () => {
