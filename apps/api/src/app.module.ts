@@ -16,6 +16,7 @@ import { KnowledgeModule } from "./knowledge/knowledge.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { OutlineModule } from "./outlines/outline.module";
+import { ScriptModule } from "./scripts/script.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
@@ -49,6 +50,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     AnalyticsModule,
     DashboardModule,
     OutlineModule,
+    ScriptModule,
   ],
   providers: [
     SupabaseAuthGuard,

@@ -70,6 +70,10 @@ const EXPECTED_ROUTES = [
   "GET /api/v1/outlines",
   "GET /api/v1/outlines/:id",
   "DELETE /api/v1/outlines/:id",
+  "POST /api/v1/scripts",
+  "GET /api/v1/scripts",
+  "GET /api/v1/scripts/:id",
+  "DELETE /api/v1/scripts/:id",
 ];
 
 describe("Application boot contract", () => {
