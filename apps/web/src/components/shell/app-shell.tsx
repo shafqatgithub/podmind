@@ -2,8 +2,9 @@
 
 /**
  * Application shell — 13-Information-Architecture.md §21:
- * Primary navigation: Dashboard, Projects, Research, Guests, Scripts,
- * Knowledge, Analytics, Settings. Dark is the primary theme; the toggle
+ * Primary navigation follows the documented order, extended as modules
+ * shipped: Dashboard, Projects, Research, Outlines, Guests, Scripts,
+ * Fact Checker, AI Chat, Knowledge, Analytics, Settings. Dark is the primary theme; the toggle
  * persists the user's choice (05-Design-System §4: "User can switch anytime").
  */
 
@@ -18,6 +19,7 @@ import {
   LayoutDashboard,
   Mic2,
   Moon,
+  ScanSearch,
   Search,
   Settings,
   Sun,
@@ -36,6 +38,7 @@ const PRIMARY_NAV = [
   { href: "/outlines", label: "Outlines", icon: ListOrdered },
   { href: "/guests", label: "Guests", icon: Users },
   { href: "/scripts", label: "Scripts", icon: FileText },
+  { href: "/fact-checks", label: "Fact Checker", icon: ScanSearch },
   { href: "/chat", label: "AI Chat", icon: MessageSquare },
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
