@@ -6,6 +6,7 @@ import {
   type CompletionResult,
   ProviderError,
   type ProviderSlug,
+  type StreamEvent,
 } from "./provider.types";
 import type { Env } from "../../config/env";
 
@@ -41,6 +42,31 @@ export class AnthropicProvider extends BaseHttpProvider {
         ...(systemParts.length ? { system: systemParts.join("\n\n") } : {}),
       },
     };
+  }
+
+  protected override parseStreamChunk(data: unknown): StreamEvent | null {
+    const chunk = data as {
+      type?: string;
+      delta?: { text?: string; stop_reason?: string };
+      message?: { model?: string; usage?: { input_tokens?: number } };
+      usage?: { input_tokens?: number; output_tokens?: number };
+    };
+
+    if (chunk.type === "content_block_delta" && typeof chunk.delta?.text === "string") {
+      return { type: "delta", text: chunk.delta.text };
+    }
+
+    // message_delta carries the output tally; the input count arrived on
+    // message_start, so it is read from whichever frame supplies it.
+    if (chunk.type === "message_delta" && chunk.usage) {
+      return {
+        type: "done",
+        promptTokens: chunk.usage.input_tokens ?? 0,
+        completionTokens: chunk.usage.output_tokens ?? 0,
+        model: "",
+      };
+    }
+    return null;
   }
 
   protected parseResponse(data: unknown, fallbackModel: string): CompletionResult {

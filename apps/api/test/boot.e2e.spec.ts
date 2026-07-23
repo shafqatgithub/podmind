@@ -110,6 +110,7 @@ const EXPECTED_ROUTES = [
   "GET /api/v1/guests/:id",
   "POST /api/v1/guests/:id/notes",
   "DELETE /api/v1/guests/:id",
+  "POST /api/v1/chat/conversations/:id/messages/stream",
   "POST /api/v1/billing/paddle/webhook",
   "GET /api/v1/admin",
   "GET /api/v1/admin/organizations",

@@ -4,6 +4,7 @@ import {
   type CompletionOptions,
   type CompletionResult,
   ProviderError,
+  type StreamEvent,
   type ProviderSlug,
 } from "./provider.types";
 
@@ -31,7 +32,11 @@ export abstract class BaseHttpProvider implements AiProvider {
   protected abstract buildRequest(options: CompletionOptions): {
     url: string;
     headers: Record<string, string>;
-    body: unknown;
+    /**
+     * An object rather than unknown, because the streaming path merges the
+     * provider's stream flags into it — which a spread cannot do to unknown.
+     */
+    body: Record<string, unknown>;
   };
 
   protected abstract parseResponse(data: unknown, fallbackModel: string): CompletionResult;
@@ -128,4 +133,111 @@ export abstract class BaseHttpProvider implements AiProvider {
     }
     return null;
   }
+  /**
+   * Shared SSE reader.
+   *
+   * Providers differ in their event shape but all speak `data: {json}` lines
+   * over the same transport, so the transport lives here and each provider
+   * supplies only the shape-specific part. A provider that does not override
+   * parseStreamChunk simply has no stream() and the Router uses complete().
+   */
+  protected parseStreamChunk?(data: unknown): StreamEvent | null;
+
+  async *stream(options: CompletionOptions): AsyncIterable<StreamEvent> {
+    if (!this.parseStreamChunk) {
+      throw new ProviderError(this.slug, "streaming not supported", false);
+    }
+    if (!this.apiKey) {
+      throw new ProviderError(this.slug, "no API key configured", false);
+    }
+
+    const request = this.buildRequest(options);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(request.url, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...request.headers },
+        body: JSON.stringify({ ...request.body, ...this.streamBody() }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      throw new ProviderError(
+        this.slug,
+        err instanceof Error ? err.message : "request failed",
+        true,
+      );
+    }
+
+    if (!response.ok || !response.body) {
+      clearTimeout(timeout);
+      const detail = await this.safeErrorText(response);
+      throw new ProviderError(
+        this.slug,
+        detail,
+        !BaseHttpProvider.TERMINAL_STATUSES.has(response.status),
+        response.status,
+      );
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let produced = false;
+
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Events are separated by a blank line; a partial event stays in the
+        // buffer until the rest of it arrives.
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const rawEvent = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          boundary = buffer.indexOf("\n\n");
+
+          for (const line of rawEvent.split("\n")) {
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (!payload || payload === "[DONE]") continue;
+
+            let parsed: unknown;
+            try {
+              parsed = JSON.parse(payload);
+            } catch {
+              continue; // A malformed frame is skipped, not fatal.
+            }
+
+            const event = this.parseStreamChunk(parsed);
+            if (event) {
+              if (event.type === "delta") produced = true;
+              yield event;
+            }
+          }
+        }
+      }
+    } finally {
+      clearTimeout(timeout);
+      reader.releaseLock();
+    }
+
+    // An empty stream is a failure, not an answer — the same rule complete()
+    // applies, so the Router can fall back rather than saving an empty turn.
+    if (!produced) {
+      throw new ProviderError(this.slug, "provider returned an empty stream", false);
+    }
+  }
+
+  /** Extra body fields that switch the provider into streaming mode. */
+  protected streamBody(): Record<string, unknown> {
+    return { stream: true };
+  }
+
 }

@@ -8,6 +8,7 @@ import {
   type AiTask,
   type CompletionResult,
   ProviderError,
+  type StreamEvent,
   type ProviderSlug,
 } from "../providers/provider.types";
 import { ModelCatalog, type CatalogModel } from "./model-catalog";
@@ -242,4 +243,141 @@ export class AiRouterService {
     );
     return rows[0]!.id;
   }
+  /**
+   * Streaming variant of route().
+   *
+   * The rules are the same — charge first, refund on total failure — but the
+   * failure window is different: once the first token has reached the user
+   * the request has succeeded from their point of view, so this does not fall
+   * back mid-answer. Falling back after partial output would splice two
+   * different models' sentences together, which reads as corruption.
+   *
+   * Providers without a stream() are skipped rather than silently downgraded,
+   * because a caller asking to stream has already committed to that shape.
+   */
+  async *routeStream(request: RouteRequest): AsyncIterable<StreamEvent> {
+    const cost = TASK_CREDIT_COST[request.task];
+    const promptChars = request.messages.reduce((n, m) => n + m.content.length, 0);
+    const plan = buildRoutePlan(request.task, promptChars, request.preferredProvider);
+
+    const creditTx = await this.credits.consume(
+      request.organizationId,
+      cost,
+      `AI ${request.task}`,
+    );
+
+    let lastError: ProviderError | null = null;
+
+    for (const candidate of plan) {
+      const provider = this.registry.get(candidate.provider);
+      if (!provider?.isConfigured() || typeof provider.stream !== "function") continue;
+
+      const model = await this.catalog.resolve(candidate.provider, candidate.family);
+      if (!model) continue;
+
+      const startedAt = Date.now();
+      let delivered = false;
+      let text = "";
+      let promptTokens = 0;
+      let completionTokens = 0;
+
+      try {
+        for await (const event of provider.stream({
+          model: model.modelName,
+          messages: request.messages,
+          maxTokens: request.maxTokens,
+          temperature: request.temperature,
+        })) {
+          if (event.type === "delta") {
+            delivered = true;
+            text += event.text;
+            yield event;
+          } else {
+            // The provider's own done carries the tallies but not which
+            // provider answered. It is absorbed rather than forwarded so a
+            // consumer sees exactly one done event, emitted below.
+            promptTokens = event.promptTokens;
+            completionTokens = event.completionTokens;
+          }
+        }
+
+        await this.recordRequest({
+          request,
+          model,
+          result: {
+            text,
+            promptTokens,
+            completionTokens,
+            model: model.modelName,
+            provider: candidate.provider,
+          },
+          latencyMs: Date.now() - startedAt,
+          estimatedCost: ModelCatalog.estimateCost(model, promptTokens, completionTokens),
+          success: true,
+        });
+
+        yield {
+          type: "done",
+          promptTokens,
+          completionTokens,
+          model: model.modelName,
+          provider: candidate.provider,
+        };
+        return;
+      } catch (err) {
+        const providerError =
+          err instanceof ProviderError
+            ? err
+            : new ProviderError(candidate.provider, String(err), false);
+        lastError = providerError;
+
+        await this.recordRequest({
+          request,
+          model,
+          result: {
+            text,
+            promptTokens,
+            completionTokens,
+            model: model.modelName,
+            provider: candidate.provider,
+          },
+          latencyMs: Date.now() - startedAt,
+          estimatedCost: ModelCatalog.estimateCost(model, promptTokens, completionTokens),
+          success: false,
+          errorMessage: providerError.message,
+        });
+
+        // Already streaming to the user: stop rather than stitch a second
+        // model onto a half-written sentence. The turn is kept and charged,
+        // because they received an answer.
+        if (delivered) {
+          yield {
+            type: "done",
+            promptTokens,
+            completionTokens,
+            model: model.modelName,
+            provider: candidate.provider,
+          };
+          return;
+        }
+        // Nothing delivered yet, so the next provider is a clean start.
+      }
+    }
+
+    await this.credits.refund(
+      request.organizationId,
+      cost,
+      `Refund for ${creditTx}: AI ${request.task} stream failed`,
+    );
+
+    throw (
+      lastError ??
+      new ProviderError(
+        "openai",
+        "No AI provider available for streaming — check provider configuration",
+        false,
+      )
+    );
+  }
+
 }

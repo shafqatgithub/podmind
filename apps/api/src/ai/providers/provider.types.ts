@@ -73,6 +73,18 @@ export interface EmbeddingResult {
   totalTokens: number;
 }
 
+/** One piece of a streamed answer, or the final accounting. */
+export type StreamEvent =
+  | { type: "delta"; text: string }
+  | {
+      type: "done";
+      promptTokens: number;
+      completionTokens: number;
+      model: string;
+      /** Set by the Router, which knows which provider actually answered. */
+      provider?: ProviderSlug;
+    };
+
 export interface AiProvider {
   readonly slug: ProviderSlug;
   /** False when no API key is configured — the Router skips it in selection. */
@@ -80,4 +92,10 @@ export interface AiProvider {
   complete(options: CompletionOptions): Promise<CompletionResult>;
   /** Optional: only providers with an embeddings API implement this. */
   embed?(inputs: string[], dimensions: number): Promise<EmbeddingResult>;
+  /**
+   * Optional: providers that can stream token by token implement this. The
+   * Router falls back to complete() for those that do not, so a provider
+   * without streaming still answers — just all at once.
+   */
+  stream?(options: CompletionOptions): AsyncIterable<StreamEvent>;
 }

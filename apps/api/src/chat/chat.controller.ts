@@ -1,5 +1,6 @@
 import {
   Body,
+  HttpCode,
   Controller,
   Delete,
   Get,
@@ -8,7 +9,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { CurrentUser, type AuthUser } from "../auth/supabase-auth.guard";
 import { TenancyService } from "../tenancy/tenancy.service";
 import { ChatService } from "./chat.service";
@@ -71,4 +74,56 @@ export class ChatController {
     const tenant = await this.tenancy.resolve(user.id);
     return this.chat.sendMessage(tenant, id, dto);
   }
+  /**
+   * Streaming reply — /api/v1/chat/conversations/:id/messages/stream
+   *
+   * Server-Sent Events rather than WebSockets: the traffic is one-directional
+   * and short-lived, so a socket would be machinery without a purpose.
+   *
+   * The response is written directly instead of returning a value, because
+   * the global envelope interceptor would buffer the whole answer and defeat
+   * the point of streaming it.
+   */
+  @Post("conversations/:id/messages/stream")
+  @HttpCode(200)
+  async streamMessage(
+    @CurrentUser() user: AuthUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: SendMessageDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const tenant = await this.tenancy.resolve(user.id);
+
+    res.setHeader("content-type", "text/event-stream");
+    res.setHeader("cache-control", "no-cache, no-transform");
+    res.setHeader("connection", "keep-alive");
+    // Proxies that buffer would hold the whole answer and deliver it at once.
+    res.setHeader("x-accel-buffering", "no");
+    res.flushHeaders();
+
+    const send = (payload: unknown) => {
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    // If the reader goes away there is no one left to stream to.
+    let closed = false;
+    res.on("close", () => {
+      closed = true;
+    });
+
+    try {
+      for await (const event of this.chat.streamMessage(tenant, id, dto)) {
+        if (closed) break;
+        send(event);
+      }
+    } catch (err) {
+      send({
+        type: "error",
+        message: err instanceof Error ? err.message : "The assistant could not reply.",
+      });
+    } finally {
+      if (!closed) res.end();
+    }
+  }
+
 }

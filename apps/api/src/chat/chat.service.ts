@@ -116,6 +116,86 @@ export class ChatService {
     };
   }
 
+
+  /**
+   * Streaming variant of sendMessage.
+   *
+   * Persistence happens after the stream closes rather than before, because
+   * only then is the final text known. The user turn is still written first
+   * so the conversation reads correctly if the connection drops mid-answer,
+   * and it is removed if the stream fails before producing anything.
+   */
+  async *streamMessage(tenant: TenantContext, conversationId: string, dto: SendMessageDto) {
+    const conversation = await this.repository.findConversation(tenant, conversationId);
+    const history = await this.repository.findMessages(conversationId);
+    const userMessage = await this.repository.addUserMessage(conversationId, dto.content);
+
+    const startedAt = Date.now();
+    let text = "";
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let model = "";
+    let provider: string | null = null;
+
+    try {
+      const messages = await this.buildMessages(tenant, conversation, history, dto.content);
+
+      for await (const event of this.router.routeStream({
+        organizationId: tenant.organizationId,
+        task: "chat",
+        messages,
+        projectId: conversation.project_id,
+        conversationId,
+        maxTokens: 4000,
+        temperature: 0.7,
+        preferredProvider: dto.provider ?? null,
+      })) {
+        if (event.type === "delta") {
+          text += event.text;
+          yield { type: "delta" as const, text: event.text };
+        } else {
+          promptTokens = event.promptTokens;
+          completionTokens = event.completionTokens;
+          model = event.model || model;
+          provider = event.provider ?? provider;
+        }
+      }
+    } catch (err) {
+      // Nothing was delivered, so the user turn would sit alone with no reply.
+      await this.repository.deleteMessage(userMessage.id);
+      yield {
+        type: "error" as const,
+        message: err instanceof Error ? err.message : "The assistant could not reply.",
+      };
+      return;
+    }
+
+    const assistantMessage = await this.repository.addAssistantMessage({
+      conversationId,
+      content: text,
+      // ai_messages.ai_provider is an enum column, so this must be the real
+      // provider the Router used — never a placeholder.
+      provider: provider ?? "openai",
+      model,
+      promptTokens,
+      completionTokens,
+      estimatedCost: 0,
+      responseTimeMs: Date.now() - startedAt,
+      parentMessageId: userMessage.id,
+    });
+
+    if (history.length === 0) {
+      await this.repository.setTitle(conversationId, deriveTitle(dto.content));
+    }
+
+    yield {
+      type: "done" as const,
+      user_message_id: userMessage.id,
+      assistant_message_id: assistantMessage.id,
+      model,
+    };
+  }
+
   /**
    * Assemble the model input: system prompt with project context and
    * long-term memories, then the recent turns, then the new message.

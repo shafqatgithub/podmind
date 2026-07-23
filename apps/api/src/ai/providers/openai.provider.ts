@@ -7,6 +7,7 @@ import {
   type EmbeddingResult,
   ProviderError,
   type ProviderSlug,
+  type StreamEvent,
 } from "./provider.types";
 import type { Env } from "../../config/env";
 
@@ -53,6 +54,35 @@ export class OpenAiProvider extends BaseHttpProvider {
         ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
       },
     };
+  }
+
+  /** OpenAI needs asking for usage; without it the final tally never arrives. */
+  protected override streamBody(): Record<string, unknown> {
+    return { stream: true, stream_options: { include_usage: true } };
+  }
+
+  protected override parseStreamChunk(data: unknown): StreamEvent | null {
+    const chunk = data as {
+      model?: string;
+      choices?: { delta?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+    };
+
+    const text = chunk.choices?.[0]?.delta?.content;
+    if (typeof text === "string" && text.length > 0) {
+      return { type: "delta", text };
+    }
+
+    // The usage frame arrives last and carries no choice, closing the stream.
+    if (chunk.usage) {
+      return {
+        type: "done",
+        promptTokens: chunk.usage.prompt_tokens ?? 0,
+        completionTokens: chunk.usage.completion_tokens ?? 0,
+        model: chunk.model ?? "",
+      };
+    }
+    return null;
   }
 
   protected parseResponse(data: unknown, fallbackModel: string): CompletionResult {

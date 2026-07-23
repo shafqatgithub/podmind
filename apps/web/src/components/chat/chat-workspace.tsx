@@ -160,6 +160,7 @@ export function ChatWorkspace() {
   const [projectId, setProjectId] = React.useState("");
   const [input, setInput] = React.useState("");
   const [sending, setSending] = React.useState(false);
+  const [streamingText, setStreamingText] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const threadEndRef = React.useRef<HTMLDivElement>(null);
@@ -191,8 +192,15 @@ export function ChatWorkspace() {
   }, [loadConversations]);
 
   React.useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [active?.messages.length, sending]);
+    // streamingText is a dependency because the message count does not change
+    // while an answer streams — without it the reply grows below the fold and
+    // the reader has to chase it. Instant while streaming, since a smooth
+    // scroll restarted on every token fights itself.
+    threadEndRef.current?.scrollIntoView({
+      behavior: streamingText ? "auto" : "smooth",
+      block: "end",
+    });
+  }, [active?.messages.length, sending, streamingText]);
 
   const startConversation = async () => {
     setError(null);
@@ -250,39 +258,70 @@ export function ChatWorkspace() {
     setSending(true);
     setActive({ ...conversation, messages: [...conversation.messages, optimistic] });
 
-    try {
-      const result = await chatApi.send(conversation.id, { content });
+    // A placeholder the deltas are appended to, so the answer appears as it
+    // is written rather than after the whole thing has arrived.
+    const streamingId = `streaming-${Date.now()}`;
+    setActive((current) =>
+      current
+        ? {
+            ...current,
+            messages: [
+              ...current.messages,
+              {
+                id: streamingId,
+                role: "assistant",
+                content: "",
+                created_at: new Date().toISOString(),
+              } as ChatMessage,
+            ],
+          }
+        : current,
+    );
+
+    let failed: string | null = null;
+
+    await chatApi.stream(
+      conversation.id,
+      { content },
+      {
+        onDelta: (text) => {
+          setStreamingText((current) => current + text);
+        },
+        onDone: () => {
+          failed = null;
+        },
+        onError: (message) => {
+          failed = message.includes("credit")
+            ? "You are out of AI credits."
+            : "Message failed. Please try again.";
+        },
+      },
+    );
+
+    if (failed) {
+      // The server discards the unanswered turn, so the view must too.
       setActive((current) =>
         current
           ? {
               ...current,
-              messages: [
-                ...current.messages.filter((m) => m.id !== optimistic.id),
-                result.user_message,
-                result.assistant_message,
-              ],
+              messages: current.messages.filter(
+                (m) => m.id !== optimistic.id && m.id !== streamingId,
+              ),
             }
           : current,
       );
-      await loadConversations();
-    } catch (err) {
-      // The server discards the unanswered turn, so the view must too.
-      setActive((current) =>
-        current
-          ? { ...current, messages: current.messages.filter((m) => m.id !== optimistic.id) }
-          : current,
-      );
       setInput(content);
-      setError(
-        err instanceof ApiError
-          ? err.code === "INSUFFICIENT_CREDITS"
-            ? "You are out of AI credits."
-            : err.message
-          : "Message failed. Please try again.",
-      );
-    } finally {
-      setSending(false);
+      setError(failed);
+    } else {
+      // Reload rather than patching ids in: the server owns the real message
+      // records, and this is one request at the end of a long interaction.
+      const fresh = await chatApi.get(conversation.id).catch(() => null);
+      if (fresh) setActive(fresh);
+      await loadConversations();
     }
+
+    setStreamingText("");
+    setSending(false);
   };
 
   const togglePin = async (conversation: Conversation) => {
@@ -401,10 +440,20 @@ export function ChatWorkspace() {
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {active && active.messages.length > 0 ? (
               <div className="flex flex-col gap-5">
-                {active.messages.map((m) => (
-                  <MessageBubble key={m.id} message={m} />
-                ))}
-                {sending ? <ThinkingBubble /> : null}
+                {active.messages.map((m) =>
+                  // The placeholder shows whatever has streamed so far;
+                  // everything else renders its stored content.
+                  m.id.startsWith("streaming-") ? (
+                    streamingText ? (
+                      <MessageBubble key={m.id} message={{ ...m, content: streamingText }} />
+                    ) : null
+                  ) : (
+                    <MessageBubble key={m.id} message={m} />
+                  ),
+                )}
+                {/* Only think while nothing has arrived yet — once tokens are
+                    landing, the answer itself is the progress indicator. */}
+                {sending && !streamingText ? <ThinkingBubble /> : null}
                 <div ref={threadEndRef} />
               </div>
             ) : (
