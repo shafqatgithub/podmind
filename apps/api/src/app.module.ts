@@ -21,6 +21,8 @@ import { ExportModule } from "./exports/export.module";
 import { FactCheckModule } from "./fact-checks/fact-check.module";
 import { GuestModule } from "./guests/guest.module";
 import { SettingsModule } from "./settings/settings.module";
+import { SeoModule } from "./seo/seo.module";
+import { SocialModule } from "./social/social.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
@@ -59,6 +61,8 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     FactCheckModule,
     GuestModule,
     SettingsModule,
+    SeoModule,
+    SocialModule,
   ],
   providers: [
     SupabaseAuthGuard,
