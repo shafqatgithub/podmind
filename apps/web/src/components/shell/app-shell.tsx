@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  Brain,
   FileText,
   FolderKanban,
   LayoutDashboard,
@@ -32,6 +33,7 @@ import { ListOrdered, LogOut, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LogoLockup } from "@/components/brand/logo";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const PRIMARY_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -45,6 +47,7 @@ const PRIMARY_NAV = [
   { href: "/social", label: "Social", icon: Share2 },
   { href: "/chat", label: "AI Chat", icon: MessageSquare },
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
+  { href: "/memory", label: "AI Memory", icon: Brain },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
@@ -239,6 +242,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <LogoLockup markSize={26} priority />
           </Link>
           <div className="flex flex-1 items-center justify-end gap-4">
+            <NotificationBell />
             <ThemeToggle />
             <UserMenu />
           </div>
