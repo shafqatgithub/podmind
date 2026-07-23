@@ -14,9 +14,11 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  CreditCard,
   Brain,
   FileText,
   FolderKanban,
+  KeyRound,
   LayoutDashboard,
   Moon,
   ScanSearch,
@@ -49,6 +51,8 @@ const PRIMARY_NAV = [
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/memory", label: "AI Memory", icon: Brain },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/billing", label: "Billing", icon: CreditCard },
+  { href: "/api-keys", label: "API Keys", icon: KeyRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
