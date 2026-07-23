@@ -15,6 +15,7 @@ import { Badge, Button, Card, CardContent, Skeleton, cn } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { billingApi, type BillingOverview, type Plan } from "@/lib/api/billing";
 import { EmptyState } from "@/components/common/empty-state";
+import { openCheckout } from "@/lib/paddle";
 import { Item, Reveal } from "@/components/motion/motion";
 
 function money(amount: number | null, currency: string | null): string {
@@ -53,11 +54,21 @@ function PlanCard({
   plan,
   current,
   paymentsEnabled,
+  organizationId,
 }: {
   plan: Plan;
   current: boolean;
   paymentsEnabled: boolean;
+  organizationId: string | null;
 }) {
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // A plan is only purchasable once it has been mapped to a Paddle price and
+  // we know who is buying; otherwise the button would open an empty checkout.
+  const priceId = plan.paddle_price_id_monthly;
+  const purchasable = Boolean(priceId && organizationId);
+
   return (
     <Card className={cn("h-full", current && "border-primary-500/60 shadow-glow-blue")}>
       <CardContent className="flex h-full flex-col gap-4 p-5">
@@ -95,13 +106,34 @@ function PlanCard({
             <Button variant="secondary" disabled className="w-full">
               Your plan
             </Button>
-          ) : paymentsEnabled ? (
-            <Button className="w-full">Choose {plan.name}</Button>
+          ) : paymentsEnabled && purchasable && priceId && organizationId ? (
+            <Button
+              className="w-full"
+              loading={busy}
+              onClick={() => {
+                setBusy(true);
+                setError(null);
+                openCheckout({ priceId, organizationId })
+                  .catch(() =>
+                    setError("Could not open checkout. Please try again."),
+                  )
+                  // Paddle takes over the screen from here; the webhook is
+                  // what actually applies the plan, so nothing is assumed.
+                  .finally(() => setBusy(false));
+              }}
+            >
+              Choose {plan.name}
+            </Button>
           ) : (
             <Button variant="secondary" disabled className="w-full">
               Not available yet
             </Button>
           )}
+          {error ? (
+            <p role="alert" className="mt-2 text-xs text-error-400">
+              {error}
+            </p>
+          ) : null}
         </div>
       </CardContent>
     </Card>
@@ -254,6 +286,7 @@ export function BillingWorkspace() {
                   plan={plan}
                   current={subscription?.plan_id === plan.id}
                   paymentsEnabled={data.payments_enabled}
+                  organizationId={data.organization_id}
                 />
               ))}
             </div>

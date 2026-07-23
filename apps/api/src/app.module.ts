@@ -23,6 +23,7 @@ import { GuestModule } from "./guests/guest.module";
 import { SettingsModule } from "./settings/settings.module";
 import { AgentModule } from "./agents/agent.module";
 import { AdminModule } from "./admin/admin.module";
+import { PaddleModule } from "./billing/paddle/paddle.module";
 import { SeoModule } from "./seo/seo.module";
 import { SocialModule } from "./social/social.module";
 import { MemoryModule } from "./memory/memory.module";
@@ -69,6 +70,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     SettingsModule,
     AgentModule,
     AdminModule,
+    PaddleModule,
     SeoModule,
     SocialModule,
     MemoryModule,

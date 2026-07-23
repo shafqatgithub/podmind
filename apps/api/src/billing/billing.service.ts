@@ -16,7 +16,14 @@ export class BillingService {
    * button that leads nowhere.
    */
   private paymentsEnabled(): boolean {
-    return Boolean(this.config.get<string>("STRIPE_SECRET_KEY"));
+    // Paddle is the merchant of record for PodMind. Checkout needs the
+    // client token in the browser and the webhook secret on the server —
+    // without both, a purchase could be started but never confirmed, so the
+    // UI must say plainly that paid plans are not available yet.
+    return Boolean(
+      this.config.get<string>("PADDLE_CLIENT_TOKEN") &&
+        this.config.get<string>("PADDLE_WEBHOOK_SECRET"),
+    );
   }
 
   listPlans() {
@@ -42,6 +49,10 @@ export class BillingService {
       credits,
       transactions,
       payments_enabled: this.paymentsEnabled(),
+      // Checkout must tell Paddle which organization is buying, so the
+      // webhook can attribute it — on a first purchase there is no earlier
+      // customer record to match against.
+      organization_id: tenant.organizationId,
     };
   }
 }

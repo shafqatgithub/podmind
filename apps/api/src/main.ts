@@ -7,7 +7,9 @@ import { AppModule } from "./app.module";
 import type { Env } from "./config/env";
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody is required by the Paddle webhook: its signature covers the exact
+  // bytes received, so a re-serialised body would fail verification.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
 
   const config = app.get(ConfigService<Env, true>);

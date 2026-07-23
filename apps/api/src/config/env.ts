@@ -36,6 +36,15 @@ export const envSchema = z.object({
   // plans and usage but states plainly that checkout is not available yet.
   STRIPE_SECRET_KEY: z.string().optional(),
 
+  // Paddle Billing. Paddle is the merchant of record, so it owns checkout,
+  // card data and tax liability; we only need to talk to its API and verify
+  // the webhooks it sends back.
+  PADDLE_API_KEY: z.string().optional(),
+  /** Safe to expose in the browser; opens the Paddle checkout overlay. */
+  PADDLE_CLIENT_TOKEN: z.string().optional(),
+  PADDLE_WEBHOOK_SECRET: z.string().optional(),
+  PADDLE_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
+
   // AI provider keys — each optional so the API runs with any subset
   // configured; the Router skips providers without credentials.
   OPENAI_API_KEY: z.string().optional(),

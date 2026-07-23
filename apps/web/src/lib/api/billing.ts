@@ -13,6 +13,8 @@ export interface Plan {
   max_team_members: number | null;
   max_storage_gb: number | null;
   features: string[] | Record<string, unknown> | null;
+  paddle_price_id_monthly: string | null;
+  paddle_price_id_yearly: string | null;
 }
 
 export interface Subscription {
@@ -55,6 +57,8 @@ export interface BillingOverview {
   credits: { available_credits: number; used_credits: number; purchased_credits: number };
   transactions: CreditTransaction[];
   payments_enabled: boolean;
+  /** Needed so checkout can attribute the purchase to this organization. */
+  organization_id: string | null;
 }
 
 export const billingApi = {
