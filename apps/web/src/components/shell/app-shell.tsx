@@ -21,7 +21,9 @@ import {
   ScanSearch,
   Search,
   Settings,
+  Share2,
   Sun,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@podmind/ui";
@@ -39,6 +41,8 @@ const PRIMARY_NAV = [
   { href: "/guests", label: "Guests", icon: Users },
   { href: "/scripts", label: "Scripts", icon: FileText },
   { href: "/fact-checks", label: "Fact Checker", icon: ScanSearch },
+  { href: "/seo", label: "SEO", icon: TrendingUp },
+  { href: "/social", label: "Social", icon: Share2 },
   { href: "/chat", label: "AI Chat", icon: MessageSquare },
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
