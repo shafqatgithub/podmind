@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import { Settings } from "lucide-react";
 import { PageHeader } from "@/components/common/page-header";
-import { EmptyState } from "@/components/common/empty-state";
+import { SettingsWorkspace } from "@/components/settings/settings-workspace";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default function Page() {
   return (
     <>
-      <PageHeader title="Settings" description="Workspace and account preferences." />
-      <EmptyState icon={Settings} title="Settings arrive with authentication" description="Profile, organization, AI provider and billing settings unlock in the authentication stage." />
+      <PageHeader title="Settings" description="Your profile, defaults and workspace." />
+      <SettingsWorkspace />
     </>
   );
 }
