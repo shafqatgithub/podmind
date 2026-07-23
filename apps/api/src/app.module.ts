@@ -21,6 +21,7 @@ import { ExportModule } from "./exports/export.module";
 import { FactCheckModule } from "./fact-checks/fact-check.module";
 import { GuestModule } from "./guests/guest.module";
 import { SettingsModule } from "./settings/settings.module";
+import { AgentModule } from "./agents/agent.module";
 import { SeoModule } from "./seo/seo.module";
 import { SocialModule } from "./social/social.module";
 import { MemoryModule } from "./memory/memory.module";
@@ -65,6 +66,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     FactCheckModule,
     GuestModule,
     SettingsModule,
+    AgentModule,
     SeoModule,
     SocialModule,
     MemoryModule,

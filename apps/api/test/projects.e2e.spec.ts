@@ -146,7 +146,11 @@ describe("Projects (e2e)", () => {
       language: "en",
       is_archived: false,
     });
-    expect(res.body.data.slug).toBe("the-future-of-sleep-science");
+    // The slug is derived from the title. A database that already holds that
+    // slug gets a numeric suffix, which is correct behaviour — so assert the
+    // derivation rather than global uniqueness, or this passes only against a
+    // pristine database and wastes someone's afternoon later.
+    expect(res.body.data.slug).toMatch(/^the-future-of-sleep-science(-\d+)?$/);
     expect(res.body.data.owner_id).toBe(alice);
   });
 

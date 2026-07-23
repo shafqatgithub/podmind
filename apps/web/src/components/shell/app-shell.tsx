@@ -28,6 +28,7 @@ import {
   Sun,
   TrendingUp,
   Users,
+  Workflow,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@podmind/ui";
 import { m, LazyMotion, domAnimation } from "framer-motion";
@@ -40,6 +41,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 const PRIMARY_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/agents", label: "Episode Pipeline", icon: Workflow },
   { href: "/research", label: "Research", icon: Search },
   { href: "/outlines", label: "Outlines", icon: ListOrdered },
   { href: "/guests", label: "Guests", icon: Users },
