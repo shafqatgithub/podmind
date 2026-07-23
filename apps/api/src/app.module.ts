@@ -19,6 +19,8 @@ import { OutlineModule } from "./outlines/outline.module";
 import { ScriptModule } from "./scripts/script.module";
 import { ExportModule } from "./exports/export.module";
 import { FactCheckModule } from "./fact-checks/fact-check.module";
+import { GuestModule } from "./guests/guest.module";
+import { SettingsModule } from "./settings/settings.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
@@ -55,6 +57,8 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     ScriptModule,
     ExportModule,
     FactCheckModule,
+    GuestModule,
+    SettingsModule,
   ],
   providers: [
     SupabaseAuthGuard,
