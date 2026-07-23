@@ -303,7 +303,10 @@ export function AnalyticsWorkspace() {
                   {data!.providers.length ? (
                     <>
                       <ProviderBar providers={data!.providers} />
-                      <table className="mt-2 w-full text-sm">
+                      {/* Wrapped so a narrow screen scrolls the table rather
+                          than stretching the page sideways. */}
+                      <div className="mt-2 overflow-x-auto">
+                      <table className="w-full min-w-[22rem] text-sm">
                         <thead>
                           <tr className="text-xs text-muted-foreground">
                             <th className="pb-1 text-left font-normal">Provider</th>
@@ -334,6 +337,7 @@ export function AnalyticsWorkspace() {
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">No requests yet.</p>

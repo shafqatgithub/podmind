@@ -21,6 +21,7 @@ import {
   FolderKanban,
   KeyRound,
   LayoutDashboard,
+  Menu,
   Moon,
   ScanSearch,
   Search,
@@ -30,13 +31,14 @@ import {
   TrendingUp,
   Users,
   Workflow,
+  X,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@podmind/ui";
 import { m, LazyMotion, domAnimation } from "framer-motion";
 import { ListOrdered, LogOut, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { LogoLockup } from "@/components/brand/logo";
+import { LogoLockup, LogoMark } from "@/components/brand/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
 /**
@@ -268,6 +270,86 @@ function UpgradeCard() {
   );
 }
 
+/**
+ * Mobile navigation.
+ *
+ * The sidebar is hidden below md, so without this there is no way to reach
+ * any page on a phone — the app simply ends at whatever screen you landed on.
+ * A drawer keeps the same grouped nav rather than shipping a second, shorter
+ * menu that would quietly hide half the product on mobile.
+ */
+function MobileNav({ pathname }: { pathname: string }) {
+  const [open, setOpen] = React.useState(false);
+
+  // Route changes close the drawer; without this it stays open over the page
+  // the user just navigated to.
+  React.useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Escape closes it, and the body is locked so the page behind cannot scroll
+  // under the overlay.
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Open menu"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus md:hidden"
+      >
+        <Menu className="h-5 w-5" aria-hidden />
+      </button>
+
+      {open ? (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 h-full w-full bg-background/80 backdrop-blur-sm"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation"
+            className="absolute inset-y-0 left-0 flex w-[min(18rem,85vw)] flex-col border-r border-primary-500/15 bg-surface shadow-2xl"
+          >
+            <div className="flex items-center justify-between px-4 py-4">
+              <LogoLockup markSize={26} />
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                <X className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+
+            <SidebarNav pathname={pathname} />
+            <UpgradeCard />
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function SidebarNav({ pathname }: { pathname: string }) {
   return (
     <LazyMotion features={domAnimation} strict>
@@ -368,12 +450,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-primary-500/15 bg-surface/70 px-6 backdrop-blur-xl">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-primary-500/15 bg-surface/70 px-4 backdrop-blur-xl sm:gap-4 sm:px-6">
+          <MobileNav pathname={pathname} />
           <Link
             href="/dashboard"
             className="flex items-center md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
-            <LogoLockup markSize={26} priority />
+            <LogoMark size={28} priority />
           </Link>
 
           <SearchBar />
@@ -385,7 +468,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );
