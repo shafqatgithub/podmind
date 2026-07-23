@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   },
   description:
     "The AI-powered podcast platform: research, guests, outlines, scripts, SEO and publishing — in minutes instead of hours.",
+  icons: {
+    icon: "/favicon-32.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

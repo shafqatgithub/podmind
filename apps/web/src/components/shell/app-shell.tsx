@@ -17,7 +17,6 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
-  Mic2,
   Moon,
   ScanSearch,
   Search,
@@ -30,6 +29,7 @@ import { m, LazyMotion, domAnimation } from "framer-motion";
 import { ListOrdered, LogOut, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { LogoLockup } from "@/components/brand/logo";
 
 const PRIMARY_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -140,7 +140,7 @@ function UserMenu() {
       ) : (
         <div
           aria-hidden
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600/20 text-sm font-semibold text-primary-300"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-sm font-semibold text-white shadow-glow-blue"
         >
           {initial}
         </div>
@@ -162,12 +162,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="relative flex min-h-screen">
+      {/*
+        Aurora backdrop, deliberately far quieter than the landing page.
+        The landing is looked at for thirty seconds; this is a work surface
+        someone sits in for hours, so the brand should be felt at the edges
+        rather than competing with their content.
+      */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-48 left-1/4 h-[420px] w-[620px] -translate-x-1/2 rounded-full bg-primary-500/[0.07] blur-[130px] motion-safe:animate-aurora" />
+        <div className="absolute top-1/3 -right-40 h-[380px] w-[380px] rounded-full bg-purple-500/[0.06] blur-[120px] motion-safe:animate-aurora [animation-delay:3s]" />
+        <div className="absolute -bottom-40 left-0 h-[340px] w-[340px] rounded-full bg-cyan-400/[0.05] blur-[110px] motion-safe:animate-aurora [animation-delay:6s]" />
+      </div>
+
       {/* Sidebar */}
-      <aside className="hidden w-60 flex-col border-r border-border bg-surface md:flex">
-        <Link href="/" className="flex items-center gap-2 px-5 py-5">
-          <Mic2 className="h-5 w-5 text-primary-400" aria-hidden />
-          <span className="font-semibold tracking-tight">PodMind AI</span>
+      <aside className="hidden w-60 flex-col border-r border-primary-500/15 bg-gradient-to-b from-surface via-surface to-background/80 backdrop-blur-xl md:flex">
+        <Link
+          href="/"
+          className="flex items-center px-5 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        >
+          <LogoLockup priority />
         </Link>
 
         <LazyMotion features={domAnimation} strict>
@@ -180,10 +194,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-colors",
+                  "group relative flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                   active
-                    ? "text-primary-300"
+                    ? "text-white"
                     : "text-muted-foreground hover:bg-hover hover:text-foreground",
                 )}
               >
@@ -191,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <m.span
                     layoutId="nav-active"
                     aria-hidden
-                    className="absolute inset-0 rounded bg-primary-600/15"
+                    className="absolute inset-0 rounded bg-brand-gradient opacity-90 shadow-glow-blue"
                     transition={{ type: "spring", stiffness: 400, damping: 32 }}
                   />
                 )}
@@ -203,18 +217,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         </LazyMotion>
 
-        <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
-          PodMind AI
+        <div className="border-t border-primary-500/15 px-5 py-4">
+          <p className="bg-hero-glow bg-clip-text text-xs font-medium text-transparent">
+            Research Less. Create More.
+          </p>
         </div>
       </aside>
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between gap-4 border-b border-border bg-surface/60 px-6 backdrop-blur">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-primary-500/15 bg-surface/70 px-6 backdrop-blur-xl">
           {/* Mobile brand (sidebar hidden on small screens) */}
-          <Link href="/" className="flex items-center gap-2 md:hidden">
-            <Mic2 className="h-5 w-5 text-primary-400" aria-hidden />
-            <span className="font-semibold">PodMind</span>
+          <Link
+            href="/"
+            className="flex items-center md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <LogoLockup markSize={26} priority />
           </Link>
           <div className="flex flex-1 items-center justify-end gap-4">
             <ThemeToggle />

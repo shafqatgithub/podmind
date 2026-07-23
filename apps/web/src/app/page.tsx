@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Badge, Button, Card, CardContent } from "@podmind/ui";
 import { Item, LiftCard, MotionProvider, Reveal } from "@/components/motion/motion";
+import { LogoLockup } from "@/components/brand/logo";
 
 const FEATURES = [
   { icon: Search, title: "AI Research Engine", description: "Complete episode research in minutes — summaries, statistics, angles, sources." },
@@ -54,9 +55,8 @@ export default function LandingPage() {
 
         {/* Header */}
         <Reveal className="flex items-center justify-between py-6">
-          <Item className="flex items-center gap-2">
-            <Mic2 className="h-6 w-6 text-primary-400" aria-hidden />
-            <span className="text-lg font-semibold tracking-tight">PodMind AI</span>
+          <Item className="flex items-center">
+            <LogoLockup markSize={34} priority />
           </Item>
           <Item className="flex items-center gap-4">
             <Link
