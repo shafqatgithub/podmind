@@ -6,15 +6,55 @@ import {
   BookOpen,
   Bot,
   FileText,
+  Check,
   ScanSearch,
   Workflow,
   Search,
   Share2,
   Users,
 } from "lucide-react";
-import { Badge, Button, Card, CardContent } from "@podmind/ui";
+import { Badge, Button, Card, CardContent, cn } from "@podmind/ui";
 import { Item, LiftCard, MotionProvider, Reveal } from "@/components/motion/motion";
 import { LogoLockup } from "@/components/brand/logo";
+
+/**
+ * Mirrors subscription_plans. Enterprise is priced on application rather than
+ * shown as a number, which is why it carries no figure here.
+ */
+const PLANS = [
+  {
+    name: "Free",
+    price: "$0",
+    featured: false,
+    cta: "Start free",
+    href: "/signup",
+    points: ["5,000 AI credits", "3 projects", "Every AI tool included"],
+  },
+  {
+    name: "Starter",
+    price: "$19",
+    featured: false,
+    cta: "Choose Starter",
+    href: "/signup",
+    points: ["50,000 AI credits", "25 projects", "Export to every format"],
+  },
+  {
+    name: "Pro",
+    price: "$49",
+    featured: true,
+    cta: "Choose Pro",
+    href: "/signup",
+    points: ["250,000 AI credits", "100 projects", "API access", "Priority support"],
+  },
+  {
+    name: "Business",
+    price: "$99",
+    featured: false,
+    cta: "Choose Business",
+    href: "/signup",
+    points: ["1,000,000 AI credits", "500 projects", "Everything in Pro"],
+  },
+] as const;
 
 const FEATURES = [
   { icon: Workflow, title: "Episode Pipeline", description: "One topic in, a full episode package out — research, outline, script, SEO and social in a single run." },
@@ -123,8 +163,86 @@ export default function LandingPage() {
           ))}
         </Reveal>
 
-        <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} PodMind AI
+
+        {/* Pricing */}
+        <div id="pricing" />
+        <Reveal as="section" amount={0.1} className="flex flex-col items-center gap-3 pb-10">
+          <Item>
+            <h2 className="text-center font-display text-3xl font-bold tracking-tight">
+              Simple, credit-based pricing
+            </h2>
+          </Item>
+          <Item>
+            <p className="max-w-xl text-balance text-center text-muted-foreground">
+              Every AI feature costs a fixed number of credits, shown before you run it. If a
+              request fails, the credits come back.
+            </p>
+          </Item>
+        </Reveal>
+
+        <Reveal as="section" amount={0.1} className="grid gap-4 pb-24 sm:grid-cols-2 lg:grid-cols-4">
+          {PLANS.map((plan) => (
+            <LiftCard key={plan.name}>
+              <Card
+                className={cn(
+                  "h-full",
+                  plan.featured && "border-primary-500/50 shadow-glow-blue/60",
+                )}
+              >
+                <CardContent className="flex h-full flex-col gap-4 p-6">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-display font-semibold">{plan.name}</h3>
+                      {plan.featured ? (
+                        <Badge className="bg-primary-500/20 text-[10px] text-primary-300">
+                          POPULAR
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="mt-2 font-display text-3xl font-bold">
+                      {plan.price}
+                      <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                    </p>
+                  </div>
+
+                  <ul className="flex flex-1 flex-col gap-2 text-sm text-muted-foreground">
+                    {plan.points.map((point) => (
+                      <li key={point} className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-success-400" aria-hidden />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    asChild
+                    variant={plan.featured ? "primary" : "secondary"}
+                    className="w-full"
+                  >
+                    <Link href={plan.href}>{plan.cta}</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </LiftCard>
+          ))}
+        </Reveal>
+
+        <footer className="flex flex-col items-center gap-4 border-t border-border py-8 text-sm text-muted-foreground">
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2" aria-label="Footer">
+            <Link href="#features" className="hover:text-foreground">
+              Features
+            </Link>
+            <Link href="#pricing" className="hover:text-foreground">
+              Pricing
+            </Link>
+            <Link href="/terms" className="hover:text-foreground">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy Policy
+            </Link>
+          </nav>
+          <p>© {new Date().getFullYear()} PodMind AI</p>
         </footer>
       </main>
     </MotionProvider>

@@ -10,7 +10,12 @@ export interface TenantContext {
 }
 
 /** Credits granted with the free plan on provisioning. */
-const FREE_PLAN_CREDITS = 500;
+/**
+ * Must match the Free plan's ai_credits in subscription_plans. These drifted
+ * once — the plan advertised 5,000 while provisioning granted 500 — which
+ * would have made the pricing page a promise the product broke on signup.
+ */
+const FREE_PLAN_CREDITS = 5000;
 
 /**
  * Tenancy provisioning.

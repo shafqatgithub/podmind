@@ -198,6 +198,19 @@ export function SignupForm() {
           <Button type="submit" loading={pending} disabled={Boolean(state.message)}>
             Sign up
           </Button>
+          {/* Stated at the point of agreement rather than buried in a footer,
+              so consent is informed and the record of it is meaningful. */}
+          <p className="text-center text-xs text-muted-foreground">
+            By creating an account you agree to our{" "}
+            <Link href="/terms" className="text-primary-400 hover:text-primary-300">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary-400 hover:text-primary-300">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </form>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
