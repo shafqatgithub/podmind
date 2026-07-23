@@ -1,63 +1,106 @@
 # PodMind AI
 
-> **Research Less. Create More.** — AI-powered podcast research platform.
+> **Research Less. Create More.** — the AI operating system for podcasters.
 
-Monorepo for the PodMind AI platform. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-for the full system design that all modules conform to.
+Give it a topic; get back an episode package: research, guest briefing, outline,
+script, fact check, SEO and social posts — with sources, credit metering and
+provider fallback throughout.
 
-## Repository status
+**Live:** [podmind-web.vercel.app](https://podmind-web.vercel.app)
 
-| Module | Contents | Status |
-| ------ | -------- | ------ |
-| 1 | Architecture + Database layer (`supabase/`) | ✅ Complete, tested |
-| 2 | FastAPI backend core (`apps/api`) | ⏳ Next |
-| 3 | AI Provider Manager | ⏳ |
-| 4 | Feature APIs (Projects, Topic Finder, Research Agent, Library, Chat, Notes) | ⏳ |
-| 5 | Next.js frontend foundation (`apps/web`) | ⏳ |
-| 6 | Frontend features | ⏳ |
-| 7 | Export engine + deployment (Vercel/Railway/CI) | ⏳ |
+---
 
-## Database — applying migrations
+## Stack
 
-Requirements: [Supabase CLI](https://supabase.com/docs/guides/cli) ≥ 1.200, a Supabase project.
+| Layer | Technology | Hosting |
+| ----- | ---------- | ------- |
+| Frontend | Next.js 15 (App Router), Tailwind, Framer Motion | Vercel |
+| Backend | NestJS 11, TypeScript | Railway |
+| Database | Supabase Postgres 17 + pgvector | Supabase |
+| Auth | Supabase Auth (JWT, JWKS verified) | — |
+| Payments | Paddle Billing (merchant of record) | — |
+| Monorepo | pnpm workspaces + Turborepo | — |
 
-```bash
-# Link your project once
-supabase link --project-ref <your-project-ref>
+## What is built
 
-# Apply all migrations
-supabase db push
+All 20 documented product modules ship with a backend, a screen and tests.
+
+**Create** — Episode Pipeline (orchestrator), Research, Outlines, Scripts, Guest
+Intelligence
+**Refine** — Fact Checker, SEO Engine, Social Posts, Export Center
+**Context** — Knowledge Hub (pgvector RAG), AI Memory, AI Chat
+**Operate** — Dashboard, Analytics, Billing, API Keys, Notifications, Settings,
+Admin Panel
+
+Roughly 96 REST routes under `/api/v1`, 199 database tables, 316 tests across 23
+suites.
+
+## Repository layout
+
+```
+apps/
+  api/        NestJS backend  — one module per feature, each tenant-scoped
+  web/        Next.js frontend — one workspace component per feature
+packages/
+  config/     Shared TypeScript, ESLint and Prettier presets
+  types/      Generated database types + API envelope types
+  ui/         Design tokens and primitives (brand system lives here)
+docs/         Numbered specifications — the source of truth for every module
+  database/   Ordered .sql migrations (41 files)
+supabase/
+  deploy/     Compacted migration batches for applying to the live project
+  tests/      Schema smoke tests + a local Supabase shim
 ```
 
-Migrations live in `supabase/migrations/` and are strictly ordered:
+## Conventions that matter
 
-1. `…0001_extensions_and_types.sql` — pgcrypto/pg_trgm/citext, all enums
-2. `…0002_tables.sql` — 12 core tables with constraints
-3. `…0003_functions_and_triggers.sql` — signup provisioning, credit ledger, counters
-4. `…0004_indexes.sql` — indexes mapped to real query paths
-5. `…0005_rls_policies.sql` — row-level security on every table
-6. `…0006_storage.sql` — `avatars` and `exports` buckets + object policies
+**The docs are the source of truth.** `docs/` holds numbered specifications;
+modules conform to them rather than the other way round. Where a specification
+and the live schema disagreed, the fix went into `docs/database/` and was then
+applied to the live project — never patched around in application code.
 
-## Database — running the test suite locally
+**Every module is tenant-scoped.** Repositories reach their rows through
+`project → workspace → organization`. An id forged from another tenant matches
+no row rather than being caught by a permission check afterwards.
 
-The schema is validated against vanilla PostgreSQL 16 using a Supabase
-environment shim (no Supabase project needed):
+**One envelope.** Every response is
+`{ success, data, error, request_id, timestamp, version }`, applied globally by
+an interceptor. Errors carry machine-readable UPPER_SNAKE codes so clients can
+branch on `INSUFFICIENT_CREDITS` without matching strings.
+
+**The boot contract test.** `apps/api/test/boot.e2e.spec.ts` boots the real
+application and asserts the exact route table. A module that is written but
+never registered is silently absent at runtime — this test is what catches that,
+so every new feature module adds its routes there.
+
+**AI goes through the Router.** No module calls a provider directly. The Router
+(`apps/api/src/ai/`) owns model selection per task, retries, fallback across
+providers, credit metering and telemetry into `ai_requests`.
+
+## Getting started
+
+Requires Node 20–24 and pnpm 9.
 
 ```bash
-./supabase/tests/run_tests.sh          # requires local postgres + createdb rights
+pnpm install
+cp apps/web/.env.example apps/web/.env.local   # Supabase + API URL
+cp apps/api/.env.example apps/api/.env         # database + provider keys
+pnpm dev
 ```
 
-The suite covers: signup provisioning, credit grant/spend/overdraft/refund
-atomicity, denormalized counter sync, the completed-requires-content
-constraint, full-text search, RLS tenant isolation, and ledger immutability.
+Full pipeline — build, typecheck and test across every package:
 
-## Post-migration Supabase dashboard configuration
+```bash
+pnpm turbo run build typecheck test
+```
 
-These are dashboard settings (not expressible in SQL migrations):
+Tests run against a real Postgres with the documented schema applied, not
+mocks, so a query that would fail in production fails here first. See
+`supabase/tests/` for the local setup.
 
-1. **Auth → Providers**: enable **Email** (with "Confirm email" ON) and
-   **Google** (add OAuth client ID/secret from Google Cloud Console).
-2. **Auth → URL Configuration**: set Site URL to your Vercel domain; add
-   `http://localhost:3000/**` to redirect allow-list for development.
-3. **Auth → Email Templates**: customize confirmation & recovery emails
-   (branded templates ship with Module 5).
+## Deployment
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the Railway, Vercel and
+Supabase specifics, including the traps that cost real time — Railway watch
+paths silently skipping commits, and variable changes redeploying the last
+successful build rather than the latest one.

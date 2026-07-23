@@ -6,7 +6,8 @@ import {
   BookOpen,
   Bot,
   FileText,
-  Mic2,
+  ScanSearch,
+  Workflow,
   Search,
   Share2,
   Users,
@@ -16,14 +17,15 @@ import { Item, LiftCard, MotionProvider, Reveal } from "@/components/motion/moti
 import { LogoLockup } from "@/components/brand/logo";
 
 const FEATURES = [
+  { icon: Workflow, title: "Episode Pipeline", description: "One topic in, a full episode package out — research, outline, script, SEO and social in a single run." },
   { icon: Search, title: "AI Research Engine", description: "Complete episode research in minutes — summaries, statistics, angles, sources." },
-  { icon: Users, title: "Guest Finder", description: "Discover expert guests with bios, talking points and interview questions." },
-  { icon: FileText, title: "Outlines & Scripts", description: "Structured outlines and full scripts, versioned and collaborative." },
+  { icon: Users, title: "Guest Intelligence", description: "Guest backgrounds, past interviews, smart questions and what to verify first." },
+  { icon: ScanSearch, title: "Fact Checker", description: "Every claim in your script judged individually, with evidence and a line to say instead." },
+  { icon: FileText, title: "Outlines & Scripts", description: "Structured outlines and full scripts, versioned and exportable." },
   { icon: Bot, title: "AI Chat with Memory", description: "Project-aware assistant that remembers your show, audience and style." },
   { icon: BookOpen, title: "Knowledge Hub", description: "Your documents become searchable, citable context for every AI agent." },
   { icon: Share2, title: "SEO & Social", description: "Titles, descriptions, chapters, hashtags and post variations per platform." },
   { icon: BarChart3, title: "Analytics", description: "Understand what works across episodes, topics and formats." },
-  { icon: Mic2, title: "Built for Teams", description: "Organizations, workspaces, roles and reviews — from solo shows to studios." },
 ] as const;
 
 /** Signature element: live input-level waveform under the hero copy. */

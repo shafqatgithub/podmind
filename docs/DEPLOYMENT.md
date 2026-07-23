@@ -106,3 +106,56 @@ Auth → URL Configuration:
 - **Redirect URLs**: `https://podmind-web.vercel.app/**`
 
 Without these, verification and password-reset emails link to `localhost`.
+
+---
+
+## Paddle Billing
+
+Paddle is the merchant of record: it owns checkout, card data and tax
+liability. Nothing here handles a card number.
+
+### Variables
+
+| Where | Variable | Notes |
+| ----- | -------- | ----- |
+| Railway | `PADDLE_API_KEY` | Server-side API access |
+| Railway | `PADDLE_WEBHOOK_SECRET` | Signs webhooks; without it the endpoint refuses every request rather than accepting unverified billing events |
+| Railway | `PADDLE_ENVIRONMENT` | `sandbox` or `production` |
+| Vercel | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Safe in the browser; only opens the overlay |
+| Vercel | `NEXT_PUBLIC_PADDLE_ENVIRONMENT` | Must match the Railway value |
+
+### Webhook
+
+Point Paddle at:
+
+```
+https://<api-host>/api/v1/billing/paddle/webhook
+```
+
+Subscribe to `subscription.created`, `subscription.updated`,
+`subscription.activated`, `subscription.canceled`, `subscription.paused` and
+`transaction.completed`. Other event types are acknowledged and ignored, so
+subscribing to extras is harmless.
+
+### Linking prices to plans
+
+A Paddle price grants nothing until it is mapped to a plan. Without the
+mapping the webhook refuses to upgrade anyone rather than guessing:
+
+```sql
+update public.subscription_plans
+   set paddle_price_id_monthly = 'pri_...',
+       paddle_price_id_yearly  = 'pri_...'
+ where slug = 'pro';
+```
+
+### Things worth knowing
+
+- The signature covers the **raw** request body, which is why the app is
+  created with `rawBody: true`. Any middleware that re-serialises the body
+  will break verification.
+- Paddle retries until it receives a 2xx. Every event is claimed by id in
+  `payment_webhook_events` before any work happens, so a retry cannot grant
+  credits twice.
+- Credits are granted only when a subscription is `active` — never on a
+  trial — and cancelling does not claw back credits already paid for.
