@@ -32,6 +32,10 @@ export const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_JWT_AUD: z.string().default("authenticated"),
 
+  // Billing. Optional: without a payment provider the billing page shows
+  // plans and usage but states plainly that checkout is not available yet.
+  STRIPE_SECRET_KEY: z.string().optional(),
+
   // AI provider keys — each optional so the API runs with any subset
   // configured; the Router skips providers without credentials.
   OPENAI_API_KEY: z.string().optional(),

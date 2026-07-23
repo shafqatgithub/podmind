@@ -25,6 +25,8 @@ import { SeoModule } from "./seo/seo.module";
 import { SocialModule } from "./social/social.module";
 import { MemoryModule } from "./memory/memory.module";
 import { NotificationModule } from "./notifications/notification.module";
+import { BillingModule } from "./billing/billing.module";
+import { ApiKeyModule } from "./api-keys/api-key.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
@@ -67,6 +69,8 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     SocialModule,
     MemoryModule,
     NotificationModule,
+    BillingModule,
+    ApiKeyModule,
   ],
   providers: [
     SupabaseAuthGuard,
