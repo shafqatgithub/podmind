@@ -1,13 +1,38 @@
 import { apiRequest } from "./client";
 
+export interface DashboardStats {
+  projects: number;
+  projects_change_pct: number | null;
+  documents: number;
+  content_created: number;
+  ai_requests: number;
+  credits_used_this_month: number;
+  credits_change_pct: number | null;
+}
+
+export interface CreditDay {
+  day: string;
+  credits: number;
+}
+
 export interface DashboardOverview {
-  credits: { available: number; used: number };
+  stats: DashboardStats;
+  credit_series: CreditDay[];
+  credits: {
+    available: number;
+    used: number;
+    /** The plan's allowance, or null on the free tier where no plan row exists. */
+    allowance: number | null;
+    plan_name: string | null;
+    period_end: string | null;
+  };
   recent_projects: {
     id: string;
     title: string;
     status: string;
     is_favorite: boolean;
     updated_at: string;
+    document_count: number;
   }[];
   recent_research: {
     id: string;

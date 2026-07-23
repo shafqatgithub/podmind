@@ -15,6 +15,7 @@ import {
   BarChart3,
   BookOpen,
   CreditCard,
+  Crown,
   Brain,
   FileText,
   FolderKanban,
@@ -38,24 +39,47 @@ import { createClient } from "@/lib/supabase/client";
 import { LogoLockup } from "@/components/brand/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
-const PRIMARY_NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/agents", label: "Episode Pipeline", icon: Workflow },
-  { href: "/research", label: "Research", icon: Search },
-  { href: "/outlines", label: "Outlines", icon: ListOrdered },
-  { href: "/guests", label: "Guests", icon: Users },
-  { href: "/scripts", label: "Scripts", icon: FileText },
-  { href: "/fact-checks", label: "Fact Checker", icon: ScanSearch },
-  { href: "/seo", label: "SEO", icon: TrendingUp },
-  { href: "/social", label: "Social", icon: Share2 },
-  { href: "/chat", label: "AI Chat", icon: MessageSquare },
-  { href: "/knowledge", label: "Knowledge", icon: BookOpen },
-  { href: "/memory", label: "AI Memory", icon: Brain },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/billing", label: "Billing", icon: CreditCard },
-  { href: "/api-keys", label: "API Keys", icon: KeyRound },
-  { href: "/settings", label: "Settings", icon: Settings },
+/**
+ * Navigation is grouped rather than flat: seventeen equal-weight links is a
+ * list to scan, not a menu to use. The groups follow what someone is trying
+ * to do — make something, manage the workspace, or handle the account.
+ */
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "AI Tools",
+    items: [
+      { href: "/agents", label: "Episode Pipeline", icon: Workflow, badge: "NEW" },
+      { href: "/chat", label: "AI Chat", icon: MessageSquare },
+      { href: "/research", label: "AI Research", icon: Search },
+      { href: "/outlines", label: "Outlines", icon: ListOrdered },
+      { href: "/scripts", label: "Scripts", icon: FileText },
+      { href: "/guests", label: "Guest Assistant", icon: Users },
+      { href: "/fact-checks", label: "Fact Checker", icon: ScanSearch },
+      { href: "/seo", label: "SEO Engine", icon: TrendingUp },
+      { href: "/social", label: "Social Posts", icon: Share2 },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      { href: "/projects", label: "Projects", icon: FolderKanban },
+      { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
+      { href: "/memory", label: "AI Memory", icon: Brain },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href: "/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/billing", label: "Billing", icon: CreditCard },
+      { href: "/api-keys", label: "API Keys", icon: KeyRound },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ] as const;
 
 function ThemeToggle() {
@@ -171,6 +195,147 @@ function UserMenu() {
   );
 }
 
+/** Search field with the keyboard hint, as in the design. */
+function SearchBar() {
+  const router = useRouter();
+  const ref = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        ref.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  return (
+    <form
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const q = new FormData(e.currentTarget).get("q");
+        const query = String(q ?? "").trim();
+        // Projects is the one place that searches across the workspace today,
+        // so the bar goes there rather than to a results page that would have
+        // nothing behind it.
+        if (query) router.push(`/projects?search=${encodeURIComponent(query)}`);
+      }}
+      className="relative hidden max-w-md flex-1 sm:block"
+    >
+      <Search
+        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        ref={ref}
+        name="q"
+        type="search"
+        placeholder="Search projects, chats, docs..."
+        aria-label="Search"
+        className="h-10 w-full rounded-full border border-border bg-surface/60 pl-10 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      />
+      <kbd
+        aria-hidden
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+      >
+        ⌘K
+      </kbd>
+    </form>
+  );
+}
+
+/** Upgrade card pinned to the foot of the sidebar. */
+function UpgradeCard() {
+  return (
+    <div className="m-3 rounded-lg border border-primary-500/25 bg-gradient-to-br from-primary-500/10 to-purple-500/10 p-4">
+      <p className="flex items-center gap-2 font-display text-sm font-semibold">
+        <Crown className="h-4 w-4 text-warning-400" aria-hidden />
+        Upgrade to Pro
+      </p>
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        Unlimited AI, premium models and advanced features.
+      </p>
+      <Link
+        href="/billing"
+        className="mt-3 flex h-9 w-full items-center justify-center rounded bg-brand-gradient text-sm font-semibold text-white shadow-glow-blue transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      >
+        Upgrade Now
+      </Link>
+    </div>
+  );
+}
+
+function SidebarNav({ pathname }: { pathname: string }) {
+  return (
+    <LazyMotion features={domAnimation} strict>
+      <nav aria-label="Primary" className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-2">
+        {NAV_GROUPS.map((group, groupIndex) => (
+          <div key={group.label ?? "root"} className="flex flex-col gap-1">
+            {group.label ? (
+              <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                {group.label}
+              </p>
+            ) : null}
+
+            {group.items.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const badge = "badge" in item ? (item.badge as string) : null;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                    active
+                      ? "text-white"
+                      : "text-muted-foreground hover:bg-hover hover:text-foreground",
+                  )}
+                >
+                  {active && (
+                    <m.span
+                      layoutId="nav-active"
+                      aria-hidden
+                      className={cn(
+                        "absolute inset-0 rounded-lg",
+                        // The dashboard entry sits alone above the groups and
+                        // reads as the home row, so it gets the fuller
+                        // treatment; the rest use a subtler tint so a long
+                        // sidebar does not glow at the user all day.
+                        groupIndex === 0
+                          ? "bg-brand-gradient opacity-90 shadow-glow-blue"
+                          : "bg-primary-500/15 ring-1 ring-inset ring-primary-500/30",
+                      )}
+                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                  <item.icon
+                    className={cn(
+                      "relative z-10 h-4 w-4 shrink-0",
+                      active && groupIndex !== 0 && "text-primary-300",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="relative z-10 truncate">{item.label}</span>
+                  {badge ? (
+                    <span className="relative z-10 ml-auto rounded bg-primary-500/20 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-primary-300">
+                      {badge}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+    </LazyMotion>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -189,67 +354,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Sidebar */}
-      <aside className="hidden w-60 flex-col border-r border-primary-500/15 bg-gradient-to-b from-surface via-surface to-background/80 backdrop-blur-xl md:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-primary-500/15 bg-gradient-to-b from-surface via-surface to-background/80 backdrop-blur-xl md:flex">
         <Link
-          href="/"
+          href="/dashboard"
           className="flex items-center px-5 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
         >
           <LogoLockup priority />
         </Link>
 
-        <LazyMotion features={domAnimation} strict>
-        <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 px-3 py-2">
-          {PRIMARY_NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "group relative flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
-                  active
-                    ? "text-white"
-                    : "text-muted-foreground hover:bg-hover hover:text-foreground",
-                )}
-              >
-                {active && (
-                  <m.span
-                    layoutId="nav-active"
-                    aria-hidden
-                    className="absolute inset-0 rounded bg-brand-gradient opacity-90 shadow-glow-blue"
-                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                  />
-                )}
-                <Icon className="relative z-10 h-4 w-4" aria-hidden />
-                <span className="relative z-10">{label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        </LazyMotion>
-
-        <div className="border-t border-primary-500/15 px-5 py-4">
-          <p className="bg-hero-glow bg-clip-text text-xs font-medium text-transparent">
-            Research Less. Create More.
-          </p>
-        </div>
+        <SidebarNav pathname={pathname} />
+        <UpgradeCard />
       </aside>
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-primary-500/15 bg-surface/70 px-6 backdrop-blur-xl">
-          {/* Mobile brand (sidebar hidden on small screens) */}
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-primary-500/15 bg-surface/70 px-6 backdrop-blur-xl">
           <Link
-            href="/"
+            href="/dashboard"
             className="flex items-center md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <LogoLockup markSize={26} priority />
           </Link>
-          <div className="flex flex-1 items-center justify-end gap-4">
-            <NotificationBell />
+
+          <SearchBar />
+
+          <div className="flex flex-1 items-center justify-end gap-3">
             <ThemeToggle />
+            <NotificationBell />
             <UserMenu />
           </div>
         </header>

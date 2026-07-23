@@ -189,8 +189,18 @@ describe("Dashboard", () => {
 
     expect(empty.recent_research).toEqual([]);
     expect(empty.recent_conversations).toEqual([]);
-    expect(empty.credits).toEqual({ available: 0, used: 0 });
+    expect(empty.credits).toMatchObject({ available: 0, used: 0 });
+    // No plan row on the free tier, so no ceiling is invented for the balance.
+    expect(empty.credits.allowance).toBeNull();
     // No baseline means no trend, rather than a misleading +100%.
     expect(empty.weekly.research_trend_pct).toBeNull();
+    expect(empty.stats.projects_change_pct).toBeNull();
+    // This organization owns exactly one project — the one the main tenant
+    // must not see — and nothing else, so the counters reflect only its own.
+    expect(empty.stats).toMatchObject({ projects: 1, documents: 0, content_created: 0 });
+    // The chart is a continuous 30-day series even with nothing to show,
+    // so it renders a flat line rather than collapsing.
+    expect(empty.credit_series).toHaveLength(30);
+    expect(empty.credit_series.every((d: { credits: number }) => d.credits === 0)).toBe(true);
   });
 });
