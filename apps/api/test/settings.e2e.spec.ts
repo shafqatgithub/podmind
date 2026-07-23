@@ -118,6 +118,22 @@ describe("Settings", () => {
     expect(rows[0]!.is_active).toBe(true);
   });
 
+  it("lets onboarding mark itself complete without opening the whitelist", async () => {
+    const updated = await service.updateProfile(tenant, { onboarding_completed: true });
+    expect(updated.onboarding_completed).toBe(true);
+
+    // The escalation fields must still be unreachable alongside it.
+    await service.updateProfile(tenant, {
+      onboarding_completed: true,
+      role: "super_admin",
+    } as never);
+    const { rows } = await pool.query<{ role: string }>(
+      `select role::text as role from public.profiles where id = $1`,
+      [userId],
+    );
+    expect(rows[0]!.role).toBe("user");
+  });
+
   it("updates preferences including the enum-backed ones", async () => {
     const prefs = await service.updatePreferences(tenant, {
       theme: "light",

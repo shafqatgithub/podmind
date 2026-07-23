@@ -53,6 +53,10 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsIn(LANGUAGES)
   language?: (typeof LANGUAGES)[number];
+
+  @IsOptional()
+  @IsBoolean()
+  onboarding_completed?: boolean;
 }
 
 /** PATCH /api/v1/settings/preferences */

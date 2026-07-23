@@ -14,6 +14,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -307,12 +308,28 @@ export function DashboardWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const firstName = useFirstName();
+  const router = useRouter();
 
   React.useEffect(() => {
     const controller = new AbortController();
     void (async () => {
       try {
-        setData(await dashboardApi.overview(controller.signal));
+        const overview = await dashboardApi.overview(controller.signal);
+
+        // A first-time account with nothing in it gets the setup screen once.
+        // Checked against real emptiness rather than a flag alone, so someone
+        // who signed up before onboarding existed is not sent back through it.
+        if (
+          overview.stats.projects === 0 &&
+          overview.stats.content_created === 0 &&
+          !localStorage.getItem("podmind-onboarded")
+        ) {
+          localStorage.setItem("podmind-onboarded", "1");
+          router.replace("/onboarding");
+          return;
+        }
+
+        setData(overview);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(
@@ -325,7 +342,7 @@ export function DashboardWorkspace() {
       }
     })();
     return () => controller.abort();
-  }, []);
+  }, [router]);
 
   if (!isApiConfigured()) {
     return (

@@ -22,6 +22,9 @@ export class SettingsRepository {
     "country",
     "timezone",
     "website",
+    // Whitelisted so onboarding can mark itself done; it is a user-owned flag,
+    // unlike role or is_active which stay unreachable by construction.
+    "onboarding_completed",
   ] as const;
 
   private static readonly PREFERENCE_FIELDS = [
