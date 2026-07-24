@@ -39,6 +39,14 @@ export interface CompletionOptions {
   messages: AiMessage[];
   /** Ask the provider for a strict JSON object where supported. */
   jsonMode?: boolean;
+  /**
+   * Ask the provider to search the web before answering.
+   *
+   * Only providers with a native search tool honour this; the Router checks
+   * `supportsWebSearch` rather than assuming, because a provider that quietly
+   * ignored it would return confident guesses dressed as current research.
+   */
+  webSearch?: boolean;
   maxTokens?: number;
   temperature?: number;
   /** Abort signal so callers can enforce their own deadlines. */
@@ -89,6 +97,8 @@ export interface AiProvider {
   readonly slug: ProviderSlug;
   /** False when no API key is configured — the Router skips it in selection. */
   isConfigured(): boolean;
+  /** True when this provider can ground an answer in live web results. */
+  supportsWebSearch?(): boolean;
   complete(options: CompletionOptions): Promise<CompletionResult>;
   /** Optional: only providers with an embeddings API implement this. */
   embed?(inputs: string[], dimensions: number): Promise<EmbeddingResult>;

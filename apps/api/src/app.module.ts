@@ -22,6 +22,7 @@ import { FactCheckModule } from "./fact-checks/fact-check.module";
 import { GuestModule } from "./guests/guest.module";
 import { SettingsModule } from "./settings/settings.module";
 import { AgentModule } from "./agents/agent.module";
+import { TopicModule } from "./topics/topic.module";
 import { AdminModule } from "./admin/admin.module";
 import { PaddleModule } from "./billing/paddle/paddle.module";
 import { SeoModule } from "./seo/seo.module";
@@ -69,6 +70,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     GuestModule,
     SettingsModule,
     AgentModule,
+    TopicModule,
     AdminModule,
     PaddleModule,
     SeoModule,

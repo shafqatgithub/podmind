@@ -22,6 +22,10 @@ export class AnthropicProvider extends BaseHttpProvider {
     super(config.get("ANTHROPIC_API_KEY", { infer: true }));
   }
 
+  supportsWebSearch(): boolean {
+    return true;
+  }
+
   protected buildRequest(options: CompletionOptions) {
     const systemParts = options.messages.filter((m) => m.role === "system").map((m) => m.content);
     if (options.jsonMode) systemParts.push(JSON_INSTRUCTION);
@@ -40,6 +44,11 @@ export class AnthropicProvider extends BaseHttpProvider {
           .filter((m) => m.role !== "system")
           .map((m) => ({ role: m.role, content: m.content })),
         ...(systemParts.length ? { system: systemParts.join("\n\n") } : {}),
+        // Anthropic runs the search server-side and returns the answer with
+        // its citations, so nothing here has to fetch or rank pages itself.
+        ...(options.webSearch
+          ? { tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }] }
+          : {}),
       },
     };
   }

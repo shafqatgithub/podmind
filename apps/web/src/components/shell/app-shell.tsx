@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  Compass,
   CreditCard,
   Crown,
   Brain,
@@ -55,7 +56,8 @@ const NAV_GROUPS = [
   {
     label: "AI Tools",
     items: [
-      { href: "/agents", label: "Episode Pipeline", icon: Workflow, badge: "NEW" },
+      { href: "/topics", label: "Topic Discovery", icon: Compass, badge: "NEW" },
+      { href: "/agents", label: "Episode Pipeline", icon: Workflow },
       { href: "/chat", label: "AI Chat", icon: MessageSquare },
       { href: "/research", label: "AI Research", icon: Search },
       { href: "/outlines", label: "Outlines", icon: ListOrdered },

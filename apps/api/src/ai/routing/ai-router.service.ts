@@ -31,6 +31,8 @@ export const TASK_CREDIT_COST: Record<AiTask, number> = {
 export interface RouteRequest {
   organizationId: string;
   task: AiTask;
+  /** Ground the answer in live web results. Skips providers without search. */
+  webSearch?: boolean;
   messages: AiMessage[];
   projectId?: string | null;
   conversationId?: string | null;
@@ -93,6 +95,13 @@ export class AiRouterService {
         continue;
       }
 
+      // A provider that cannot search would answer from memory and present it
+      // as current research. Skipping is honest; silently downgrading is not.
+      if (request.webSearch && provider.supportsWebSearch?.() !== true) {
+        this.logger.debug({ provider: candidate.provider }, "skipping provider without web search");
+        continue;
+      }
+
       const model = await this.catalog.resolve(candidate.provider, candidate.family);
       if (!model) {
         this.logger.warn(
@@ -109,6 +118,7 @@ export class AiRouterService {
             model: model.modelName,
             messages: request.messages,
             jsonMode: request.jsonMode,
+            webSearch: request.webSearch,
             maxTokens: request.maxTokens,
             temperature: request.temperature,
           });

@@ -13,6 +13,7 @@
 export const PROTECTED_PREFIXES = [
   "/dashboard",
   "/projects",
+  "/topics",
   "/agents",
   "/research",
   "/outlines",
