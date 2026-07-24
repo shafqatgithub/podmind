@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site-url";
 import { PROTECTED_PREFIXES } from "@/lib/routes";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://podmind-web.vercel.app";
+
 
 /**
  * The application itself is behind auth and has nothing to offer a crawler,
@@ -19,6 +20,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [...PROTECTED_PREFIXES, "/auth/"],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

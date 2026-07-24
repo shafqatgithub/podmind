@@ -1,14 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-/**
- * metadataBase makes the relative OG paths absolute. Without it, a shared
- * link renders with no image at all — crawlers cannot resolve "/og.png".
- */
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://podmind-web.vercel.app";
+import { SITE_URL } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  // SITE_URL is already validated, so this cannot throw during build.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "PodMind AI — Research Less. Create More.",
     template: "%s · PodMind AI",
@@ -25,7 +22,7 @@ export const metadata: Metadata = {
     title: "PodMind AI — Research Less. Create More.",
     description:
       "Turn a topic into an episode package: research, guests, outlines, scripts, fact checks, SEO and social.",
-    url: siteUrl,
+    url: SITE_URL,
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "PodMind AI" }],
   },
   twitter: {
