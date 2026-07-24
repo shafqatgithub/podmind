@@ -375,7 +375,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
   return (
     <LazyMotion features={domAnimation} strict>
       <nav aria-label="Primary" className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-2">
-        {NAV_GROUPS.map((group, groupIndex) => (
+        {NAV_GROUPS.map((group) => (
           <div key={group.label ?? "root"} className="flex flex-col gap-1">
             {group.label ? (
               <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
@@ -403,26 +403,17 @@ function SidebarNav({ pathname }: { pathname: string }) {
                     <m.span
                       layoutId="nav-active"
                       aria-hidden
-                      className={cn(
-                        "absolute inset-0 rounded-lg",
-                        // The dashboard entry sits alone above the groups and
-                        // reads as the home row, so it gets the fuller
-                        // treatment; the rest use a subtler tint so a long
-                        // sidebar does not glow at the user all day.
-                        groupIndex === 0
-                          ? "bg-brand-gradient opacity-90 shadow-glow-blue"
-                          : "bg-primary-500/15 ring-1 ring-inset ring-primary-500/30",
-                      )}
+                      // Every active item gets the same treatment. An earlier
+                      // version gave only the dashboard the full gradient and
+                      // the rest a faint tint, to keep a long sidebar calm —
+                      // but the tint was so quiet that the current page read
+                      // as unselected, which is a worse problem than glow.
+                      // Only one item is ever active, so it is one gradient.
+                      className="absolute inset-0 rounded-lg bg-brand-gradient opacity-90 shadow-glow-blue"
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
                     />
                   )}
-                  <item.icon
-                    className={cn(
-                      "relative z-10 h-4 w-4 shrink-0",
-                      active && groupIndex !== 0 && "text-primary-300",
-                    )}
-                    aria-hidden
-                  />
+                  <item.icon className="relative z-10 h-4 w-4 shrink-0" aria-hidden />
                   <span className="relative z-10 truncate">{item.label}</span>
                   {badge ? (
                     <span className="relative z-10 ml-auto rounded bg-primary-500/20 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-primary-300">

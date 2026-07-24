@@ -8,6 +8,7 @@
  */
 
 import * as React from "react";
+import { cn } from "@podmind/ui";
 import {
   LazyMotion,
   MotionConfig,
@@ -73,7 +74,10 @@ export function Item({
   className?: string;
 }) {
   return (
-    <m.div className={className} variants={fadeUp}>
+    // h-full so a card inside a grid can fill its row. Without it the child's
+    // own h-full has nothing to measure against and cards in a row end up
+    // different heights whenever one has an extra line of text.
+    <m.div className={cn("h-full", className)} variants={fadeUp}>
       {children}
     </m.div>
   );
@@ -111,7 +115,7 @@ export function LiftCard({
 }) {
   return (
     <m.div
-      className={className}
+      className={cn("h-full", className)}
       variants={fadeUp}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.99 }}
