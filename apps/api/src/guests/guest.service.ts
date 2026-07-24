@@ -1,14 +1,22 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { AiRouterService } from "../ai/routing/ai-router.service";
 import { BaseHttpProvider } from "../ai/providers/base-http.provider";
 import type { TenantContext } from "../tenancy/tenancy.service";
 import { GuestRepository, type GuestBriefingInput } from "./guest.repository";
 import { buildGuestMessages, GUEST_MAX_TOKENS, QUESTION_BUCKETS } from "./guest.prompt";
+import {
+  buildGuestDiscoveryMessages,
+  GUEST_DISCOVERY_MAX_TOKENS,
+  REACHABILITY,
+} from "./guest-discovery.prompt";
+import { ProviderRegistry } from "../ai/providers/provider.registry";
 import type {
   CreateGuestDto,
   CreateGuestManualDto,
+  DiscoverGuestsDto,
   ListGuestsQueryDto,
 } from "./dto/guest.dto";
+import type { SelectableProvider } from "../research/dto/research.dto";
 
 function str(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -47,6 +55,7 @@ export class GuestService {
   constructor(
     private readonly repository: GuestRepository,
     private readonly router: AiRouterService,
+    private readonly registry: ProviderRegistry,
   ) {}
 
   /** Research a person and store the full briefing. Consumes 8 credits. */
@@ -222,4 +231,144 @@ export class GuestService {
     await this.repository.remove(tenant, id);
     return { deleted: true };
   }
+  /* ------------------------------------------------- discovery */
+
+  /** Whether any configured provider can search; discovery needs one. */
+  searchAvailable(): boolean {
+    return this.registry
+      .all()
+      .some((p) => p.isConfigured() && p.supportsWebSearch?.() === true);
+  }
+
+  /**
+   * Find candidate guests for a topic.
+   *
+   * These are leads, not briefings — deliberately shallow, because the
+   * expensive deep-dive should happen after a human has picked someone.
+   */
+  async discover(tenant: TenantContext, dto: DiscoverGuestsDto) {
+    if (!this.searchAvailable()) {
+      throw new ServiceUnavailableException({
+        code: "SEARCH_UNAVAILABLE",
+        message:
+          "Guest discovery needs a provider with web search. Add an Anthropic API key to enable it.",
+      });
+    }
+
+    const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
+    const excludeNames = await this.repository.suggestedNames(project.id);
+
+    const routed = await this.router.route({
+      organizationId: tenant.organizationId,
+      task: "guest",
+      messages: buildGuestDiscoveryMessages({
+        topic: dto.topic,
+        country: dto.country,
+        podcastName: project.podcast_name,
+        audience: project.audience,
+        excludeNames,
+        language: project.language,
+      }),
+      projectId: project.id,
+      jsonMode: true,
+      webSearch: true,
+      maxTokens: GUEST_DISCOVERY_MAX_TOKENS,
+      temperature: 0.4,
+      preferredProvider: dto.provider ?? null,
+    });
+
+    const parsed = BaseHttpProvider.extractJson(routed.text) as Record<string, unknown> | null;
+    if (!parsed) {
+      throw new ServiceUnavailableException({
+        code: "AI_UNAVAILABLE",
+        message: "The model did not return usable suggestions. Please try again.",
+      });
+    }
+
+    const suggestions = objArray(parsed.guests)
+      .map((g) => ({
+        full_name: str(g.full_name) ?? "",
+        headline: str(g.headline),
+        why_them: str(g.why_them),
+        expertise: str(g.expertise),
+        reachability: REACHABILITY.has(String(g.reachability ?? "").toLowerCase())
+          ? String(g.reachability).toLowerCase()
+          : null,
+        profile_urls: objArray(g.profile_urls).filter((u) => str(u.url)),
+        sources: objArray(g.sources).filter((src) => str(src.url) ?? str(src.title)),
+        confidence:
+          typeof g.confidence === "number" && Number.isFinite(g.confidence)
+            ? Math.min(Math.max(g.confidence, 0), 1)
+            : null,
+      }))
+      // A person with no source is a guess, not a lead — and guessing about
+      // real people is the one thing this feature must never do.
+      .filter((g) => g.full_name && g.sources.length > 0);
+
+    if (suggestions.length === 0) {
+      throw new ServiceUnavailableException({
+        code: "NO_SOURCED_GUESTS",
+        message:
+          "No guests came back with a source behind them. Try describing the topic differently.",
+      });
+    }
+
+    await this.repository.saveSuggestions(
+      tenant,
+      project.id,
+      dto.topic,
+      dto.country ?? null,
+      suggestions,
+    );
+
+    this.logger.log({
+      topic: dto.topic,
+      suggested: suggestions.length,
+      dropped: objArray(parsed.guests).length - suggestions.length,
+      provider: routed.provider,
+    });
+
+    return {
+      topic: dto.topic,
+      summary: str(parsed.summary),
+      angles: strArray(parsed.angles),
+      notes: strArray(parsed.notes),
+      dropped_unsourced: objArray(parsed.guests).length - suggestions.length,
+      items: await this.repository.listSuggestions(tenant, project.id, dto.topic),
+    };
+  }
+
+  listSuggestions(tenant: TenantContext, projectId?: string, topic?: string) {
+    return this.repository
+      .listSuggestions(tenant, projectId, topic)
+      .then((items) => ({ items }));
+  }
+
+  /**
+   * Promote a lead into a full briefing by running the existing guest
+   * research on it. The suggestion's headline is passed as identifying
+   * context, which is what stops the briefing landing on a different person
+   * with the same name.
+   */
+  async promote(tenant: TenantContext, suggestionId: string, provider?: SelectableProvider) {
+    const suggestion = await this.repository.findSuggestion(tenant, suggestionId);
+
+    if (suggestion.guest_id) {
+      // Already researched: return what exists rather than charging twice.
+      return this.repository.findOne(tenant, suggestion.guest_id);
+    }
+
+    const guest = await this.research(tenant, {
+      project_id: suggestion.project_id,
+      full_name: suggestion.full_name,
+      context: [suggestion.headline, suggestion.expertise, suggestion.country]
+        .filter(Boolean)
+        .join(" — "),
+      ...(provider ? { provider } : {}),
+    });
+
+    await this.repository.linkSuggestionToGuest(suggestionId, guest.id);
+    return guest;
+  }
+
 }

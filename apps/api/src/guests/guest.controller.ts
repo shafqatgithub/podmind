@@ -15,7 +15,10 @@ import {
   CreateGuestDto,
   CreateGuestManualDto,
   CreateGuestNoteDto,
+  DiscoverGuestsDto,
   ListGuestsQueryDto,
+  ListSuggestionsQueryDto,
+  PromoteSuggestionDto,
 } from "./dto/guest.dto";
 
 /** Guest Intelligence — /api/v1/guests */
@@ -31,6 +34,39 @@ export class GuestController {
   async research(@CurrentUser() user: AuthUser, @Body() dto: CreateGuestDto) {
     const tenant = await this.tenancy.resolve(user.id);
     return this.guests.research(tenant, dto);
+  }
+
+  /** Whether discovery can run, so the UI can explain why not. */
+  @Get("discovery-status")
+  status() {
+    return { search_available: this.guests.searchAvailable() };
+  }
+
+  /** Find candidate guests for a topic. Leads, not full briefings. */
+  @Post("discover")
+  async discover(@CurrentUser() user: AuthUser, @Body() dto: DiscoverGuestsDto) {
+    const tenant = await this.tenancy.resolve(user.id);
+    return this.guests.discover(tenant, dto);
+  }
+
+  @Get("suggestions")
+  async listSuggestions(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListSuggestionsQueryDto,
+  ) {
+    const tenant = await this.tenancy.resolve(user.id);
+    return this.guests.listSuggestions(tenant, query.project_id, query.topic);
+  }
+
+  /** Turn a lead into a full briefing. Consumes credits. */
+  @Post("suggestions/:id/promote")
+  async promote(
+    @CurrentUser() user: AuthUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: PromoteSuggestionDto,
+  ) {
+    const tenant = await this.tenancy.resolve(user.id);
+    return this.guests.promote(tenant, id, dto.provider);
   }
 
   /** Add a guest by hand — no AI, no credits. */

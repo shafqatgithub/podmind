@@ -63,12 +63,30 @@ const GOOD = JSON.stringify({
 class ScriptedProvider implements AiProvider {
   mode: "ok" | "prose" = "ok";
   lastOptions: CompletionOptions | null = null;
+  canSearch = true;
+  completeCalls = 0;
+  /** Returned when the request asked for web search (discovery). */
+  discoveryPayload: unknown = null;
+
   constructor(readonly slug: ProviderSlug) {}
   isConfigured(): boolean {
     return true;
   }
+  supportsWebSearch(): boolean {
+    return this.canSearch;
+  }
   complete(options: CompletionOptions): Promise<CompletionResult> {
     this.lastOptions = options;
+    this.completeCalls += 1;
+    if (options.webSearch && this.discoveryPayload) {
+      return Promise.resolve({
+        text: JSON.stringify(this.discoveryPayload),
+        promptTokens: 600,
+        completionTokens: 900,
+        model: "claude-opus",
+        provider: this.slug,
+      });
+    }
     return Promise.resolve({
       text: this.mode === "prose" ? "Just some prose about the person." : GOOD,
       promptTokens: 500,
@@ -308,5 +326,110 @@ describe("Guest Intelligence", () => {
       await service.remove(tenant, guest.id);
       await expect(service.findOne(tenant, guest.id)).rejects.toMatchObject({ status: 404 });
     });
+
+    describe("guest discovery", () => {
+      const SOURCE = { title: "Their faculty page", url: "https://example.edu/person" };
+
+      beforeEach(() => {
+        provider.canSearch = true;
+        provider.discoveryPayload = {
+          summary: "This topic calls for a practitioner.",
+          guests: [
+            {
+              full_name: "Real Person",
+              headline: "Researcher at Example University",
+              why_them: "Published the study everyone is citing",
+              expertise: "Attention and focus",
+              reachability: "moderate",
+              profile_urls: [{ platform: "website", url: "https://example.edu/person" }],
+              sources: [SOURCE],
+              confidence: 0.82,
+            },
+          ],
+          angles: ["Ask about the replication attempt"],
+          notes: ["Two academics share this name — this is the one at Example University"],
+        };
+      });
+
+      it("searches, and stores only people it could source", async () => {
+        provider.discoveryPayload = {
+          guests: [
+            { full_name: "Sourced Person", sources: [SOURCE], confidence: 0.9 },
+            { full_name: "Invented Expert", sources: [] },
+            { full_name: "Also Invented" },
+          ],
+        };
+
+        const result = await service.discover(tenant, {
+          project_id: projectId,
+          topic: "The attention economy",
+        });
+
+        expect(provider.lastOptions?.webSearch).toBe(true);
+        expect(result.items.map((g: { full_name: string }) => g.full_name)).toEqual([
+          "Sourced Person",
+        ]);
+        // Guessing about real people is the one thing this must never do.
+        expect(result.dropped_unsourced).toBe(2);
+      });
+
+      it("fails loudly rather than returning unsourced names", async () => {
+        provider.discoveryPayload = { guests: [{ full_name: "Nobody", sources: [] }] };
+        await expect(
+          service.discover(tenant, { project_id: projectId, topic: "X" }),
+        ).rejects.toMatchObject({ status: 503 });
+      });
+
+      it("refuses when no provider can search, without falling back to recall", async () => {
+        provider.canSearch = false;
+        await expect(
+          service.discover(tenant, { project_id: projectId, topic: "X" }),
+        ).rejects.toMatchObject({ status: 503 });
+      });
+
+      it("drops a reachability value it does not recognise", async () => {
+        provider.discoveryPayload = {
+          guests: [{ full_name: "Odd", reachability: "VERY EASY", sources: [SOURCE] }],
+        };
+        const result = await service.discover(tenant, { project_id: projectId, topic: "X" });
+        expect(result.items[0]!.reachability).toBeNull();
+      });
+
+      it("promotes a lead into a full briefing, passing its context through", async () => {
+        const discovered = await service.discover(tenant, {
+          project_id: projectId,
+          topic: "The attention economy",
+        });
+        const suggestionId = discovered.items[0]!.id;
+
+        const guest = await service.promote(tenant, suggestionId);
+        expect(guest.full_name).toBe("Real Person");
+
+        // The headline must reach the briefing prompt, or the research can land
+        // on a different person with the same name.
+        const [, user] = provider.lastOptions!.messages;
+        expect(user!.content).toContain("Researcher at Example University");
+      });
+
+      it("does not research the same lead twice", async () => {
+        const discovered = await service.discover(tenant, {
+          project_id: projectId,
+          topic: "Repeat topic",
+        });
+        const suggestionId = discovered.items[0]!.id;
+
+        const first = await service.promote(tenant, suggestionId);
+        const callsAfterFirst = provider.completeCalls;
+
+        const second = await service.promote(tenant, suggestionId);
+        expect(second.id).toBe(first.id);
+        expect(provider.completeCalls).toBe(callsAfterFirst);
+      });
+
+      it("rejects a suggestion from another tenant", async () => {
+        await expect(service.promote(tenant, randomUUID())).rejects.toMatchObject({ status: 404 });
+      });
+    });
   });
+
 });

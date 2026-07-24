@@ -21,6 +21,7 @@ import {
   Info,
   Mic2,
   Plus,
+  Search,
   Sparkles,
   StickyNote,
   Trash2,
@@ -47,6 +48,7 @@ import {
   QUESTION_GROUPS,
   type Guest,
   type GuestDetail,
+  type GuestSuggestion,
 } from "@/lib/api/guests";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
@@ -401,7 +403,16 @@ export function GuestsWorkspace() {
   const [detail, setDetail] = React.useState<GuestDetail | null>(null);
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [projectId, setProjectId] = React.useState("");
-  const [mode, setMode] = React.useState<"research" | "manual">("research");
+  const [mode, setMode] = React.useState<"discover" | "research" | "manual">("discover");
+  const [suggestions, setSuggestions] = React.useState<GuestSuggestion[] | null>(null);
+  const [discoveryMeta, setDiscoveryMeta] = React.useState<{
+    summary: string | null;
+    angles: string[];
+    notes: string[];
+    dropped: number;
+  } | null>(null);
+  const [promoting, setPromoting] = React.useState<string | null>(null);
+  const [searchAvailable, setSearchAvailable] = React.useState<boolean | null>(null);
   const [running, setRunning] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -433,6 +444,11 @@ export function GuestsWorkspace() {
       } catch {
         /* selector stays on Auto */
       }
+      try {
+        setSearchAvailable((await guestsApi.discoveryStatus(controller.signal)).search_available);
+      } catch {
+        setSearchAvailable(null);
+      }
       await loadGuests();
     })();
     return () => controller.abort();
@@ -454,6 +470,43 @@ export function GuestsWorkspace() {
 
     setRunning(true);
     setError(null);
+
+    if (mode === "discover") {
+      try {
+        const result = await guestsApi.discover({
+          project_id: projectId,
+          topic: fullName,
+          ...(String(form.get("context") ?? "").trim()
+            ? { country: String(form.get("context")).trim() }
+            : {}),
+          ...(String(form.get("provider") ?? "")
+            ? { provider: String(form.get("provider")) as "openai" | "anthropic" | "google" }
+            : {}),
+        });
+        setSuggestions(result.items);
+        setDiscoveryMeta({
+          summary: result.summary,
+          angles: result.angles,
+          notes: result.notes,
+          dropped: result.dropped_unsourced,
+        });
+        setDetail(null);
+      } catch (err) {
+        setError(
+          err instanceof ApiError
+            ? err.code === "SEARCH_UNAVAILABLE"
+              ? "Guest discovery needs a provider with web search. Add an Anthropic API key."
+              : err.code === "NO_SOURCED_GUESTS"
+                ? "No guests came back with a source behind them. Try describing the topic differently."
+                : err.message
+            : "Discovery failed. Please try again.",
+        );
+      } finally {
+        setRunning(false);
+      }
+      return;
+    }
+
     try {
       const guest =
         mode === "research"
@@ -521,6 +574,31 @@ export function GuestsWorkspace() {
     }
   };
 
+  const promote = async (suggestion: GuestSuggestion) => {
+    setPromoting(suggestion.id);
+    setError(null);
+    try {
+      const guest = await guestsApi.promote(suggestion.id);
+      setDetail(guest);
+      setSuggestions((all) =>
+        all
+          ? all.map((s) => (s.id === suggestion.id ? { ...s, guest_id: guest.id } : s))
+          : all,
+      );
+      await loadGuests();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.code === "INSUFFICIENT_CREDITS"
+            ? "You are out of AI credits."
+            : err.message
+          : "Could not build the briefing.",
+      );
+    } finally {
+      setPromoting(null);
+    }
+  };
+
   const addNote = async (note: string) => {
     if (!detail) return;
     await guestsApi.addNote(detail.id, note);
@@ -565,7 +643,7 @@ export function GuestsWorkspace() {
                   )}
                 </div>
 
-                {mode === "research" ? (
+                {mode !== "manual" ? (
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="provider">AI provider</Label>
                     <Select id="provider" name="provider" defaultValue="">
@@ -581,7 +659,18 @@ export function GuestsWorkspace() {
                 ) : null}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "discover" ? "primary" : "secondary"}
+                  aria-pressed={mode === "discover"}
+                  onClick={() => setMode("discover")}
+                  disabled={searchAvailable === false}
+                >
+                  <Search className="h-4 w-4" />
+                  Find guests for a topic
+                </Button>
                 <Button
                   type="button"
                   size="sm"
@@ -590,7 +679,7 @@ export function GuestsWorkspace() {
                   onClick={() => setMode("research")}
                 >
                   <Sparkles className="h-4 w-4" />
-                  Research with AI
+                  Research a person
                 </Button>
                 <Button
                   type="button"
@@ -606,11 +695,36 @@ export function GuestsWorkspace() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
-                  <Label htmlFor="full_name">Guest name</Label>
-                  <Input id="full_name" name="full_name" maxLength={200} required />
+                  <Label htmlFor="full_name">
+                    {mode === "discover" ? "Episode topic" : "Guest name"}
+                  </Label>
+                  <Input
+                    id="full_name"
+                    name="full_name"
+                    maxLength={500}
+                    placeholder={
+                      mode === "discover"
+                        ? "Why attention became the scarcest resource"
+                        : undefined
+                    }
+                    required
+                  />
                 </div>
 
-                {mode === "research" ? (
+                {mode === "discover" ? (
+                  <div className="flex flex-col gap-1.5 sm:col-span-2">
+                    <Label htmlFor="context">Country (optional)</Label>
+                    <Input
+                      id="context"
+                      name="context"
+                      maxLength={100}
+                      placeholder="Pakistan"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Prefers local voices, and says which suggestions are international.
+                    </p>
+                  </div>
+                ) : mode === "research" ? (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="context">Identifying details</Label>
                     <Input
@@ -650,7 +764,11 @@ export function GuestsWorkspace() {
 
               <div className="flex items-center gap-3">
                 <Button type="submit" loading={running} disabled={projects.length === 0}>
-                  {mode === "research" ? (
+                  {mode === "discover" ? (
+                    <>
+                      <Search className="h-4 w-4" /> Find guests
+                    </>
+                  ) : mode === "research" ? (
                     <>
                       <Sparkles className="h-4 w-4" /> Research guest
                     </>
@@ -661,7 +779,11 @@ export function GuestsWorkspace() {
                   )}
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  {mode === "research" ? "Uses 8 AI credits" : "No credits used"}
+                  {mode === "discover"
+                    ? "8 credits · searches the live web"
+                    : mode === "research"
+                      ? "Uses 8 AI credits"
+                      : "No credits used"}
                 </span>
               </div>
             </form>
@@ -678,6 +800,152 @@ export function GuestsWorkspace() {
               </p>
             </CardContent>
           </Card>
+        ) : null}
+
+        {suggestions && !running && !detail ? (
+          <Appear>
+            <div className="flex flex-col gap-4">
+              {discoveryMeta?.summary ? (
+                <Card>
+                  <CardContent className="flex flex-col gap-2 p-5">
+                    <p className="text-sm text-muted-foreground">{discoveryMeta.summary}</p>
+                    {discoveryMeta.dropped ? (
+                      <p className="text-xs text-muted-foreground/70">
+                        {discoveryMeta.dropped} suggestion
+                        {discoveryMeta.dropped === 1 ? "" : "s"} dropped for having no source.
+                      </p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              <Reveal className="flex flex-col gap-3">
+                {suggestions.map((s) => (
+                  <Item key={s.id}>
+                    <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-4 sm:p-5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-display font-semibold">{s.full_name}</h3>
+                        {s.reachability ? (
+                          <Badge
+                            className={cn(
+                              s.reachability === "easy"
+                                ? "bg-success-500/15 text-success-300"
+                                : s.reachability === "moderate"
+                                  ? "bg-warning-500/15 text-warning-300"
+                                  : "bg-error-500/15 text-error-300",
+                            )}
+                          >
+                            {s.reachability} to book
+                          </Badge>
+                        ) : null}
+                        {s.confidence !== null ? (
+                          <span className="text-xs text-muted-foreground">
+                            {Math.round(s.confidence * 100)}% confident
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {s.headline ? (
+                        <p className="text-sm text-muted-foreground">{s.headline}</p>
+                      ) : null}
+                      {s.why_them ? (
+                        <p className="text-sm">
+                          <span className="font-medium text-primary-300">Why them — </span>
+                          {s.why_them}
+                        </p>
+                      ) : null}
+
+                      {s.profile_urls?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {s.profile_urls.map((u, i) =>
+                            u.url ? (
+                              <a
+                                key={i}
+                                href={u.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded border border-border/60 px-2 py-1 text-xs text-primary-400 hover:border-primary-500/40"
+                              >
+                                {u.platform ?? "profile"}
+                                <ExternalLink className="h-3 w-3" aria-hidden />
+                              </a>
+                            ) : null,
+                          )}
+                        </div>
+                      ) : null}
+
+                      {/* Always visible: a suggestion about a real person has
+                          to be checkable. */}
+                      {s.sources?.length ? (
+                        <div className="flex flex-col gap-1 border-t border-border/60 pt-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Found via
+                          </p>
+                          <ul className="flex flex-col gap-1 text-xs">
+                            {s.sources.map((source, i) => (
+                              <li key={i}>
+                                {source.url ? (
+                                  <a
+                                    href={source.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-start gap-1 text-primary-400 hover:text-primary-300"
+                                  >
+                                    {source.title ?? source.url}
+                                    <ExternalLink className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground">{source.title}</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+
+                      <div className="pt-1">
+                        {s.guest_id ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => void open(s.guest_id!)}
+                          >
+                            View briefing
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            loading={promoting === s.id}
+                            disabled={promoting !== null}
+                            onClick={() => void promote(s)}
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            Build full briefing
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Item>
+                ))}
+              </Reveal>
+
+              {discoveryMeta?.notes.length ? (
+                <Card>
+                  <CardContent className="flex flex-col gap-2 p-5">
+                    <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
+                      <Info className="h-4 w-4 text-warning-400" aria-hidden />
+                      Before you reach out
+                    </h3>
+                    <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
+                      {discoveryMeta.notes.map((n, i) => (
+                        <li key={i}>{n}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ) : null}
+            </div>
+          </Appear>
         ) : null}
 
         {detail && !running ? (

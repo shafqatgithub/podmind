@@ -364,4 +364,139 @@ export class GuestRepository {
       [id],
     );
   }
+  /* ------------------------------------------------- discovery */
+
+  /** Names already suggested for this project, so a rerun brings new people. */
+  async suggestedNames(projectId: string, limit = 25): Promise<string[]> {
+    const { rows } = await this.pool.query<{ full_name: string }>(
+      `select distinct full_name from public.guest_suggestions
+        where project_id = $1
+        order by full_name
+        limit $2`,
+      [projectId, limit],
+    );
+    return rows.map((r) => r.full_name);
+  }
+
+  async saveSuggestions(
+    tenant: TenantContext,
+    projectId: string,
+    topic: string,
+    country: string | null,
+    suggestions: {
+      full_name: string;
+      headline: string | null;
+      why_them: string | null;
+      expertise: string | null;
+      reachability: string | null;
+      profile_urls: unknown[];
+      sources: unknown[];
+      confidence: number | null;
+    }[],
+  ): Promise<void> {
+    const client: PoolClient = await this.pool.connect();
+    try {
+      await client.query("begin");
+      for (const [index, s] of suggestions.entries()) {
+        await client.query(
+          `insert into public.guest_suggestions
+             (project_id, created_by, topic, country, full_name, headline, why_them,
+              expertise, reachability, profile_urls, sources, confidence, sort_order)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+          [
+            projectId,
+            tenant.userId,
+            topic,
+            country,
+            s.full_name,
+            s.headline,
+            s.why_them,
+            s.expertise,
+            s.reachability,
+            JSON.stringify(s.profile_urls),
+            JSON.stringify(s.sources),
+            s.confidence,
+            index,
+          ],
+        );
+      }
+      await client.query("commit");
+    } catch (err) {
+      await client.query("rollback").catch(() => undefined);
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async listSuggestions(tenant: TenantContext, projectId?: string, topic?: string) {
+    const params: unknown[] = [tenant.organizationId];
+    const where = [
+      `s.project_id in (
+         select p.id from public.projects p
+          where p.workspace_id in (
+            select w.id from public.workspaces w where w.organization_id = $1
+          )
+       )`,
+    ];
+    if (projectId) {
+      params.push(projectId);
+      where.push(`s.project_id = $${params.length}`);
+    }
+    if (topic) {
+      params.push(topic);
+      where.push(`s.topic = $${params.length}`);
+    }
+
+    const { rows } = await this.pool.query(
+      `select s.id, s.project_id, s.topic, s.country, s.full_name, s.headline,
+              s.why_them, s.expertise, s.reachability, s.profile_urls, s.sources,
+              s.confidence, s.guest_id, s.created_at
+         from public.guest_suggestions s
+        where ${where.join(" and ")}
+        order by s.created_at desc, s.sort_order
+        limit 60`,
+      params,
+    );
+    return rows;
+  }
+
+  async findSuggestion(tenant: TenantContext, id: string) {
+    const { rows } = await this.pool.query(
+      `select s.id, s.project_id, s.topic, s.country, s.full_name, s.headline,
+              s.expertise, s.guest_id
+         from public.guest_suggestions s
+        where s.id = $2
+          and s.project_id in (
+            select p.id from public.projects p
+             where p.workspace_id in (
+               select w.id from public.workspaces w where w.organization_id = $1
+             )
+          )`,
+      [tenant.organizationId, id],
+    );
+    const suggestion = rows[0];
+    if (!suggestion) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "Suggestion not found" });
+    }
+    return suggestion as {
+      id: string;
+      project_id: string;
+      topic: string;
+      country: string | null;
+      full_name: string;
+      headline: string | null;
+      expertise: string | null;
+      guest_id: string | null;
+    };
+  }
+
+  /** Records that a lead became a full briefing, so it is not researched twice. */
+  async linkSuggestionToGuest(suggestionId: string, guestId: string): Promise<void> {
+    await this.pool.query(
+      `update public.guest_suggestions set guest_id = $2 where id = $1`,
+      [suggestionId, guestId],
+    );
+  }
+
 }

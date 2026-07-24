@@ -103,7 +103,56 @@ export const QUESTION_GROUPS = [
   { type: "closing", label: "Closing questions" },
 ] as const;
 
+export interface GuestSuggestion {
+  id: string;
+  project_id: string;
+  topic: string;
+  country: string | null;
+  full_name: string;
+  headline: string | null;
+  why_them: string | null;
+  expertise: string | null;
+  reachability: "easy" | "moderate" | "hard" | null;
+  profile_urls: { platform?: string; url?: string }[] | null;
+  sources: { title?: string; url?: string; publisher?: string }[] | null;
+  confidence: number | null;
+  guest_id: string | null;
+  created_at: string;
+}
+
+export interface GuestDiscovery {
+  topic: string;
+  summary: string | null;
+  angles: string[];
+  notes: string[];
+  dropped_unsourced: number;
+  items: GuestSuggestion[];
+}
+
 export const guestsApi = {
+  discoveryStatus: (signal?: AbortSignal) =>
+    apiRequest<{ search_available: boolean }>("/guests/discovery-status", { signal }),
+
+  discover: (body: {
+    project_id: string;
+    topic: string;
+    country?: string;
+    provider?: SelectableProvider;
+  }) => apiRequest<GuestDiscovery>("/guests/discover", { method: "POST", body }),
+
+  suggestions: (query: { project_id?: string; topic?: string } = {}, signal?: AbortSignal) =>
+    apiRequest<{ items: GuestSuggestion[] }>("/guests/suggestions", {
+      query: { ...query },
+      signal,
+    }),
+
+  /** Turns a lead into a full briefing. Consumes credits. */
+  promote: (id: string, provider?: SelectableProvider) =>
+    apiRequest<GuestDetail>(`/guests/suggestions/${id}/promote`, {
+      method: "POST",
+      body: provider ? { provider } : {},
+    }),
+
   research: (body: {
     project_id: string;
     full_name: string;

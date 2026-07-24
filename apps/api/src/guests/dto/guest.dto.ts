@@ -22,6 +22,43 @@ export class CreateGuestDto {
   provider?: SelectableProvider;
 }
 
+/** POST /api/v1/guests/discover — find candidate guests for a topic. */
+export class DiscoverGuestsDto {
+  @IsUUID()
+  project_id!: string;
+
+  @IsString()
+  @Length(3, 500)
+  topic!: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 100)
+  country?: string;
+
+  @IsOptional()
+  @IsIn(SELECTABLE_PROVIDERS)
+  provider?: SelectableProvider;
+}
+
+/** POST /api/v1/guests/suggestions/:id/promote — turn a lead into a briefing. */
+export class PromoteSuggestionDto {
+  @IsOptional()
+  @IsIn(SELECTABLE_PROVIDERS)
+  provider?: SelectableProvider;
+}
+
+export class ListSuggestionsQueryDto {
+  @IsOptional()
+  @IsUUID()
+  project_id?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 500)
+  topic?: string;
+}
+
 /** POST /api/v1/guests/manual — add a guest without an AI run. */
 export class CreateGuestManualDto {
   @IsUUID()
