@@ -9,6 +9,7 @@
  */
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -280,6 +281,12 @@ function UpgradeCard() {
  */
 function MobileNav({ pathname }: { pathname: string }) {
   const [open, setOpen] = React.useState(false);
+  // document only exists after mount, so the portal waits for it.
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Route changes close the drawer; without this it stays open over the page
   // the user just navigated to.
@@ -315,8 +322,16 @@ function MobileNav({ pathname }: { pathname: string }) {
         <Menu className="h-5 w-5" aria-hidden />
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 md:hidden">
+      {/*
+        Portalled to the body on purpose. This button lives inside the header,
+        which carries backdrop-blur — and backdrop-filter makes an ancestor a
+        containing block for position:fixed descendants. Rendered in place, the
+        drawer was trapped inside the 64px header box and painted on top of the
+        page instead of covering it.
+      */}
+      {open && mounted
+        ? createPortal(
+            <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
             aria-label="Close menu"
@@ -344,8 +359,10 @@ function MobileNav({ pathname }: { pathname: string }) {
             <SidebarNav pathname={pathname} />
             <UpgradeCard />
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

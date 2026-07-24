@@ -132,15 +132,15 @@ export default function LandingPage() {
               scripts, SEO and social, all powered by a provider-agnostic AI Router.
             </p>
           </Item>
-          <Item className="mt-10 flex items-center gap-4">
-            <Link href="/signup">
-              <Button size="lg">Start researching</Button>
-            </Link>
-            <Link href="#features">
-              <Button size="lg" variant="secondary">
-                Explore features
-              </Button>
-            </Link>
+          {/* Stacked on mobile: two large buttons side by side overflowed a
+              360px screen and ran off both edges. */}
+          <Item className="mt-10 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+            <Button asChild size="lg" className="w-full sm:w-auto">
+              <Link href="/signup">Start researching</Link>
+            </Button>
+            <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto">
+              <Link href="#features">Explore features</Link>
+            </Button>
           </Item>
           <Item className="mt-14">
             <Waveform />
@@ -149,14 +149,18 @@ export default function LandingPage() {
 
         {/* Features */}
         <div id="features" />
-        <Reveal as="section" amount={0.1} className="grid gap-4 pb-24 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Two per row from the smallest screen. Padding and type step down
+            with it, so a narrow column reads as compact rather than cramped. */}
+        <Reveal as="section" amount={0.1} className="grid grid-cols-2 gap-3 pb-24 sm:gap-4 lg:grid-cols-4">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <LiftCard key={title}>
               <Card className="h-full transition-colors hover:border-primary-500/50 hover:shadow-glow-blue/60 hover:bg-hover">
-                <CardContent className="flex flex-col gap-3 p-6">
+                <CardContent className="flex flex-col gap-2 p-4 sm:gap-3 sm:p-6">
                   <Icon className="h-5 w-5 text-primary-400" aria-hidden />
-                  <h3 className="font-semibold">{title}</h3>
-                  <p className="text-sm text-muted-foreground">{description}</p>
+                  <h3 className="text-sm font-semibold sm:text-base">{title}</h3>
+                  <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                    {description}
+                  </p>
                 </CardContent>
               </Card>
             </LiftCard>
@@ -180,7 +184,7 @@ export default function LandingPage() {
           </Item>
         </Reveal>
 
-        <Reveal as="section" amount={0.1} className="grid gap-4 pb-24 sm:grid-cols-2 lg:grid-cols-4">
+        <Reveal as="section" amount={0.1} className="grid grid-cols-2 gap-3 pb-24 sm:gap-4 lg:grid-cols-4">
           {PLANS.map((plan) => (
             <LiftCard key={plan.name}>
               <Card
@@ -189,9 +193,9 @@ export default function LandingPage() {
                   plan.featured && "border-primary-500/50 shadow-glow-blue/60",
                 )}
               >
-                <CardContent className="flex h-full flex-col gap-4 p-6">
+                <CardContent className="flex h-full flex-col gap-3 p-4 sm:gap-4 sm:p-6">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-display font-semibold">{plan.name}</h3>
                       {plan.featured ? (
                         <Badge className="bg-primary-500/20 text-[10px] text-primary-300">
@@ -199,13 +203,13 @@ export default function LandingPage() {
                         </Badge>
                       ) : null}
                     </div>
-                    <p className="mt-2 font-display text-3xl font-bold">
+                    <p className="mt-2 font-display text-2xl font-bold sm:text-3xl">
                       {plan.price}
                       <span className="text-sm font-normal text-muted-foreground">/mo</span>
                     </p>
                   </div>
 
-                  <ul className="flex flex-1 flex-col gap-2 text-sm text-muted-foreground">
+                  <ul className="flex flex-1 flex-col gap-2 text-xs text-muted-foreground sm:text-sm">
                     {plan.points.map((point) => (
                       <li key={point} className="flex items-start gap-2">
                         <Check className="mt-0.5 h-4 w-4 shrink-0 text-success-400" aria-hidden />
@@ -240,6 +244,9 @@ export default function LandingPage() {
             </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
+            </Link>
+            <Link href="/refunds" className="hover:text-foreground">
+              Refund Policy
             </Link>
           </nav>
           <p>© {new Date().getFullYear()} PodMind AI</p>

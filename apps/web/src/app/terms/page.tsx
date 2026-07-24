@@ -105,8 +105,11 @@ export default function Page() {
           the next renewal and you keep access until the end of the period you have paid for.
         </p>
         <p>
-          Prices are shown before purchase. Refunds are handled under{" "}
-          <Fill>your refund policy — e.g. 14 days, unused credits</Fill>.
+          Prices are shown before purchase. Refunds are handled under our{" "}
+          <a href="/refunds" className="text-primary-400 hover:text-primary-300">
+            Refund Policy
+          </a>
+          .
         </p>
       </Section>
 

@@ -166,12 +166,12 @@ function ToolCard({ tool }: { tool: (typeof TOOLS)[number] }) {
     <LiftCard>
       <Link
         href={tool.href}
-        className="group flex h-full flex-col gap-3 rounded-lg border border-border/60 bg-card/60 p-5 transition-colors hover:border-primary-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        className="group flex h-full flex-col gap-2.5 rounded-lg border border-border/60 bg-card/60 p-4 transition-colors hover:border-primary-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:gap-3 sm:p-5"
       >
         <div className="flex items-start justify-between">
           <span
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-lg border",
+              "flex h-10 w-10 items-center justify-center rounded-lg border sm:h-11 sm:w-11",
               tool.ring,
               tool.glow,
             )}
@@ -184,8 +184,10 @@ function ToolCard({ tool }: { tool: (typeof TOOLS)[number] }) {
         </div>
 
         <div>
-          <h3 className="font-display font-semibold">{tool.title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{tool.description}</p>
+          <h3 className="font-display text-sm font-semibold sm:text-base">{tool.title}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            {tool.description}
+          </p>
         </div>
 
         <span
@@ -391,7 +393,9 @@ export function DashboardWorkspace() {
           </Card>
         ) : null}
 
-        <Reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Two per row on mobile as well — one tall card per screenful made
+            the tool list feel much longer than it is. */}
+        <Reveal className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {TOOLS.map((tool) => (
             <Item key={tool.href}>
               <ToolCard tool={tool} />
@@ -407,14 +411,14 @@ export function DashboardWorkspace() {
             </div>
 
             {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="h-24 rounded-lg" />
                 ))}
               </div>
             ) : data ? (
               <>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                   <StatTile
                     label="Projects"
                     value={data.stats.projects}
