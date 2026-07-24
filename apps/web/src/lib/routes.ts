@@ -15,6 +15,7 @@ export const PROTECTED_PREFIXES = [
   "/projects",
   "/topics",
   "/agents",
+  "/calendar",
   "/research",
   "/outlines",
   "/scripts",

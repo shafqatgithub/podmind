@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  CalendarDays,
   Compass,
   CreditCard,
   Crown,
@@ -58,6 +59,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/topics", label: "Topic Discovery", icon: Compass, badge: "NEW" },
       { href: "/agents", label: "Episode Pipeline", icon: Workflow },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/chat", label: "AI Chat", icon: MessageSquare },
       { href: "/research", label: "AI Research", icon: Search },
       { href: "/outlines", label: "Outlines", icon: ListOrdered },
