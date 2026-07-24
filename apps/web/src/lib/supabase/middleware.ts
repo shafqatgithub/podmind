@@ -1,16 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isProtectedPath } from "@/lib/routes";
 
-const PROTECTED_PREFIXES = [
-  "/dashboard",
-  "/projects",
-  "/research",
-  "/guests",
-  "/scripts",
-  "/knowledge",
-  "/analytics",
-  "/settings",
-];
+
 
 /**
  * Session refresh + route protection (12-User-Flows: unauthenticated users
@@ -48,7 +40,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+  const isProtected = isProtectedPath(pathname);
   const isAuthPage = ["/login", "/signup", "/forgot-password"].some((p) =>
     pathname.startsWith(p),
   );
