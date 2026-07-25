@@ -116,7 +116,7 @@ export default function LandingPage() {
         {/* Hero */}
         <Reveal as="section" className="flex flex-1 flex-col items-center justify-center py-24 text-center">
           <Item>
-            <Badge className="mb-6">AI-powered podcast platform</Badge>
+            <Badge className="mb-6">PodMind AI &mdash; AI-powered podcast platform</Badge>
           </Item>
           <Item>
             <h1 className="max-w-3xl text-balance text-5xl font-bold tracking-tight sm:text-6xl">
@@ -128,8 +128,9 @@ export default function LandingPage() {
           </Item>
           <Item>
             <p className="mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
-              PodMind turns hours of episode prep into minutes — research, guests, outlines,
-              scripts, SEO and social, all powered by a provider-agnostic AI Router.
+              PodMind AI is an AI-powered podcast production platform that turns hours of
+              episode prep into minutes — topic research, guest discovery, outlines, scripts,
+              fact checks, SEO and social posts, all in one place.
             </p>
           </Item>
           {/* Stacked on mobile: two large buttons side by side overflowed a
