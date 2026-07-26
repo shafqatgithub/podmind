@@ -14,9 +14,11 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "
 import { createClient } from "@/lib/supabase/client";
 import {
   forgotPasswordAction,
+  resendSignupCodeAction,
   resetPasswordAction,
   signInAction,
   signUpAction,
+  verifyEmailCodeAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
 
@@ -166,6 +168,10 @@ export function LoginForm() {
 export function SignupForm() {
   const [state, action, pending] = useActionState(signUpAction, INITIAL);
 
+  if (state.codeSentTo) {
+    return <VerifyEmailCodeForm email={state.codeSentTo} />;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -218,6 +224,66 @@ export function SignupForm() {
             Sign in
           </Link>
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Shown after signup: the user enters the 6-digit code emailed to them.
+ * Verifying the code confirms the account and signs them in (redirect to
+ * /dashboard happens inside the server action).
+ */
+export function VerifyEmailCodeForm({ email }: { email: string }) {
+  const [state, action, pending] = useActionState(verifyEmailCodeAction, INITIAL);
+  const [resendState, resendAction, resendPending] = useActionState(
+    resendSignupCodeAction,
+    INITIAL,
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Check your email</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          We sent a 6-digit code to <span className="text-foreground">{email}</span>. Enter it
+        below to verify your account.
+        </p>
+        <form action={action} className="flex flex-col gap-4">
+          <input type="hidden" name="email" value={email} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="token">Verification code</Label>
+            <Input
+              id="token"
+              name="token"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="\d{6}"
+              maxLength={6}
+              placeholder="123456"
+              className="text-center text-lg tracking-[0.5em]"
+              required
+              autoFocus
+            />
+          </div>
+          <StatusText state={state} />
+          <Button type="submit" loading={pending}>
+            Verify email
+          </Button>
+        </form>
+        <form action={resendAction} className="flex flex-col items-center gap-1">
+          <input type="hidden" name="email" value={email} />
+          <StatusText state={resendState} />
+          <button
+            type="submit"
+            disabled={resendPending}
+            className="text-sm text-primary-400 hover:text-primary-300 disabled:opacity-50"
+          >
+            {resendPending ? "Sending..." : "Resend code"}
+          </button>
+        </form>
       </CardContent>
     </Card>
   );
