@@ -19,6 +19,8 @@ export interface AuthActionState {
   message?: string | null;
   /** Set when signup succeeded and a verification code was emailed. */
   codeSentTo?: string | null;
+  /** Set when a password-reset code was verified and a new password can be set. */
+  resetVerified?: boolean;
 }
 
 const credentialsSchema = z.object({
@@ -149,8 +151,45 @@ export async function forgotPasswordAction(
   });
   if (error) return { error: error.message };
 
-  // Same message whether or not the account exists — no user enumeration.
-  return { error: null, message: "If that email has an account, a reset link is on its way." };
+  // Same outcome whether or not the account exists — no user enumeration.
+  return { error: null, codeSentTo: parsed.data.email };
+}
+
+export async function verifyResetCodeAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = otpSchema.safeParse({
+    email: formData.get("email"),
+    token: formData.get("token"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid code" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email: parsed.data.email,
+    token: parsed.data.token,
+    type: "recovery",
+  });
+  if (error) {
+    return { error: "That code is invalid or has expired — try again or resend." };
+  }
+  return { error: null, resetVerified: true };
+}
+
+export async function resendResetCodeAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = emailSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return { error: "Invalid email" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email);
+  if (error) return { error: error.message };
+  return { error: null, message: "A new code is on its way." };
 }
 
 export async function resetPasswordAction(

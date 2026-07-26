@@ -14,11 +14,13 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "
 import { createClient } from "@/lib/supabase/client";
 import {
   forgotPasswordAction,
+  resendResetCodeAction,
   resendSignupCodeAction,
   resetPasswordAction,
   signInAction,
   signUpAction,
   verifyEmailCodeAction,
+  verifyResetCodeAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
 
@@ -289,8 +291,16 @@ export function VerifyEmailCodeForm({ email }: { email: string }) {
   );
 }
 
+/**
+ * Password reset in three steps on one screen: request a code by email,
+ * verify the 6-digit code (type: recovery), then set the new password.
+ */
 export function ForgotPasswordForm() {
   const [state, action, pending] = useActionState(forgotPasswordAction, INITIAL);
+
+  if (state.codeSentTo) {
+    return <ResetWithCodeForm email={state.codeSentTo} />;
+  }
 
   return (
     <Card>
@@ -298,14 +308,17 @@ export function ForgotPasswordForm() {
         <CardTitle>Reset your password</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          Enter your email and we&rsquo;ll send you a 6-digit code to reset your password.
+        </p>
         <form action={action} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </div>
           <StatusText state={state} />
-          <Button type="submit" loading={pending} disabled={Boolean(state.message)}>
-            Send reset link
+          <Button type="submit" loading={pending}>
+            Send code
           </Button>
         </form>
         <p className="text-center text-sm text-muted-foreground">
@@ -313,6 +326,108 @@ export function ForgotPasswordForm() {
             Back to sign in
           </Link>
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ResetWithCodeForm({ email }: { email: string }) {
+  const [state, action, pending] = useActionState(verifyResetCodeAction, INITIAL);
+  const [resendState, resendAction, resendPending] = useActionState(
+    resendResetCodeAction,
+    INITIAL,
+  );
+
+  if (state.resetVerified) {
+    return <NewPasswordForm />;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Check your email</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          If <span className="text-foreground">{email}</span> has an account, we sent it a
+          6-digit code. Enter it below to continue.
+        </p>
+        <form action={action} className="flex flex-col gap-4">
+          <input type="hidden" name="email" value={email} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="token">Reset code</Label>
+            <Input
+              id="token"
+              name="token"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="\d{6}"
+              maxLength={6}
+              placeholder="123456"
+              className="text-center text-lg tracking-[0.5em]"
+              required
+              autoFocus
+            />
+          </div>
+          <StatusText state={state} />
+          <Button type="submit" loading={pending}>
+            Verify code
+          </Button>
+        </form>
+        <form action={resendAction} className="flex flex-col items-center gap-1">
+          <input type="hidden" name="email" value={email} />
+          <StatusText state={resendState} />
+          <button
+            type="submit"
+            disabled={resendPending}
+            className="text-sm text-primary-400 hover:text-primary-300 disabled:opacity-50"
+          >
+            {resendPending ? "Sending..." : "Resend code"}
+          </button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NewPasswordForm() {
+  const [state, action, pending] = useActionState(resetPasswordAction, INITIAL);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Set a new password</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <form action={action} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password">New password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="confirm">Confirm password</Label>
+            <Input
+              id="confirm"
+              name="confirm"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </div>
+          <StatusText state={state} />
+          <Button type="submit" loading={pending}>
+            Reset password
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
