@@ -13,6 +13,7 @@
 import * as React from "react";
 import {
   Archive,
+  Pencil,
   FolderKanban,
   Loader2,
   Plus,
@@ -70,13 +71,16 @@ function formatDate(iso: string): string {
   });
 }
 
-/* ------------------------------------------------------------- create */
+/* -------------------------------------------------------- create/edit */
 
-function CreateProjectForm({
-  onCreated,
+function ProjectForm({
+  project,
+  onSaved,
   onCancel,
 }: {
-  onCreated: (project: Project) => void;
+  /** When set, the form edits this project; otherwise it creates a new one. */
+  project?: Project | null;
+  onSaved: (project: Project) => void;
   onCancel: () => void;
 }) {
   const [pending, setPending] = React.useState(false);
@@ -105,10 +109,16 @@ function CreateProjectForm({
     setPending(true);
     setError(null);
     try {
-      onCreated(await projectsApi.create(body));
+      onSaved(
+        project ? await projectsApi.update(project.id, body) : await projectsApi.create(body),
+      );
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "Could not create the project. Try again.",
+        err instanceof ApiError
+          ? err.message
+          : project
+            ? "Could not save the project. Try again."
+            : "Could not create the project. Try again.",
       );
     } finally {
       setPending(false);
@@ -126,6 +136,7 @@ function CreateProjectForm({
                 id="title"
                 name="title"
                 placeholder="The Future of AI Agents"
+                defaultValue={project?.title ?? ""}
                 maxLength={200}
                 autoFocus
                 required
@@ -139,23 +150,24 @@ function CreateProjectForm({
                 name="description"
                 rows={3}
                 maxLength={5000}
+                defaultValue={project?.description ?? ""}
                 placeholder="What is this episode about?"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="podcast_name">Podcast name</Label>
-              <Input id="podcast_name" name="podcast_name" maxLength={200} />
+              <Input id="podcast_name" name="podcast_name" maxLength={200} defaultValue={project?.podcast_name ?? ""} />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="category">Category</Label>
-              <Input id="category" name="category" maxLength={120} placeholder="Technology" />
+              <Input id="category" name="category" maxLength={120} placeholder="Technology" defaultValue={project?.category ?? ""} />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="niche">Niche</Label>
-              <Input id="niche" name="niche" maxLength={120} placeholder="AI tooling" />
+              <Input id="niche" name="niche" maxLength={120} placeholder="AI tooling" defaultValue={project?.niche ?? ""} />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -165,12 +177,13 @@ function CreateProjectForm({
                 name="audience"
                 maxLength={500}
                 placeholder="Founders and engineers"
+                defaultValue={project?.audience ?? ""}
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="status">Status</Label>
-              <Select id="status" name="status" defaultValue="draft">
+              <Select id="status" name="status" defaultValue={project?.status ?? "draft"}>
                 {PROJECT_STATUSES.filter((s) => s !== "archived").map((s) => (
                   <option key={s} value={s} className="capitalize">
                     {s}
@@ -181,7 +194,7 @@ function CreateProjectForm({
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="visibility">Visibility</Label>
-              <Select id="visibility" name="visibility" defaultValue="private">
+              <Select id="visibility" name="visibility" defaultValue={project?.visibility ?? "private"}>
                 {PROJECT_VISIBILITIES.map((v) => (
                   <option key={v} value={v}>
                     {v}
@@ -192,7 +205,7 @@ function CreateProjectForm({
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="language">Language</Label>
-              <Select id="language" name="language" defaultValue="en">
+              <Select id="language" name="language" defaultValue={project?.language ?? "en"}>
                 {LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>
                     {l.label}
@@ -210,7 +223,7 @@ function CreateProjectForm({
 
           <div className="flex items-center gap-3">
             <Button type="submit" loading={pending}>
-              Create project
+              {project ? "Save changes" : "Create project"}
             </Button>
             <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
               Cancel
@@ -226,11 +239,13 @@ function CreateProjectForm({
 
 function ProjectCard({
   project,
+  onOpen,
   onToggleFavorite,
   onArchive,
   onDelete,
 }: {
   project: Project;
+  onOpen: (p: Project) => void;
   onToggleFavorite: (p: Project) => void;
   onArchive: (p: Project) => void;
   onDelete: (p: Project) => void;
@@ -248,7 +263,22 @@ function ProjectCard({
 
   return (
     <LiftCard>
-      <Card className={cn("h-full", project.is_archived && "opacity-60")}>
+      <Card
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${project.title}`}
+        onClick={() => onOpen(project)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen(project);
+          }
+        }}
+        className={cn(
+          "h-full cursor-pointer transition-colors hover:border-primary-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+          project.is_archived && "opacity-60",
+        )}
+      >
         <CardContent className="flex h-full flex-col gap-3 p-5">
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-display font-semibold leading-tight">{project.title}</h3>
@@ -257,7 +287,10 @@ function ProjectCard({
               aria-label={project.is_favorite ? "Remove from favorites" : "Add to favorites"}
               aria-pressed={project.is_favorite}
               disabled={busy}
-              onClick={() => void run(() => onToggleFavorite(project))}
+              onClick={(e) => {
+                e.stopPropagation();
+                void run(() => onToggleFavorite(project));
+              }}
               className="rounded p-1 text-muted-foreground transition-colors hover:text-warning-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
             >
               <Star
@@ -282,9 +315,24 @@ function ProjectCard({
             <div className="flex items-center gap-1">
               <button
                 type="button"
+                aria-label="Edit project"
+                disabled={busy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpen(project);
+                }}
+                className="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
                 aria-label={project.is_archived ? "Unarchive project" : "Archive project"}
                 disabled={busy}
-                onClick={() => void run(() => onArchive(project))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void run(() => onArchive(project));
+                }}
                 className="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
               >
                 <Archive className="h-4 w-4" />
@@ -293,7 +341,10 @@ function ProjectCard({
                 type="button"
                 aria-label="Delete project"
                 disabled={busy}
-                onClick={() => void run(() => onDelete(project))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void run(() => onDelete(project));
+                }}
                 className="rounded p-1.5 text-muted-foreground transition-colors hover:text-error-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
@@ -313,6 +364,7 @@ export function ProjectsWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<ApiError | null>(null);
   const [creating, setCreating] = React.useState(false);
+  const [editing, setEditing] = React.useState<Project | null>(null);
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState<"" | ProjectStatus>("");
   const [showArchived, setShowArchived] = React.useState(false);
@@ -450,16 +502,31 @@ export function ProjectsWorkspace() {
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
         </Button>
 
-        <Button onClick={() => setCreating((v) => !v)}>
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setCreating((v) => !v);
+          }}
+        >
           <Plus className="h-4 w-4" />
           New project
         </Button>
       </div>
 
-      {creating ? (
-        <CreateProjectForm
+      {editing ? (
+        <ProjectForm
+          key={editing.id}
+          project={editing}
+          onCancel={() => setEditing(null)}
+          onSaved={(project) => {
+            setEditing(null);
+            setProjects((all) => all.map((p) => (p.id === project.id ? project : p)));
+          }}
+        />
+      ) : creating ? (
+        <ProjectForm
           onCancel={() => setCreating(false)}
-          onCreated={(project) => {
+          onSaved={(project) => {
             setCreating(false);
             setProjects((all) => [project, ...all]);
           }}
@@ -507,6 +574,11 @@ export function ProjectsWorkspace() {
             <Item key={project.id}>
               <ProjectCard
                 project={project}
+                onOpen={(p) => {
+                  setCreating(false);
+                  setEditing(p);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 onToggleFavorite={toggleFavorite}
                 onArchive={toggleArchive}
                 onDelete={remove}
