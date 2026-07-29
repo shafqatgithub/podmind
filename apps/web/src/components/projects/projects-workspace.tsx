@@ -514,15 +514,20 @@ export function ProjectsWorkspace() {
       </div>
 
       {editing ? (
-        <ProjectForm
-          key={editing.id}
-          project={editing}
-          onCancel={() => setEditing(null)}
-          onSaved={(project) => {
-            setEditing(null);
-            setProjects((all) => all.map((p) => (p.id === project.id ? project : p)));
-          }}
-        />
+        <div className="flex flex-col gap-4">
+          <ProjectForm
+            key={editing.id}
+            project={editing}
+            onCancel={() => setEditing(null)}
+            onSaved={(project) => {
+              // Keep the panel open on save: the point of opening a project is
+              // to look at its work, not to be bounced back to the grid.
+              setEditing(project);
+              setProjects((all) => all.map((p) => (p.id === project.id ? project : p)));
+            }}
+          />
+          <ProjectContentPanel projectId={editing.id} />
+        </div>
       ) : creating ? (
         <ProjectForm
           onCancel={() => setCreating(false)}
