@@ -5,7 +5,11 @@ import { randomUUID } from "node:crypto";
 import { validateEnv } from "../src/config/env";
 import { DatabaseModule, PG_POOL } from "../src/database/database.module";
 import { AiModule } from "../src/ai/ai.module";
-import { AiRouterService, TASK_CREDIT_COST } from "../src/ai/routing/ai-router.service";
+import {
+  AiRouterService,
+  creditsForCost,
+  TASK_MIN_CREDITS,
+} from "../src/ai/routing/ai-router.service";
 import { CreditsService, InsufficientCreditsException } from "../src/ai/credits/credits.service";
 import { ProviderRegistry } from "../src/ai/providers/provider.registry";
 import { ModelCatalog } from "../src/ai/routing/model-catalog";
@@ -115,7 +119,7 @@ describe("AI Router", () => {
       const tasks = Object.keys(TASK_ROUTES);
       expect(tasks).toHaveLength(10);
       tasks.forEach((t) => {
-        expect(TASK_CREDIT_COST[t as keyof typeof TASK_CREDIT_COST]).toBeGreaterThan(0);
+        expect(TASK_MIN_CREDITS[t as keyof typeof TASK_MIN_CREDITS]).toBeGreaterThan(0);
       });
     });
   });
@@ -227,10 +231,12 @@ describe("AI Router", () => {
       });
 
       expect(result.provider).toBe("anthropic");
-      expect(result.creditsSpent).toBe(TASK_CREDIT_COST.research);
+      // Metered: never below the floor, and matching what the run actually cost.
+      expect(result.creditsSpent).toBe(creditsForCost("research", result.estimatedCost));
+      expect(result.creditsSpent).toBeGreaterThanOrEqual(TASK_MIN_CREDITS.research);
       expect(result.fallbacksUsed).toEqual([]);
       expect(result.requestId).toBeTruthy();
-      expect(await credits.getBalance(orgId)).toBe(before - TASK_CREDIT_COST.research);
+      expect(await credits.getBalance(orgId)).toBe(before - result.creditsSpent);
     });
 
     it("writes telemetry to ai_requests with tokens, cost and latency", async () => {

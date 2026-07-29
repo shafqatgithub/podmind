@@ -14,8 +14,22 @@ import {
 import { ModelCatalog, type CatalogModel } from "./model-catalog";
 import { buildRoutePlan } from "./model-selection";
 
-/** Credit cost per task — flat pricing so spend is predictable for users. */
-export const TASK_CREDIT_COST: Record<AiTask, number> = {
+/**
+ * Credit unit: 1 credit = $0.001 of raw provider spend. Credits are therefore
+ * metered against what a request actually cost, not a flat per-task number —
+ * a Quick research that writes 4k tokens must not cost the same as a Deep one
+ * that writes 30k.
+ */
+export const CREDIT_USD = 0.001;
+
+/**
+ * Minimum charge per task, also used as the up-front hold.
+ *
+ * The hold is taken before the provider call so a caller cannot start work
+ * with an empty balance, and it doubles as a floor: tiny requests still pay
+ * something, which covers the fixed overhead they impose.
+ */
+export const TASK_MIN_CREDITS: Record<AiTask, number> = {
   research: 10,
   guest: 8,
   outline: 5,
@@ -27,6 +41,32 @@ export const TASK_CREDIT_COST: Record<AiTask, number> = {
   fact_check: 5,
   chat: 1,
 };
+
+/**
+ * Indicative cost shown in the UI before a run, so spend stays predictable
+ * even though billing is usage-based. Derived from observed token profiles on
+ * mid-tier models; the actual charge is always the metered one.
+ */
+export const TASK_TYPICAL_CREDITS: Record<AiTask, number> = {
+  research: 50,
+  guest: 35,
+  outline: 40,
+  script: 70,
+  seo: 15,
+  social: 15,
+  summary: 8,
+  translation: 8,
+  fact_check: 25,
+  chat: 5,
+};
+
+/** @deprecated Kept for callers still reading the old flat table. */
+export const TASK_CREDIT_COST = TASK_MIN_CREDITS;
+
+/** Metered credits for a completed request, never below the task floor. */
+export function creditsForCost(task: AiTask, estimatedCostUsd: number): number {
+  return Math.max(TASK_MIN_CREDITS[task], Math.ceil(estimatedCostUsd / CREDIT_USD));
+}
 
 export interface RouteRequest {
   organizationId: string;
@@ -73,7 +113,7 @@ export class AiRouterService {
   ) {}
 
   async route(request: RouteRequest): Promise<RouteResult> {
-    const cost = TASK_CREDIT_COST[request.task];
+    const hold = TASK_MIN_CREDITS[request.task];
     const promptChars = request.messages.reduce((n, m) => n + m.content.length, 0);
     const plan = buildRoutePlan(request.task, promptChars, request.preferredProvider);
 
@@ -81,7 +121,7 @@ export class AiRouterService {
     // the ledger honest under concurrency.
     const creditTx = await this.credits.consume(
       request.organizationId,
-      cost,
+      hold,
       `AI ${request.task}`,
     );
 
@@ -138,6 +178,14 @@ export class AiRouterService {
             success: true,
           });
 
+          const creditsSpent = await this.settle({
+            organizationId: request.organizationId,
+            task: request.task,
+            hold,
+            estimatedCost,
+            requestId,
+          });
+
           this.logger.log({
             request_id: requestId,
             task: request.task,
@@ -145,6 +193,8 @@ export class AiRouterService {
             model: result.model,
             latency_ms: latencyMs,
             tokens: result.promptTokens + result.completionTokens,
+            cost_usd: estimatedCost,
+            credits: creditsSpent,
             fallbacks: fallbacksUsed.length,
           });
 
@@ -153,7 +203,7 @@ export class AiRouterService {
             requestId,
             latencyMs,
             estimatedCost,
-            creditsSpent: cost,
+            creditsSpent,
             fallbacksUsed,
           };
         } catch (err) {
@@ -199,7 +249,7 @@ export class AiRouterService {
     // to ai_requests, not to the transaction table).
     await this.credits.refund(
       request.organizationId,
-      cost,
+      hold,
       `Refund for ${creditTx}: AI ${request.task} failed`,
     );
 
@@ -210,6 +260,57 @@ export class AiRouterService {
         "No AI provider is available for this task — check provider configuration",
       details: { task: request.task, tried: fallbacksUsed },
     });
+  }
+
+  /**
+   * Reconcile the up-front hold against what the request actually cost.
+   *
+   * Charging the hold first and settling after keeps the ledger safe under
+   * concurrency (the balance can never go negative mid-flight) while still
+   * billing the user for real usage. A settle failure is logged rather than
+   * thrown: the answer has already been produced, and losing it over a
+   * bookkeeping error would be a worse outcome than a small mischarge.
+   */
+  private async settle(input: {
+    organizationId: string;
+    task: AiTask;
+    hold: number;
+    estimatedCost: number;
+    requestId: string;
+  }): Promise<number> {
+    const metered = creditsForCost(input.task, input.estimatedCost);
+    const delta = metered - input.hold;
+    if (delta === 0) return metered;
+
+    try {
+      if (delta > 0) {
+        await this.credits.consume(
+          input.organizationId,
+          delta,
+          `AI ${input.task} (metered)`,
+          input.requestId,
+        );
+      } else {
+        await this.credits.refund(
+          input.organizationId,
+          -delta,
+          `AI ${input.task} (unused hold)`,
+          input.requestId,
+        );
+      }
+      return metered;
+    } catch (err) {
+      // Most likely InsufficientCredits on the top-up leg: the balance ran out
+      // between the hold and the settle. Keep the hold, do not fail the reply.
+      this.logger.warn({
+        request_id: input.requestId,
+        task: input.task,
+        hold: input.hold,
+        metered,
+        message: err instanceof Error ? err.message : String(err),
+      });
+      return input.hold;
+    }
   }
 
   /** Telemetry row in `ai_requests` (Observable principle). */
@@ -266,13 +367,13 @@ export class AiRouterService {
    * because a caller asking to stream has already committed to that shape.
    */
   async *routeStream(request: RouteRequest): AsyncIterable<StreamEvent> {
-    const cost = TASK_CREDIT_COST[request.task];
+    const hold = TASK_MIN_CREDITS[request.task];
     const promptChars = request.messages.reduce((n, m) => n + m.content.length, 0);
     const plan = buildRoutePlan(request.task, promptChars, request.preferredProvider);
 
     const creditTx = await this.credits.consume(
       request.organizationId,
-      cost,
+      hold,
       `AI ${request.task}`,
     );
 
@@ -311,7 +412,8 @@ export class AiRouterService {
           }
         }
 
-        await this.recordRequest({
+        const streamCost = ModelCatalog.estimateCost(model, promptTokens, completionTokens);
+        const streamRequestId = await this.recordRequest({
           request,
           model,
           result: {
@@ -322,8 +424,15 @@ export class AiRouterService {
             provider: candidate.provider,
           },
           latencyMs: Date.now() - startedAt,
-          estimatedCost: ModelCatalog.estimateCost(model, promptTokens, completionTokens),
+          estimatedCost: streamCost,
           success: true,
+        });
+        await this.settle({
+          organizationId: request.organizationId,
+          task: request.task,
+          hold,
+          estimatedCost: streamCost,
+          requestId: streamRequestId,
         });
 
         yield {
@@ -376,7 +485,7 @@ export class AiRouterService {
 
     await this.credits.refund(
       request.organizationId,
-      cost,
+      hold,
       `Refund for ${creditTx}: AI ${request.task} stream failed`,
     );
 

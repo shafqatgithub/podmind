@@ -15,7 +15,7 @@ export interface TenantContext {
  * once — the plan advertised 5,000 while provisioning granted 500 — which
  * would have made the pricing page a promise the product broke on signup.
  */
-const FREE_PLAN_CREDITS = 5000;
+const FREE_PLAN_CREDITS = 150;
 
 /**
  * Tenancy provisioning.

@@ -1,6 +1,6 @@
 import { Controller, Get } from "@nestjs/common";
 import { ProviderRegistry } from "./providers/provider.registry";
-import { TASK_CREDIT_COST } from "./routing/ai-router.service";
+import { TASK_MIN_CREDITS, TASK_TYPICAL_CREDITS } from "./routing/ai-router.service";
 import { TASK_ROUTES } from "./routing/model-selection";
 import { CurrentUser, type AuthUser } from "../auth/supabase-auth.guard";
 
@@ -24,7 +24,10 @@ export class AiController {
       ready: configured.length > 0,
       tasks: Object.entries(TASK_ROUTES).map(([task, chain]) => ({
         task,
-        credits: TASK_CREDIT_COST[task as keyof typeof TASK_CREDIT_COST],
+        // Billing is metered, so the UI needs both: the floor it will always
+        // be charged, and a typical figure to set expectations before a run.
+        credits: TASK_TYPICAL_CREDITS[task as keyof typeof TASK_TYPICAL_CREDITS],
+        min_credits: TASK_MIN_CREDITS[task as keyof typeof TASK_MIN_CREDITS],
         route: chain.map((c) => `${c.provider}:${c.family}`),
         available: chain.some((c) => configured.includes(c.provider)),
       })),
