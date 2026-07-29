@@ -230,7 +230,7 @@ describe("AI Router", () => {
         messages: [{ role: "user", content: "Research polyphasic sleep" }],
       });
 
-      expect(result.provider).toBe("anthropic");
+      expect(result.provider).toBe("openai");
       // Metered: never below the floor, and matching what the run actually cost.
       expect(result.creditsSpent).toBe(creditsForCost("research", result.estimatedCost));
       expect(result.creditsSpent).toBeGreaterThanOrEqual(TASK_MIN_CREDITS.research);
@@ -267,40 +267,40 @@ describe("AI Router", () => {
     });
 
     it("falls back to the next provider when the preferred one fails", async () => {
-      anthropic.set("terminal");
+      openai.set("terminal");
       const result = await router.route({
         organizationId: orgId,
         task: "research",
         messages: [{ role: "user", content: "topic" }],
       });
 
-      expect(result.provider).toBe("openai");
-      expect(result.fallbacksUsed).toEqual(["anthropic"]);
-      expect(anthropic.calls).toBe(1); // terminal error: no retry
+      expect(result.provider).toBe("anthropic");
+      expect(result.fallbacksUsed).toEqual(["openai"]);
+      expect(openai.calls).toBe(1); // terminal error: no retry
     });
 
     it("retries a retryable failure before falling back", async () => {
-      anthropic.set("retryable");
+      openai.set("retryable");
       const result = await router.route({
         organizationId: orgId,
         task: "research",
         messages: [{ role: "user", content: "topic" }],
       });
 
-      expect(anthropic.calls).toBe(2); // one retry
-      expect(result.provider).toBe("openai");
+      expect(openai.calls).toBe(2); // one retry
+      expect(result.provider).toBe("anthropic");
     });
 
     it("skips unconfigured providers entirely", async () => {
-      anthropic.set("unconfigured");
+      openai.set("unconfigured");
       const result = await router.route({
         organizationId: orgId,
         task: "research",
         messages: [{ role: "user", content: "topic" }],
       });
 
-      expect(anthropic.calls).toBe(0);
-      expect(result.provider).toBe("openai");
+      expect(openai.calls).toBe(0);
+      expect(result.provider).toBe("anthropic");
     });
 
     it("refunds credits when every provider in the chain fails", async () => {

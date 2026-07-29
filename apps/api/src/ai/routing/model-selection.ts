@@ -19,11 +19,19 @@ export interface RouteCandidate {
 }
 
 /** Documented preference chains per task. */
+/**
+ * Provider order per task.
+ *
+ * OpenAI leads every chain because it is the only funded provider; Anthropic
+ * and Google stay in place as fallbacks and become useful the moment their
+ * accounts carry balance. Leading with an unfunded provider costs a failed
+ * call on every request and fills telemetry with errors that are not bugs.
+ */
 export const TASK_ROUTES: Record<AiTask, RouteCandidate[]> = {
-  // Research: Claude Opus preferred; GPT-5 then Gemini Pro as fallbacks.
+  // Research: OpenAI leads, Claude then Gemini as fallbacks.
   research: [
-    { provider: "anthropic", family: "claude-opus" },
     { provider: "openai", family: "gpt-5" },
+    { provider: "anthropic", family: "claude-opus" },
     { provider: "google", family: "gemini-pro" },
   ],
   // Script Writing: GPT-5 preferred; Claude then Gemini.
@@ -49,22 +57,22 @@ export const TASK_ROUTES: Record<AiTask, RouteCandidate[]> = {
     { provider: "google", family: "gemini-flash" },
   ],
   summary: [
-    { provider: "google", family: "gemini-flash" },
     { provider: "openai", family: "gpt-5-mini" },
+    { provider: "google", family: "gemini-flash" },
   ],
   translation: [
-    { provider: "google", family: "gemini-flash" },
     { provider: "openai", family: "gpt-5-mini" },
+    { provider: "google", family: "gemini-flash" },
   ],
   // Fact checking favours reasoning quality.
   fact_check: [
-    { provider: "anthropic", family: "claude-opus" },
     { provider: "openai", family: "gpt-5" },
+    { provider: "anthropic", family: "claude-opus" },
   ],
   // Guest research: quality-led like research.
   guest: [
-    { provider: "anthropic", family: "claude-sonnet" },
     { provider: "openai", family: "gpt-5" },
+    { provider: "anthropic", family: "claude-sonnet" },
     { provider: "google", family: "gemini-pro" },
   ],
   // Chat: GPT-5 Mini, Claude Sonnet.
@@ -74,8 +82,9 @@ export const TASK_ROUTES: Record<AiTask, RouteCandidate[]> = {
   ],
 };
 
-/** Long Context override — Gemini, then Claude (doc: "Long Context"). */
+/** Long Context override — OpenAI leads, then Gemini and Claude. */
 export const LONG_CONTEXT_ROUTE: RouteCandidate[] = [
+  { provider: "openai", family: "gpt-5" },
   { provider: "google", family: "gemini-pro" },
   { provider: "anthropic", family: "claude-sonnet" },
 ];
