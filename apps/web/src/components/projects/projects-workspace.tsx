@@ -35,6 +35,7 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
+import { ProjectContentPanel } from "./project-content-panel";
 import {
   LANGUAGES,
   PROJECT_STATUSES,
