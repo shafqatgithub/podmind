@@ -214,6 +214,9 @@ export function OutlinesWorkspace() {
   const [research, setResearch] = React.useState<ResearchSession[]>([]);
   const [outlines, setOutlines] = React.useState<Outline[]>([]);
   const [detail, setDetail] = React.useState<OutlineDetail | null>(null);
+  const [projectId, setProjectId] = React.useState("");
+  const [researchId, setResearchId] = React.useState("");
+  const [topic, setTopic] = React.useState("");
   const [style, setStyle] = React.useState<OutlineStyle>("solo");
   const [duration, setDuration] = React.useState(30);
   const [generating, setGenerating] = React.useState(false);
@@ -248,15 +251,22 @@ export function OutlinesWorkspace() {
     return () => controller.abort();
   }, [loadOutlines]);
 
+  // Research from other projects would produce an outline built on the wrong
+  // show's findings, so the picker is scoped to the selected project.
+  const projectResearch = React.useMemo(
+    () => research.filter((r) => r.project_id === projectId),
+    [research, projectId],
+  );
+
   const generate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const project_id = String(form.get("project_id") ?? "");
-    const topic = String(form.get("topic") ?? "").trim();
-    const research_session_id = String(form.get("research_session_id") ?? "");
+    const project_id = projectId;
+    const trimmedTopic = topic.trim();
+    const research_session_id = researchId;
     const guest_name = String(form.get("guest_name") ?? "").trim();
 
-    if (!project_id || topic.length < 3) {
+    if (!project_id || trimmedTopic.length < 3) {
       setError("Choose a project and describe the episode topic.");
       return;
     }
@@ -267,7 +277,7 @@ export function OutlinesWorkspace() {
     try {
       const created = await outlinesApi.create({
         project_id,
-        topic,
+        topic: trimmedTopic,
         style,
         duration_minutes: duration,
         ...(research_session_id ? { research_session_id } : {}),
@@ -332,7 +342,16 @@ export function OutlinesWorkspace() {
                   {loading ? (
                     <Skeleton className="h-10 rounded" />
                   ) : (
-                    <Select id="project_id" name="project_id" required defaultValue="">
+                    <Select
+                      id="project_id"
+                      name="project_id"
+                      required
+                      value={projectId}
+                      onChange={(e) => {
+                        setProjectId(e.target.value);
+                        setResearchId("");
+                      }}
+                    >
                       <option value="" disabled>
                         Choose a project
                       </option>
@@ -343,6 +362,41 @@ export function OutlinesWorkspace() {
                       ))}
                     </Select>
                   )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="research_session_id">Start from research</Label>
+                  {loading ? (
+                    <Skeleton className="h-10 rounded" />
+                  ) : (
+                    <Select
+                      id="research_session_id"
+                      name="research_session_id"
+                      value={researchId}
+                      disabled={!projectId}
+                      onChange={(e) => {
+                        setResearchId(e.target.value);
+                        // Carry the research topic across so it does not have
+                        // to be retyped — the whole point of picking one.
+                        const picked = research.find((r) => r.id === e.target.value);
+                        if (picked) setTopic(picked.topic);
+                      }}
+                    >
+                      <option value="">Write a topic myself</option>
+                      {projectResearch.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.title}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {!projectId
+                      ? "Choose a project first."
+                      : projectResearch.length === 0
+                        ? "No research in this project yet — run one for a better outline."
+                        : "The outline will be built on the findings from that session."}
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -371,6 +425,8 @@ export function OutlinesWorkspace() {
                     name="topic"
                     maxLength={500}
                     placeholder="Why attention became the product"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
                     required
                   />
                 </div>
@@ -385,18 +441,6 @@ export function OutlinesWorkspace() {
                     {[15, 20, 30, 45, 60, 90].map((m) => (
                       <option key={m} value={m}>
                         {m} minutes
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="research_session_id">Build on research (optional)</Label>
-                  <Select id="research_session_id" name="research_session_id" defaultValue="">
-                    <option value="">None — start fresh</option>
-                    {research.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.title}
                       </option>
                     ))}
                   </Select>
