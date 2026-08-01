@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Badge, Button, Card, CardContent, Skeleton, cn } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
+import { cachedFetch, peek } from "@/lib/api/cache";
 import { dashboardApi, type DashboardOverview } from "@/lib/api/dashboard";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/common/empty-state";
@@ -316,22 +317,35 @@ export function DashboardWorkspace() {
     const controller = new AbortController();
     void (async () => {
       try {
-        const overview = await dashboardApi.overview(controller.signal);
+        if (peek("dashboard:overview") === undefined) setLoading(true);
+        // Short TTL: credits and counts change as the user works, so the
+        // dashboard should correct itself quickly even though it renders
+        // from cache immediately.
+        await cachedFetch(
+          "dashboard:overview",
+          () => dashboardApi.overview(controller.signal),
+          (overview) => {
+            if (controller.signal.aborted) return;
 
-        // A first-time account with nothing in it gets the setup screen once.
-        // Checked against real emptiness rather than a flag alone, so someone
-        // who signed up before onboarding existed is not sent back through it.
-        if (
-          overview.stats.projects === 0 &&
-          overview.stats.content_created === 0 &&
-          !localStorage.getItem("podmind-onboarded")
-        ) {
-          localStorage.setItem("podmind-onboarded", "1");
-          router.replace("/onboarding");
-          return;
-        }
+            // A first-time account with nothing in it gets the setup screen
+            // once. Checked against real emptiness rather than a flag alone,
+            // so someone who signed up before onboarding existed is not sent
+            // back through it.
+            if (
+              overview.stats.projects === 0 &&
+              overview.stats.content_created === 0 &&
+              !localStorage.getItem("podmind-onboarded")
+            ) {
+              localStorage.setItem("podmind-onboarded", "1");
+              router.replace("/onboarding");
+              return;
+            }
 
-        setData(overview);
+            setData(overview);
+            setLoading(false);
+          },
+          15_000,
+        );
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(

@@ -37,6 +37,7 @@ import {
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { ProjectContentPanel } from "./project-content-panel";
+import { cachedFetch, invalidate, peek } from "@/lib/api/cache";
 import {
   LANGUAGES,
   PROJECT_STATUSES,
@@ -375,21 +376,38 @@ export function ProjectsWorkspace() {
   const [status, setStatus] = React.useState<"" | ProjectStatus>("");
   const [showArchived, setShowArchived] = React.useState(false);
 
+  // One key per filter combination, so switching filters and switching back
+  // is instant too rather than only the plain list being cached.
+  const cacheKey = `projects:${search}|${status}|${showArchived}`;
+
   const load = React.useCallback(
-    async (signal?: AbortSignal) => {
-      setLoading(true);
+    async (signal?: AbortSignal, force = false) => {
+      // Only show a spinner when there is genuinely nothing to display.
+      if (peek(cacheKey) === undefined) setLoading(true);
       setError(null);
+      if (force) invalidate(cacheKey);
+
       try {
-        const page = await projectsApi.list(
-          {
-            search: search || undefined,
-            status: status || undefined,
-            include_archived: showArchived || undefined,
-            limit: 50,
+        await cachedFetch(
+          cacheKey,
+          async () =>
+            (
+              await projectsApi.list(
+                {
+                  search: search || undefined,
+                  status: status || undefined,
+                  include_archived: showArchived || undefined,
+                  limit: 50,
+                },
+                signal,
+              )
+            ).items,
+          (items) => {
+            if (signal?.aborted) return;
+            setProjects(items);
+            setLoading(false);
           },
-          signal,
         );
-        setProjects(page.items);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(
@@ -401,7 +419,7 @@ export function ProjectsWorkspace() {
         setLoading(false);
       }
     },
-    [search, status, showArchived],
+    [cacheKey, search, status, showArchived],
   );
 
   React.useEffect(() => {
@@ -430,6 +448,7 @@ export function ProjectsWorkspace() {
     );
     try {
       await projectsApi.update(project.id, { is_favorite: next });
+      invalidate("projects");
     } catch {
       // Revert on failure — the optimistic update must not lie.
       setProjects((all) =>
@@ -442,7 +461,7 @@ export function ProjectsWorkspace() {
     const next = !project.is_archived;
     try {
       await projectsApi.update(project.id, { is_archived: next });
-      await load();
+      await load(undefined, true);
     } catch {
       setError(new ApiError("UPDATE_FAILED", "Could not update the project.", 0));
     }
@@ -454,6 +473,7 @@ export function ProjectsWorkspace() {
     setProjects((all) => all.filter((p) => p.id !== project.id));
     try {
       await projectsApi.remove(project.id);
+      invalidate("projects");
     } catch {
       setProjects(snapshot);
       setError(new ApiError("DELETE_FAILED", "Could not delete the project.", 0));
@@ -513,7 +533,12 @@ export function ProjectsWorkspace() {
           {showArchived ? "Hiding none" : "Show archived"}
         </Button>
 
-        <Button variant="ghost" size="icon" aria-label="Refresh" onClick={() => void load()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Refresh"
+          onClick={() => void load(undefined, true)}
+        >
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
         </Button>
 
@@ -539,6 +564,7 @@ export function ProjectsWorkspace() {
               // to look at its work, not to be bounced back to the grid.
               setEditing(project);
               setProjects((all) => all.map((p) => (p.id === project.id ? project : p)));
+              invalidate("projects");
             }}
           />
           <ProjectContentPanel projectId={editing.id} />
@@ -549,6 +575,7 @@ export function ProjectsWorkspace() {
           onSaved={(project) => {
             setCreating(false);
             setProjects((all) => [project, ...all]);
+            invalidate("projects");
           }}
         />
       ) : null}
@@ -561,7 +588,7 @@ export function ProjectsWorkspace() {
                 ? "The PodMind API is not reachable right now. Once the backend is deployed this page will load your projects."
                 : error.message}
             </p>
-            <Button variant="secondary" onClick={() => void load()}>
+            <Button variant="secondary" onClick={() => void load(undefined, true)}>
               Try again
             </Button>
           </CardContent>

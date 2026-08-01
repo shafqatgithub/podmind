@@ -39,6 +39,7 @@ import {
 import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { projectsApi, type Project } from "@/lib/api/projects";
 import { aiApi, PROVIDER_LABELS, type AiStatus } from "@/lib/api/ai";
+import { cachedFetch, invalidate, peek } from "@/lib/api/cache";
 import {
   RESEARCH_DEPTHS,
   researchApi,
@@ -398,9 +399,12 @@ export function ResearchWorkspace() {
 
   const loadSessions = React.useCallback(async () => {
     try {
-      const page = await researchApi.list({ limit: 25 });
-      setSessions(page.items);
-      return page.items;
+      await cachedFetch(
+        "research:sessions",
+        async () => (await researchApi.list({ limit: 25 })).items,
+        (items) => setSessions(items),
+      );
+      return peek<ResearchSession[]>("research:sessions") ?? [];
     } catch {
       // History is secondary; the run form stays usable regardless.
       return [];
@@ -411,15 +415,31 @@ export function ResearchWorkspace() {
     const controller = new AbortController();
     void (async () => {
       try {
-        const page = await projectsApi.list({ limit: 100 }, controller.signal);
-        setProjects(page.items.filter((p) => !p.is_archived));
+        if (peek("projects:picker") === undefined) setProjectsLoading(true);
+        await cachedFetch(
+          "projects:picker",
+          async () =>
+            (await projectsApi.list({ limit: 100 }, controller.signal)).items.filter(
+              (p) => !p.is_archived,
+            ),
+          (items) => {
+            if (controller.signal.aborted) return;
+            setProjects(items);
+            setProjectsLoading(false);
+          },
+        );
       } catch (err) {
         if (err instanceof ApiError && !err.isUnreachable) setError(err.message);
       } finally {
         setProjectsLoading(false);
       }
       try {
-        setAiStatus(await aiApi.status(controller.signal));
+        await cachedFetch(
+          "ai:status",
+          () => aiApi.status(controller.signal),
+          (status) => setAiStatus(status),
+          5 * 60_000,
+        );
       } catch {
         // Provider list is advisory; Auto routing still works without it.
       }
@@ -468,6 +488,7 @@ export function ResearchWorkspace() {
       });
       const full = await researchApi.get(session.id);
       setDetail(full);
+      invalidate("research:");
       await loadSessions();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -508,6 +529,7 @@ export function ResearchWorkspace() {
     if (detail?.id === id) setDetail(null);
     try {
       await researchApi.remove(id);
+      invalidate("research:");
     } catch {
       setSessions(snapshot);
     }
