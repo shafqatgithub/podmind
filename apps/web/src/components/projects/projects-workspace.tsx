@@ -11,6 +11,7 @@
  */
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Archive,
   Pencil,
@@ -366,6 +367,10 @@ export function ProjectsWorkspace() {
   const [error, setError] = React.useState<ApiError | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [editing, setEditing] = React.useState<Project | null>(null);
+  // /projects?open=<id> — used by the dashboard so "recent projects" lands on
+  // the project itself rather than dropping the user on the grid to find it.
+  const requestedId = useSearchParams().get("open");
+  const openedRef = React.useRef<string | null>(null);
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState<"" | ProjectStatus>("");
   const [showArchived, setShowArchived] = React.useState(false);
@@ -398,6 +403,15 @@ export function ProjectsWorkspace() {
     },
     [search, status, showArchived],
   );
+
+  React.useEffect(() => {
+    if (!requestedId || openedRef.current === requestedId) return;
+    const match = projects.find((p) => p.id === requestedId);
+    if (!match) return;
+    openedRef.current = requestedId;
+    setCreating(false);
+    setEditing(match);
+  }, [projects, requestedId]);
 
   // Debounce search; refetch immediately for filter toggles.
   React.useEffect(() => {

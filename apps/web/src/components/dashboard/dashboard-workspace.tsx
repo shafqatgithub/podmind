@@ -458,7 +458,7 @@ export function DashboardWorkspace() {
                   {data.recent_projects.map((project) => (
                     <li key={project.id}>
                       <Link
-                        href="/projects"
+                        href={`/projects?open=${project.id}`}
                         className="flex items-center gap-3 rounded-lg border border-border/60 p-3 transition-colors hover:border-primary-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-gradient text-xs font-bold text-white">
