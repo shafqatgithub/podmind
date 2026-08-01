@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * Guest research prompts — 07-AI-Prompt-Library §9.
@@ -84,21 +85,8 @@ export interface GuestPromptInput {
   language?: string | null;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 export function buildGuestMessages(input: GuestPromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
 
   const context: string[] = [];
   if (input.context) context.push(`Identifying details: ${input.context}`);

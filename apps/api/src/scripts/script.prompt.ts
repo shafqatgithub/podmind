@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * Script prompts — 07-AI-Prompt-Library §11.
@@ -88,19 +89,6 @@ Rules:
 - duration_seconds should reflect a natural speaking pace of roughly 140 words per minute.
 - Write all human-readable text in {{LANGUAGE}}.`;
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 export interface ScriptPromptInput {
   topic: string;
   style: ScriptStyle;
@@ -126,7 +114,7 @@ export interface ScriptPromptInput {
 }
 
 export function buildScriptMessages(input: ScriptPromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
   const targetWords = Math.round(input.durationMinutes * 140);
 
   const context: string[] = [];

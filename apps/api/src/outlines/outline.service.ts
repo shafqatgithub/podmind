@@ -69,7 +69,8 @@ export class OutlineService {
         podcastName: project.podcast_name,
         audience: project.audience,
         niche: project.niche,
-        language: project.language,
+        // Per-outline override wins; the project language is the default.
+        language: dto.language ?? project.language,
         researchSummary,
         researchKeyPoints,
         guestName: dto.guest_name ?? null,

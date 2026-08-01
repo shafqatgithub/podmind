@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * Social prompts — 11-Feature-Specifications MODULE 10.
@@ -77,23 +78,10 @@ export interface SocialPromptInput {
   language?: string | null;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 const MAX_SOURCE_CHARS = 10000;
 
 export function buildSocialMessages(input: SocialPromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
 
   const platformSpec = input.platforms
     .map((p) => `- ${p}: max ${PLATFORM_RULES[p].limit} characters. ${PLATFORM_RULES[p].guidance}`)

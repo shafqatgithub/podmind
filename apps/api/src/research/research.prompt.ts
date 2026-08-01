@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * Research prompts — 07-AI-Prompt-Library.
@@ -87,21 +88,8 @@ export interface ResearchPromptInput {
   language?: string | null;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 export function buildResearchMessages(input: ResearchPromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
 
   const context: string[] = [];
   if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);

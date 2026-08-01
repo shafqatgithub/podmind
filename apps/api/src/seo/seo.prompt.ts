@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * SEO prompts — 11-Feature-Specifications MODULE 9.
@@ -62,24 +63,11 @@ export interface SeoPromptInput {
   language?: string | null;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 /** Long scripts are truncated: the opening carries the topic signal. */
 const MAX_SOURCE_CHARS = 12000;
 
 export function buildSeoMessages(input: SeoPromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
 
   const context: string[] = [];
   if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);

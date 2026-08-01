@@ -57,6 +57,8 @@ export interface CreateOutlineInput {
   duration_minutes?: number;
   research_session_id?: string;
   guest_name?: string;
+  /** Defaults to the project's language when omitted. */
+  language?: string;
   provider?: "openai" | "anthropic" | "google";
 }
 

@@ -29,7 +29,7 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
-import { projectsApi, type Project } from "@/lib/api/projects";
+import { LANGUAGES, projectsApi, type Project } from "@/lib/api/projects";
 import { researchApi, type ResearchSession } from "@/lib/api/research";
 import {
   OUTLINE_STYLES,
@@ -217,6 +217,7 @@ export function OutlinesWorkspace() {
   const [projectId, setProjectId] = React.useState("");
   const [researchId, setResearchId] = React.useState("");
   const [topic, setTopic] = React.useState("");
+  const [language, setLanguage] = React.useState("");
   const [style, setStyle] = React.useState<OutlineStyle>("solo");
   const [duration, setDuration] = React.useState(30);
   const [generating, setGenerating] = React.useState(false);
@@ -251,6 +252,11 @@ export function OutlinesWorkspace() {
     return () => controller.abort();
   }, [loadOutlines]);
 
+  const selectedProject = React.useMemo(
+    () => projects.find((p) => p.id === projectId) ?? null,
+    [projects, projectId],
+  );
+
   // Research from other projects would produce an outline built on the wrong
   // show's findings, so the picker is scoped to the selected project.
   const projectResearch = React.useMemo(
@@ -282,6 +288,7 @@ export function OutlinesWorkspace() {
         duration_minutes: duration,
         ...(research_session_id ? { research_session_id } : {}),
         ...(guest_name ? { guest_name } : {}),
+        ...(language ? { language } : {}),
       });
       setDetail(await outlinesApi.get(created.id));
       await loadOutlines();
@@ -429,6 +436,29 @@ export function OutlinesWorkspace() {
                     onChange={(e) => setTopic(e.target.value)}
                     required
                   />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="language">Output language</Label>
+                  <Select
+                    id="language"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    <option value="">
+                      {selectedProject?.language
+                        ? `Project default (${
+                            LANGUAGES.find((l) => l.code === selectedProject.language)?.label ??
+                            selectedProject.language
+                          })`
+                        : "Project default"}
+                    </option>
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div className="flex flex-col gap-1.5">

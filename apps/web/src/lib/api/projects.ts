@@ -1,3 +1,4 @@
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 import { apiRequest } from "./client";
 
 /** Mirrors the live project_status enum. */
@@ -15,19 +16,21 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export const PROJECT_VISIBILITIES = ["private", "workspace", "organization", "public"] as const;
 export type ProjectVisibility = (typeof PROJECT_VISIBILITIES)[number];
 
-export const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "ur", label: "Urdu" },
-  { code: "ar", label: "Arabic" },
-  { code: "fr", label: "French" },
-  { code: "de", label: "German" },
-  { code: "es", label: "Spanish" },
-  { code: "it", label: "Italian" },
-  { code: "pt", label: "Portuguese" },
-  { code: "hi", label: "Hindi" },
-  { code: "tr", label: "Turkish" },
-] as const;
-export type LanguageCode = (typeof LANGUAGES)[number]["code"];
+/**
+ * Language options for pickers, derived from the shared catalogue so the UI
+ * can never offer a language the prompts do not know how to ask for.
+ *
+ * Labelled with both names — "Urdu (اردو)" — because the English name is what
+ * someone scanning an alphabetical list searches for, while the endonym is
+ * what a native speaker recognises at a glance.
+ */
+export const LANGUAGES = OUTPUT_LANGUAGES.map((l) => ({
+  code: l.code,
+  label: l.native === l.name ? l.name : `${l.name} (${l.native})`,
+}));
+
+/** Any BCP-47 code from the shared catalogue. */
+export type LanguageCode = string;
 
 export interface Project {
   id: string;

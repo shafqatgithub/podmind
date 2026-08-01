@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * Outline prompts — 07-AI-Prompt-Library §10.
@@ -71,19 +72,6 @@ Rules:
 - estimated_minutes across sections should sum to roughly the target duration.
 - Write all human-readable text in {{LANGUAGE}}.`;
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 export interface OutlinePromptInput {
   topic: string;
   style: OutlineStyle;
@@ -99,7 +87,7 @@ export interface OutlinePromptInput {
 }
 
 export function buildOutlineMessages(input: OutlinePromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
 
   const context: string[] = [];
   if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);

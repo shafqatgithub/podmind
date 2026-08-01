@@ -1,4 +1,5 @@
 import type { AiMessage } from "../ai/providers/provider.types";
+import { languageName } from "@podmind/types";
 
 /**
  * Fact checker prompts — 07-AI-Prompt-Library §12.
@@ -73,19 +74,6 @@ Rules:
 - If the text contains no checkable claims, return an empty claims array and say so in the summary.
 - Write all human-readable text in {{LANGUAGE}}.`;
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English",
-  ur: "Urdu",
-  ar: "Arabic",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  it: "Italian",
-  pt: "Portuguese",
-  hi: "Hindi",
-  tr: "Turkish",
-};
-
 export interface FactCheckPromptInput {
   text: string;
   language?: string | null;
@@ -94,7 +82,7 @@ export interface FactCheckPromptInput {
 }
 
 export function buildFactCheckMessages(input: FactCheckPromptInput): AiMessage[] {
-  const language = LANGUAGE_NAMES[input.language ?? "en"] ?? "English";
+  const language = languageName(input.language);
 
   const userPrompt = [
     `Fact check the following text.`,
