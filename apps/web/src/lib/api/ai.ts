@@ -8,7 +8,15 @@ export interface AiProviderStatus {
 export interface AiStatus {
   providers: AiProviderStatus[];
   ready: boolean;
-  tasks: { task: string; credits: number; route: string[]; available: boolean }[];
+  tasks: {
+    task: string;
+    /** Typical spend, for setting expectations before a run. */
+    credits: number;
+    /** Floor charged even for a tiny request. */
+    min_credits: number;
+    route: string[];
+    available: boolean;
+  }[];
 }
 
 /** Providers a user may pin a request to; "auto" follows the routing rules. */

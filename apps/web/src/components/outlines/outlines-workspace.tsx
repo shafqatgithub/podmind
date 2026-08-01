@@ -41,6 +41,8 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
+import { aiApi, type AiStatus } from "@/lib/api/ai";
+import { CreditHint } from "@/components/common/credit-hint";
 
 function GeneratingCard({ minutes }: { minutes: number }) {
   const [elapsed, setElapsed] = React.useState(0);
@@ -221,6 +223,7 @@ export function OutlinesWorkspace() {
   const [style, setStyle] = React.useState<OutlineStyle>("solo");
   const [duration, setDuration] = React.useState(30);
   const [generating, setGenerating] = React.useState(false);
+  const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -234,11 +237,14 @@ export function OutlinesWorkspace() {
     const controller = new AbortController();
     void (async () => {
       try {
-        const [projectPage, researchPage, items] = await Promise.all([
+        const [projectPage, researchPage, items, status] = await Promise.all([
           projectsApi.list({ limit: 100 }, controller.signal),
           researchApi.list({ limit: 50 }, controller.signal).catch(() => ({ items: [] })),
           loadOutlines(controller.signal),
+          // Advisory: drives the credit estimate, never blocks the form.
+          aiApi.status(controller.signal).catch(() => null),
         ]);
+        setAiStatus(status);
         setProjects(projectPage.items.filter((p) => !p.is_archived));
         setResearch(researchPage.items as ResearchSession[]);
         const latest = items[0];
@@ -495,7 +501,7 @@ export function OutlinesWorkspace() {
                   <Sparkles className="h-4 w-4" />
                   Build outline
                 </Button>
-                <span className="text-xs text-muted-foreground">Uses 5 AI credits</span>
+                <CreditHint status={aiStatus} task="outline" />
               </div>
             </form>
           </CardContent>

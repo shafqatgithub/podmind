@@ -46,6 +46,7 @@ import {
 } from "@/lib/api/social";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
+import { CreditHint } from "@/components/common/credit-hint";
 
 const PLATFORM_META: Record<SocialPlatform, { label: string; limit: number; accent: string }> =
   Object.fromEntries(
@@ -389,7 +390,7 @@ export function SocialWorkspace() {
                   <Sparkles className="h-4 w-4" />
                   Write posts
                 </Button>
-                <span className="text-xs text-muted-foreground">Uses 3 AI credits</span>
+                <CreditHint status={aiStatus} task="social" />
               </div>
             </form>
           </CardContent>

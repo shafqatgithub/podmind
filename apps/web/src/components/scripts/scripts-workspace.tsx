@@ -46,6 +46,8 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
+import { aiApi, type AiStatus } from "@/lib/api/ai";
+import { CreditHint } from "@/components/common/credit-hint";
 
 function readabilityLabel(score: number): { label: string; className: string } {
   if (score >= 70) return { label: "Easy to say aloud", className: "bg-success-500/15 text-success-300" };
@@ -180,6 +182,7 @@ export function ScriptsWorkspace() {
   const [tone, setTone] = React.useState<ScriptTone>("friendly");
   const [duration, setDuration] = React.useState(30);
   const [writing, setWriting] = React.useState(false);
+  const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -193,11 +196,13 @@ export function ScriptsWorkspace() {
     const controller = new AbortController();
     void (async () => {
       try {
-        const [projectPage, outlinePage, items] = await Promise.all([
+        const [projectPage, outlinePage, items, status] = await Promise.all([
           projectsApi.list({ limit: 100 }, controller.signal),
           outlinesApi.list(undefined, controller.signal).catch(() => ({ items: [] })),
           loadScripts(controller.signal),
+          aiApi.status(controller.signal).catch(() => null),
         ]);
+        setAiStatus(status);
         setProjects(projectPage.items.filter((p) => !p.is_archived));
         setOutlines(outlinePage.items as Outline[]);
         const latest = items[0];
@@ -402,9 +407,11 @@ export function ScriptsWorkspace() {
                   <Sparkles className="h-4 w-4" />
                   Write script
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  Uses 15 AI credits · a full script takes 1–2 minutes
-                </span>
+                <CreditHint
+                  status={aiStatus}
+                  task="script"
+                  suffix="a full script takes 1–2 minutes"
+                />
               </div>
             </form>
           </CardContent>

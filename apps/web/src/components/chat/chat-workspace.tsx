@@ -491,7 +491,7 @@ export function ChatWorkspace() {
             </Button>
           </form>
           <p className="text-xs text-muted-foreground">
-            Each reply uses 1 AI credit.
+            Replies are charged by length — short ones cost a credit or two.
             {active?.project_id ? null : " Select a project for show-aware answers."}
           </p>
         </CardContent>

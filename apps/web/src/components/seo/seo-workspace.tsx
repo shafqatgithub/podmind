@@ -42,6 +42,7 @@ import { aiApi, PROVIDER_LABELS, type AiStatus } from "@/lib/api/ai";
 import { seoApi, type SeoSet, type SeoSetDetail } from "@/lib/api/seo";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
+import { CreditHint } from "@/components/common/credit-hint";
 
 /** Limits that matter when the text is pasted into a real platform. */
 const TITLE_LIMIT = 60;
@@ -513,7 +514,7 @@ export function SeoWorkspace() {
                   <Sparkles className="h-4 w-4" />
                   Generate SEO
                 </Button>
-                <span className="text-xs text-muted-foreground">Uses 3 AI credits</span>
+                <CreditHint status={aiStatus} task="seo" />
               </div>
             </form>
           </CardContent>

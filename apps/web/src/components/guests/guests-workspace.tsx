@@ -52,6 +52,7 @@ import {
 } from "@/lib/api/guests";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
+import { CreditHint } from "@/components/common/credit-hint";
 
 function Section({
   icon: Icon,
@@ -778,13 +779,15 @@ export function GuestsWorkspace() {
                     </>
                   )}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  {mode === "discover"
-                    ? "8 credits · searches the live web"
-                    : mode === "research"
-                      ? "Uses 8 AI credits"
-                      : "No credits used"}
-                </span>
+                {mode === "manual" ? (
+                  <span className="text-xs text-muted-foreground">No credits used</span>
+                ) : (
+                  <CreditHint
+                    status={aiStatus}
+                    task="guest"
+                    suffix={mode === "discover" ? "searches the live web" : undefined}
+                  />
+                )}
               </div>
             </form>
           </CardContent>

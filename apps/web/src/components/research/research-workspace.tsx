@@ -51,6 +51,7 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
+import { CreditHint } from "@/components/common/credit-hint";
 
 /* --------------------------------------------------------- progress */
 
@@ -641,7 +642,7 @@ export function ResearchWorkspace() {
                   <Sparkles className="h-4 w-4" />
                   Run research
                 </Button>
-                <span className="text-xs text-muted-foreground">Uses 10 AI credits</span>
+                <CreditHint status={aiStatus} task="research" />
               </div>
             </form>
           </CardContent>
