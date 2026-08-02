@@ -21,10 +21,21 @@ export const CLAIM_TYPES = [
 ] as const;
 export type ClaimType = (typeof CLAIM_TYPES)[number];
 
-export interface ClaimEvidence {
-  source?: string;
-  detail?: string;
-  url?: string;
+/**
+ * Evidence as the API stores it: a list of plain strings.
+ *
+ * This was typed as `{ source, url, detail }` objects while the backend saved
+ * strings, so every citation rendered blank — the fields the UI read simply
+ * did not exist. The object form is kept as a tolerated shape because older
+ * rows may hold it, and because a future version that returns linked sources
+ * should not require a migration to display.
+ */
+export type ClaimEvidence = string | { source?: string; detail?: string; url?: string };
+
+/** Normalise either shape into something renderable. */
+export function evidenceParts(item: ClaimEvidence): { text: string; url: string | null } {
+  if (typeof item === "string") return { text: item, url: null };
+  return { text: item.source ?? item.detail ?? item.url ?? "", url: item.url ?? null };
 }
 
 export interface FactCheckClaim {

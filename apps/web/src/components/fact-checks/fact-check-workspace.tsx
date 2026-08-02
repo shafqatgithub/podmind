@@ -42,6 +42,7 @@ import {
   factChecksApi,
   type ClaimVerdict,
   type FactCheck,
+  evidenceParts,
   type FactCheckClaim,
   type FactCheckDetail,
 } from "@/lib/api/fact-checks";
@@ -91,16 +92,28 @@ const VERDICT: Record<
   },
 };
 
+/**
+ * Resolve a verdict, tolerating one this build has not seen.
+ *
+ * The set of verdicts lives in the database and in this map; if they ever
+ * drift, an unknown value would otherwise be looked up as `undefined` and
+ * crash the page on `.rank` or `.icon`. Treating it as unverified degrades to
+ * a cautious label instead of losing the whole report.
+ */
+function verdictOf(verdict: ClaimVerdict) {
+  return VERDICT[verdict] ?? VERDICT.unverified;
+}
+
 /** Riskiest first — this page exists to surface problems. */
 function byRisk(a: FactCheckClaim, b: FactCheckClaim): number {
-  const diff = VERDICT[a.verdict].rank - VERDICT[b.verdict].rank;
+  const diff = verdictOf(a.verdict).rank - verdictOf(b.verdict).rank;
   return diff !== 0 ? diff : a.sort_order - b.sort_order;
 }
 
 function ClaimCard({ claim }: { claim: FactCheckClaim }) {
-  const verdict = VERDICT[claim.verdict];
+  const verdict = verdictOf(claim.verdict);
   const Icon = verdict.icon;
-  const evidence = claim.evidence ?? [];
+  const evidence = Array.isArray(claim.evidence) ? claim.evidence : [];
 
   return (
     <div className={cn("flex flex-col gap-3 rounded border border-border/60 border-l-2 p-4", verdict.accent)}>
@@ -138,7 +151,9 @@ function ClaimCard({ claim }: { claim: FactCheckClaim }) {
             Evidence
           </p>
           <ul className="flex flex-col gap-1 text-sm">
-            {evidence.map((e, i) => (
+            {evidence.map((item, i) => {
+              const e = evidenceParts(item);
+              return (
               <li key={i} className="text-muted-foreground">
                 {e.url ? (
                   <a
@@ -147,15 +162,15 @@ function ClaimCard({ claim }: { claim: FactCheckClaim }) {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-primary-400 hover:text-primary-300"
                   >
-                    {e.source ?? e.url}
+                    {e.text || e.url}
                     <ExternalLink className="h-3 w-3" aria-hidden />
                   </a>
                 ) : (
-                  <span className="text-foreground">{e.source}</span>
+                  <span className="text-foreground">{e.text}</span>
                 )}
-                {e.detail ? <span> — {e.detail}</span> : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       ) : (
