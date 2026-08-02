@@ -160,8 +160,13 @@ export class FactCheckService {
       credits: routed.creditsSpent,
     });
 
+    // Return the same shape as GET, claims included. Returning the bare check
+    // meant the client received an object it had typed as a full detail, and
+    // reading `claims.length` on it took the whole page down.
+    const detail = await this.repository.findOne(tenant, check.id);
+
     return {
-      ...check,
+      ...detail,
       provider: routed.provider,
       model: routed.model,
       credits_spent: routed.creditsSpent,

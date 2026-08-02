@@ -349,6 +349,11 @@ export function FactCheckWorkspace() {
     }
   };
 
+  // A payload without claims is still worth rendering — the header, verdict
+  // counts and disclaimer are all useful — so the list degrades to empty
+  // rather than throwing.
+  const claims = Array.isArray(detail?.claims) ? detail.claims : [];
+
   if (!isApiConfigured()) {
     return (
       <EmptyState
@@ -500,13 +505,13 @@ export function FactCheckWorkspace() {
                   ) : null}
                 </header>
 
-                {detail.claims.length === 0 ? (
+                {claims.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No checkable factual claims were found in this text.
                   </p>
                 ) : (
                   <Reveal className="flex flex-col gap-3">
-                    {[...detail.claims].sort(byRisk).map((claim) => (
+                    {[...claims].sort(byRisk).map((claim) => (
                       <Item key={claim.id}>
                         <ClaimCard claim={claim} />
                       </Item>

@@ -213,6 +213,13 @@ describe("Fact Checker", () => {
       expect(await credits.getBalance(orgId)).toBeLessThan(before);
       expect(created.script_id).toBe(scriptId);
 
+      // create() must return the same shape as findOne(). It used to return
+      // the bare check, so a client that displayed the response directly read
+      // `claims` as undefined and crashed — a gap this suite missed because it
+      // only ever asserted against a follow-up findOne().
+      expect(created.claims).toHaveLength(3);
+      expect(created.claims[0]!.verdict).toBe("verified");
+
       const check = await service.findOne(tenant, created.id);
       // The empty-claim entry is dropped; three real claims remain.
       expect(check.claims).toHaveLength(3);
