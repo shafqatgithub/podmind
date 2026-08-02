@@ -2,6 +2,7 @@ import { IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from "cla
 import { Transform } from "class-transformer";
 import { SCRIPT_STYLES, SCRIPT_TONES, type ScriptStyle, type ScriptTone } from "../script.prompt";
 import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 
 /** POST /api/v1/scripts */
 export class CreateScriptDto {
@@ -37,6 +38,15 @@ export class CreateScriptDto {
   @IsString()
   @Length(1, 200)
   guest_name?: string;
+
+  /**
+   * Output language. Defaults to the source outline's language, then the
+   * project's — writing a script in a language the outline is not in produces
+   * a document that is half one language and half the other.
+   */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)

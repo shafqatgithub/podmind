@@ -1,6 +1,6 @@
 import { ExportTranslator } from "../src/exports/export.translator";
 import type { AiRouterService } from "../src/ai/routing/ai-router.service";
-import { filenameFor, type ExportDocument } from "../src/exports/export.renderers";
+import { filenameFor, toHtml, type ExportDocument } from "../src/exports/export.renderers";
 
 /**
  * Translation must be structure-preserving. A document that comes back with
@@ -197,5 +197,51 @@ describe("filenameFor", () => {
   it("falls back when a title has nothing usable", () => {
     expect(filenameFor("", "markdown")).toBe("podmind-export.md");
     expect(filenameFor("!!! ???", "markdown", "fr")).toBe("podmind-export-fr.md");
+  });
+});
+
+/**
+ * An Urdu script laid out left to right is close to unreadable, and a heading
+ * repeated once per speaker turn buries the structure it is meant to show.
+ */
+describe("toHtml", () => {
+  const doc = (over: Partial<ExportDocument> = {}): ExportDocument => ({
+    kind: "script",
+    title: "Test",
+    facts: [],
+    sections: [],
+    ...over,
+  });
+
+  it("marks right-to-left languages", () => {
+    expect(toHtml(doc({ language: "ur" }))).toContain('dir="rtl"');
+    expect(toHtml(doc({ language: "ar" }))).toContain('dir="rtl"');
+    expect(toHtml(doc({ language: "ps" }))).toContain('dir="rtl"');
+  });
+
+  it("leaves left-to-right languages alone", () => {
+    expect(toHtml(doc({ language: "en" }))).toContain('dir="ltr"');
+    expect(toHtml(doc({ language: "ja" }))).toContain('dir="ltr"');
+  });
+
+  it("declares the document language", () => {
+    expect(toHtml(doc({ language: "ur" }))).toContain('lang="ur"');
+    // No language recorded still produces a valid document.
+    expect(toHtml(doc())).toContain('lang="en"');
+  });
+
+  it("prints a repeated section heading only once", () => {
+    const html = toHtml(
+      doc({
+        sections: [
+          { title: "Intro", content: "a", durationSeconds: 120 },
+          { title: "Intro", speaker: "guest", content: "b", durationSeconds: 0 },
+          { title: "Intro", speaker: "host", content: "c", durationSeconds: 0 },
+        ],
+      }),
+    );
+    expect(html.match(/Intro/g)).toHaveLength(1);
+    // A rounded duration of zero is noise, not information.
+    expect(html).not.toContain("0 min");
   });
 });

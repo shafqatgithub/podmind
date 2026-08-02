@@ -62,6 +62,7 @@ export class ExportService {
     return this.finish(
       {
         kind: "script",
+        language: script.language,
         title: script.title,
         subtitle: script.description,
         facts,
@@ -109,6 +110,7 @@ export class ExportService {
     return this.finish(
       {
         kind: "outline",
+        language: outline.language,
         title: outline.title,
         subtitle: outline.description,
         facts,
@@ -175,6 +177,7 @@ export class ExportService {
     return this.finish(
       {
         kind: "research",
+        language: session.language,
         title: result?.title ?? session.title,
         subtitle: session.topic,
         facts,

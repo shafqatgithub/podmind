@@ -69,6 +69,8 @@ export interface CreateScriptInput {
   tone?: ScriptTone;
   duration_minutes?: number;
   guest_name?: string;
+  /** Defaults to the source outline's language, then the project's. */
+  language?: string;
 }
 
 export const scriptsApi = {

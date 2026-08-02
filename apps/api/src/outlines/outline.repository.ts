@@ -15,6 +15,8 @@ export interface OutlineRow {
   estimated_duration_minutes: number | null;
   version: number;
   is_current: boolean;
+  /** Language the outline was written in; null means the project default. */
+  language: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -34,7 +36,7 @@ export interface SectionRow {
 const OUTLINE_COLUMNS = `o.id, o.project_id, o.research_session_id, o.title, o.description,
   o.outline_type::text as outline_type, o.ai_provider::text as ai_provider,
   o.status::text as status, o.estimated_duration_minutes, o.version, o.is_current,
-  o.metadata, o.created_at, o.updated_at`;
+  o.language::text as language, o.metadata, o.created_at, o.updated_at`;
 
 /**
  * Outline repository.
@@ -118,6 +120,8 @@ export class OutlineRepository {
     style: string;
     provider: string;
     estimatedMinutes: number | null;
+    /** Null means "the project default"; a value records an explicit choice. */
+    language: string | null;
     metadata: Record<string, unknown>;
     sections: {
       title: string;
@@ -149,12 +153,14 @@ export class OutlineRepository {
         `insert into public.outlines
            (project_id, research_session_id, created_by, title, description,
             outline_type, ai_provider, estimated_duration_minutes, version,
-            is_current, metadata)
-         values ($1,$2,$3,$4,$5,$6::script_style,$7::ai_provider,$8,$9,true,$10)
+            is_current, language, metadata)
+         values ($1,$2,$3,$4,$5,$6::script_style,$7::ai_provider,$8,$9,true,
+                 $10::language_code,$11)
          returning id, project_id, research_session_id, title, description,
                    outline_type::text as outline_type, ai_provider::text as ai_provider,
                    status::text as status, estimated_duration_minutes, version,
-                   is_current, metadata, created_at, updated_at`,
+                   is_current, language::text as language, metadata,
+                   created_at, updated_at`,
         [
           input.projectId,
           input.researchSessionId,
@@ -165,6 +171,7 @@ export class OutlineRepository {
           input.provider,
           input.estimatedMinutes,
           version,
+          input.language,
           JSON.stringify(input.metadata),
         ],
       );

@@ -49,6 +49,9 @@ export class ExportTranslator {
     // Shallow-clone the parts we mutate; the caller's document stays untouched.
     const next: ExportDocument = {
       ...doc,
+      // The rendered document is now in the target language, and the renderer
+      // reads this to set text direction.
+      language: targetLanguage,
       facts: doc.facts.map((f) => ({ ...f })),
       intro: doc.intro?.map((i) => ({ ...i })),
       sections: doc.sections.map((s) => ({ ...s, bullets: s.bullets ? [...s.bullets] : undefined })),

@@ -41,6 +41,7 @@ export class ScriptService {
     let outlineContext: Parameters<typeof buildScriptMessages>[0]["outline"] = null;
     let topic = dto.topic?.trim() ?? "";
     let style = (dto.style ?? "solo") as ScriptStyle;
+    let outlineLanguage: string | null = null;
 
     if (dto.outline_id) {
       const outline = await this.repository.findOutlineForScript(tenant, dto.outline_id);
@@ -60,6 +61,7 @@ export class ScriptService {
       if (!topic) topic = outline.title;
       // The outline already decided the format; honour it unless overridden.
       if (!dto.style) style = outline.outline_type as ScriptStyle;
+      outlineLanguage = outline.language;
     }
 
     if (!topic) {
@@ -72,6 +74,13 @@ export class ScriptService {
     const tone = (dto.tone ?? "friendly") as ScriptTone;
     const duration = dto.duration_minutes ?? 30;
 
+    /**
+     * Explicit request first, then the outline being written from, then the
+     * project. Skipping the middle step told the model to write English from
+     * an Urdu outline, and it produced a script that was half each.
+     */
+    const language = dto.language ?? outlineLanguage ?? project.language;
+
     const routed = await this.router.route({
       organizationId: tenant.organizationId,
       task: "script",
@@ -82,7 +91,7 @@ export class ScriptService {
         durationMinutes: duration,
         podcastName: project.podcast_name,
         audience: project.audience,
-        language: project.language,
+        language,
         guestName: dto.guest_name ?? null,
         outline: outlineContext,
       }),
@@ -150,7 +159,7 @@ export class ScriptService {
       description: parsed ? asString(parsed.summary) : null,
       style,
       tone,
-      language: project.language,
+      language,
       provider: routed.provider,
       content,
       wordCount,

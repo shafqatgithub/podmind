@@ -59,6 +59,12 @@ export class OutlineService {
       ).slice(0, 12);
     }
 
+    // Per-outline override wins; the project language is the default. Held in
+    // a variable because it is both prompted with and stored — the stored copy
+    // is what lets a script inherit the outline's language instead of drifting
+    // back to the project's.
+    const outlineLanguage = dto.language ?? project.language;
+
     const routed = await this.router.route({
       organizationId: tenant.organizationId,
       task: "outline",
@@ -69,8 +75,7 @@ export class OutlineService {
         podcastName: project.podcast_name,
         audience: project.audience,
         niche: project.niche,
-        // Per-outline override wins; the project language is the default.
-        language: dto.language ?? project.language,
+        language: outlineLanguage,
         researchSummary,
         researchKeyPoints,
         guestName: dto.guest_name ?? null,
@@ -96,6 +101,7 @@ export class OutlineService {
         style,
         provider: routed.provider,
         estimatedMinutes: duration,
+        language: outlineLanguage,
         metadata: { unstructured: true, model: routed.model, provider: routed.provider },
         sections: [
           {
@@ -132,6 +138,7 @@ export class OutlineService {
       style,
       provider: routed.provider,
       estimatedMinutes: sectionMinutes > 0 ? sectionMinutes : duration,
+      language: outlineLanguage,
       metadata: {
         model: routed.model,
         provider: routed.provider,

@@ -27,6 +27,8 @@ export interface ExportSection {
 
 export interface ExportDocument {
   kind: "script" | "outline" | "research";
+  /** Language the body is written in — drives `lang` and text direction. */
+  language?: string | null;
   title: string;
   subtitle?: string | null;
   /** Shown under the title: duration, word count, style and so on. */
@@ -127,6 +129,18 @@ function escapeHtml(value: string): string {
  * in a browser this prints to PDF cleanly, which is the fastest honest route
  * to a PDF without shipping a rendering engine.
  */
+/**
+ * Scripts written right to left. Declaring `dir` matters more than it looks:
+ * without it a browser lays Urdu or Arabic out left to right, breaking
+ * punctuation placement and line order.
+ */
+const RTL_LANGUAGES = new Set(["ar", "fa", "he", "ur", "ps", "sd", "yi", "ug", "dv"]);
+
+function directionFor(language: string | null | undefined): "rtl" | "ltr" {
+  if (!language) return "ltr";
+  return RTL_LANGUAGES.has(language.toLowerCase().split("-")[0] ?? "") ? "rtl" : "ltr";
+}
+
 export function toHtml(doc: ExportDocument): string {
   const parts: string[] = [];
 
@@ -146,17 +160,27 @@ export function toHtml(doc: ExportDocument): string {
     );
   }
 
+  // Scripts split one outline beat across several turns, all carrying the same
+  // title. Printing it each time produced the same heading four times over,
+  // each labelled "0 min"; the heading now appears once, when it changes.
+  let lastHeading: string | null = null;
+
   for (const section of doc.sections) {
-    const heading = [escapeHtml(section.title ?? "Section")];
+    const title = section.title ?? "Section";
+    const isNewHeading = title !== lastHeading;
+    lastHeading = title;
+
+    const heading: string[] = [];
+    if (isNewHeading) heading.push(escapeHtml(title));
     if (section.speaker && section.speaker !== "host") {
       heading.push(`<span class="speaker">${escapeHtml(section.speaker)}</span>`);
     }
-    if (section.durationSeconds) {
-      heading.push(
-        `<span class="minutes">${Math.round(section.durationSeconds / 60)} min</span>`,
-      );
+    // A rounded duration of zero says nothing; only real timings are shown.
+    const minutes = section.durationSeconds ? Math.round(section.durationSeconds / 60) : 0;
+    if (minutes > 0) {
+      heading.push(`<span class="minutes">${minutes} min</span>`);
     }
-    parts.push(`<section><h2>${heading.join(" ")}</h2>`);
+    parts.push(`<section>${heading.length ? `<h2>${heading.join(" ")}</h2>` : ""}`);
     if (section.content) {
       parts.push(
         section.content
@@ -181,8 +205,11 @@ export function toHtml(doc: ExportDocument): string {
     );
   }
 
+  const language = doc.language ?? "en";
+  const direction = directionFor(doc.language);
+
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(language)}" dir="${direction}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

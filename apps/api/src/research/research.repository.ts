@@ -14,6 +14,8 @@ export interface ResearchSessionRow {
   depth: string;
   status: string;
   ai_provider: string | null;
+  /** The project's language, joined in for exports. */
+  language: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -57,6 +59,11 @@ const SESSION_COLUMNS = `id, project_id, created_by, title, topic, objective,
 const SESSION_COLUMNS_S = `s.id, s.project_id, s.created_by, s.title, s.topic, s.objective,
                            s.depth::text as depth, s.status::text as status,
                            s.ai_provider::text as ai_provider, s.metadata,
+                           -- Research has no language of its own; it is written
+                           -- in the project's, and exports need to know which
+                           -- so they can set text direction.
+                           (select p.language::text from public.projects p
+                             where p.id = s.project_id) as language,
                            s.created_at, s.updated_at`;
 
 /**

@@ -80,9 +80,11 @@ export class ScriptRepository {
       id: string;
       title: string;
       outline_type: string;
+      language: string | null;
       metadata: Record<string, unknown> | null;
     }>(
-      `select o.id, o.title, o.outline_type::text as outline_type, o.metadata
+      `select o.id, o.title, o.outline_type::text as outline_type,
+              o.language::text as language, o.metadata
          from public.outlines o
          join public.projects p on p.id = o.project_id
          join public.workspaces w on w.id = p.workspace_id

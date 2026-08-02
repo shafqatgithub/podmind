@@ -32,7 +32,7 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
-import { projectsApi, type Project } from "@/lib/api/projects";
+import { LANGUAGES, projectsApi, type Project } from "@/lib/api/projects";
 import { outlinesApi, type Outline } from "@/lib/api/outlines";
 import {
   SCRIPT_STYLES,
@@ -182,6 +182,7 @@ export function ScriptsWorkspace() {
   const [tone, setTone] = React.useState<ScriptTone>("friendly");
   const [duration, setDuration] = React.useState(30);
   const [writing, setWriting] = React.useState(false);
+  const [language, setLanguage] = React.useState("");
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -240,6 +241,7 @@ export function ScriptsWorkspace() {
       const created = await scriptsApi.create({
         project_id,
         ...(outline_id ? { outline_id } : {}),
+        ...(language ? { language } : {}),
         ...(topic ? { topic } : {}),
         style,
         tone,
@@ -341,6 +343,25 @@ export function ScriptsWorkspace() {
                     maxLength={500}
                     placeholder="Why attention became the product"
                   />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="language">Output language</Label>
+                  <Select
+                    id="language"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    <option value="">Match the outline / project</option>
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <p className="text-xs leading-snug text-muted-foreground">
+                    Leave this alone and the script follows the outline it is written from.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
