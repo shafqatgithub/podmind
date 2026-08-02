@@ -213,10 +213,11 @@ export class ExportService {
     const content = render(document, format);
     this.logger.log({ kind: doc.kind, format, language: language ?? null, bytes: content.length });
     return {
-      // Named from the original title, not the translated one: the file is
-      // still "the fitness episode", and a user scanning downloads should
-      // recognise it without first reading the language they exported into.
-      filename: filenameFor(doc.title, format, language),
+      // Named from the document as exported, so the filename is in the same
+      // language as the contents. Naming an English export with its Urdu
+      // title looked consistent in the abstract and read as a mistake in a
+      // downloads folder.
+      filename: filenameFor(document.title, format, language),
       mime: FORMAT_META[format].mime,
       content,
       creditsSpent,

@@ -186,6 +186,14 @@ describe("filenameFor", () => {
     expect(filenameFor("Episode 12 — 2026 Review", "markdown")).toBe("episode-12-2026-review.md");
   });
 
+  it("truncates long titles without leaving a trailing separator", () => {
+    // Translated titles run long in many languages; the slug is capped and
+    // must not end mid-separator.
+    const name = filenameFor(`${"a".repeat(58)} bcdefgh`, "markdown");
+    expect(name).toBe(`${"a".repeat(58)}-b.md`);
+    expect(name).not.toContain("-.");
+  });
+
   it("falls back when a title has nothing usable", () => {
     expect(filenameFor("", "markdown")).toBe("podmind-export.md");
     expect(filenameFor("!!! ???", "markdown", "fr")).toBe("podmind-export-fr.md");

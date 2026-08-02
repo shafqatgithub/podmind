@@ -90,18 +90,20 @@ export function ExportMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-primary-500/20 bg-card/95 p-1.5 shadow-soft backdrop-blur-[20px]"
+          className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-primary-500/20 bg-card/95 p-1.5 shadow-soft backdrop-blur-[20px]"
         >
-          <div className="flex flex-col gap-1.5 border-b border-border/60 px-2.5 pb-2.5 pt-1.5">
+          <div className="mb-1.5 flex flex-col gap-1.5 border-b border-border/60 px-2.5 pb-3 pt-2">
             <label htmlFor="export-language" className="text-xs text-muted-foreground">
               Language
             </label>
+            {/* No height override here: the field sets its own, and forcing a
+                shorter one clipped the control so its text escaped the box. */}
             <Select
               id="export-language"
               value={language}
               disabled={busy !== null}
               onChange={(e) => setLanguage(e.target.value)}
-              className="h-8 text-sm"
+              className="truncate text-sm"
             >
               <option value="">As written (no translation)</option>
               {LANGUAGES.map((l) => (
@@ -111,8 +113,8 @@ export function ExportMenu({
               ))}
             </Select>
             {language ? (
-              <p className="text-xs text-muted-foreground">
-                Translated on export — uses credits. The saved version is unchanged.
+              <p className="text-xs leading-snug text-muted-foreground">
+                Translated on export — uses credits. Your saved copy stays as it is.
               </p>
             ) : null}
           </div>
