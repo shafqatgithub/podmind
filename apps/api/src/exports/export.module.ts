@@ -7,10 +7,18 @@ import { OutlineRepository } from "../outlines/outline.repository";
 import { ResearchRepository } from "../research/research.repository";
 import { ExportController } from "./export.controller";
 import { ExportService } from "./export.service";
+import { ExportTranslator } from "./export.translator";
+import { AiModule } from "../ai/ai.module";
 
 @Module({
-  imports: [ScriptModule, OutlineModule, ResearchModule],
+  imports: [ScriptModule, OutlineModule, ResearchModule, AiModule],
   controllers: [ExportController],
-  providers: [ExportService, ScriptRepository, OutlineRepository, ResearchRepository],
+  providers: [
+    ExportService,
+    ExportTranslator,
+    ScriptRepository,
+    OutlineRepository,
+    ResearchRepository,
+  ],
 })
 export class ExportModule {}

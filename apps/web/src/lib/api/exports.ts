@@ -21,6 +21,8 @@ export async function downloadExport(
   kind: ExportKind,
   id: string,
   format: ExportFormat,
+  /** Translate into this language before downloading. Costs credits. */
+  language?: string,
 ): Promise<void> {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   if (!base) throw new Error("The PodMind API URL is not configured yet.");
@@ -30,8 +32,11 @@ export async function downloadExport(
     data: { session },
   } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
 
+  const query = new URLSearchParams({ format });
+  if (language) query.set("language", language);
+
   const response = await fetch(
-    `${base}/api/v1/exports/${kind}/${id}?format=${format}`,
+    `${base}/api/v1/exports/${kind}/${id}?${query.toString()}`,
     {
       headers: session?.access_token
         ? { authorization: `Bearer ${session.access_token}` }

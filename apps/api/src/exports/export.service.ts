@@ -3,6 +3,7 @@ import { ScriptRepository } from "../scripts/script.repository";
 import { OutlineRepository } from "../outlines/outline.repository";
 import { ResearchRepository } from "../research/research.repository";
 import type { TenantContext } from "../tenancy/tenancy.service";
+import { ExportTranslator } from "./export.translator";
 import {
   filenameFor,
   FORMAT_META,
@@ -34,9 +35,10 @@ export class ExportService {
     private readonly scripts: ScriptRepository,
     private readonly outlines: OutlineRepository,
     private readonly research: ResearchRepository,
+    private readonly translator: ExportTranslator,
   ) {}
 
-  async exportScript(tenant: TenantContext, id: string, format: ExportFormat) {
+  async exportScript(tenant: TenantContext, id: string, format: ExportFormat, language?: string) {
     const script = await this.scripts.findOne(tenant, id);
     const meta = (script.metadata ?? {}) as Record<string, unknown>;
 
@@ -73,10 +75,12 @@ export class ExportService {
         lists,
       },
       format,
+      tenant,
+      language,
     );
   }
 
-  async exportOutline(tenant: TenantContext, id: string, format: ExportFormat) {
+  async exportOutline(tenant: TenantContext, id: string, format: ExportFormat, language?: string) {
     const outline = await this.outlines.findOne(tenant, id);
     const meta = (outline.metadata ?? {}) as Record<string, unknown>;
 
@@ -119,10 +123,12 @@ export class ExportService {
         lists,
       },
       format,
+      tenant,
+      language,
     );
   }
 
-  async exportResearch(tenant: TenantContext, id: string, format: ExportFormat) {
+  async exportResearch(tenant: TenantContext, id: string, format: ExportFormat, language?: string) {
     const session = await this.research.findSession(tenant, id);
     const results = await this.research.findResults(id);
     const sources = await this.research.findSources(results.map((r) => r.id));
@@ -177,16 +183,40 @@ export class ExportService {
         lists,
       },
       format,
+      tenant,
+      language,
     );
   }
 
-  private finish(doc: ExportDocument, format: ExportFormat) {
-    const content = render(doc, format);
-    this.logger.log({ kind: doc.kind, format, bytes: content.length });
+  /**
+   * Translate if asked, then render.
+   *
+   * Translation sits here rather than in each export method so every source
+   * gains it at once and none can forget it — the same reason the renderers
+   * share one document shape.
+   */
+  private async finish(
+    doc: ExportDocument,
+    format: ExportFormat,
+    tenant: TenantContext,
+    language?: string,
+  ) {
+    let document = doc;
+    let creditsSpent = 0;
+
+    if (language) {
+      const translated = await this.translator.translate(doc, language, tenant.organizationId);
+      document = translated.doc;
+      creditsSpent = translated.creditsSpent;
+    }
+
+    const content = render(document, format);
+    this.logger.log({ kind: doc.kind, format, language: language ?? null, bytes: content.length });
     return {
-      filename: filenameFor(doc.title, format),
+      filename: filenameFor(document.title, format),
       mime: FORMAT_META[format].mime,
       content,
+      creditsSpent,
     };
   }
 }

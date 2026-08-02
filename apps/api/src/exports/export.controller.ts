@@ -34,7 +34,7 @@ export class ExportController {
     @Res() res: Response,
   ) {
     const tenant = await this.tenancy.resolve(user.id);
-    this.send(res, await this.exports.exportScript(tenant, id, query.format));
+    this.send(res, await this.exports.exportScript(tenant, id, query.format, query.language));
   }
 
   @Get("outlines/:id")
@@ -46,7 +46,7 @@ export class ExportController {
     @Res() res: Response,
   ) {
     const tenant = await this.tenancy.resolve(user.id);
-    this.send(res, await this.exports.exportOutline(tenant, id, query.format));
+    this.send(res, await this.exports.exportOutline(tenant, id, query.format, query.language));
   }
 
   @Get("research/:id")
@@ -58,7 +58,7 @@ export class ExportController {
     @Res() res: Response,
   ) {
     const tenant = await this.tenancy.resolve(user.id);
-    this.send(res, await this.exports.exportResearch(tenant, id, query.format));
+    this.send(res, await this.exports.exportResearch(tenant, id, query.format, query.language));
   }
 
   private send(

@@ -9,7 +9,8 @@
 
 import * as React from "react";
 import { Check, Download, Loader2 } from "lucide-react";
-import { Button, cn } from "@podmind/ui";
+import { Button, Select, cn } from "@podmind/ui";
+import { LANGUAGES } from "@/lib/api/projects";
 import {
   downloadExport,
   EXPORT_FORMATS,
@@ -30,6 +31,8 @@ export function ExportMenu({
   const [busy, setBusy] = React.useState<ExportFormat | null>(null);
   const [done, setDone] = React.useState<ExportFormat | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // Empty means "as written" — the stored text, no AI call, no credits.
+  const [language, setLanguage] = React.useState("");
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Close on outside click and on Escape — a menu that traps focus is worse
@@ -54,12 +57,18 @@ export function ExportMenu({
     setBusy(format);
     setError(null);
     try {
-      await downloadExport(kind, id, format);
+      await downloadExport(kind, id, format, language || undefined);
       setDone(format);
       setTimeout(() => setDone(null), 2000);
       setOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The export failed.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : language
+            ? "The translated export failed. Your credits were not charged for a failed run."
+            : "The export failed.",
+      );
     } finally {
       setBusy(null);
     }
@@ -83,6 +92,31 @@ export function ExportMenu({
           role="menu"
           className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-primary-500/20 bg-card/95 p-1.5 shadow-soft backdrop-blur-[20px]"
         >
+          <div className="flex flex-col gap-1.5 border-b border-border/60 px-2.5 pb-2.5 pt-1.5">
+            <label htmlFor="export-language" className="text-xs text-muted-foreground">
+              Language
+            </label>
+            <Select
+              id="export-language"
+              value={language}
+              disabled={busy !== null}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="h-8 text-sm"
+            >
+              <option value="">As written (no translation)</option>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </Select>
+            {language ? (
+              <p className="text-xs text-muted-foreground">
+                Translated on export — uses credits. The saved version is unchanged.
+              </p>
+            ) : null}
+          </div>
+
           {EXPORT_FORMATS.map((format) => (
             <button
               key={format.value}
