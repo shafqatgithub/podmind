@@ -1,6 +1,6 @@
 import { ExportTranslator } from "../src/exports/export.translator";
 import type { AiRouterService } from "../src/ai/routing/ai-router.service";
-import type { ExportDocument } from "../src/exports/export.renderers";
+import { filenameFor, type ExportDocument } from "../src/exports/export.renderers";
 
 /**
  * Translation must be structure-preserving. A document that comes back with
@@ -152,5 +152,42 @@ describe("ExportTranslator", () => {
 
     expect(calls).toHaveLength(0);
     expect(creditsSpent).toBe(0);
+  });
+});
+
+/**
+ * Filenames are how a user tells four exports of the same episode apart, so
+ * they must carry the title and, when translated, the language — and must
+ * survive titles written in any script.
+ */
+describe("filenameFor", () => {
+  it("slugifies the title", () => {
+    expect(filenameFor("Fitness Talk Pakistan", "markdown")).toBe("fitness-talk-pakistan.md");
+  });
+
+  it("appends the language when translated", () => {
+    expect(filenameFor("Fitness Talk Pakistan", "markdown", "ur")).toBe(
+      "fitness-talk-pakistan-ur.md",
+    );
+    expect(filenameFor("Fitness Talk", "html", "pt-BR")).toBe("fitness-talk-pt-br.html");
+  });
+
+  it("keeps non-Latin titles instead of erasing them", () => {
+    // The old a-z0-9 rule reduced these to nothing, so every Urdu export
+    // arrived with the same fallback name.
+    expect(filenameFor("فٹنس ٹاک", "markdown")).toBe("فٹنس-ٹاک.md");
+    expect(filenameFor("注意経済", "json", "ja")).toBe("注意経済-ja.json");
+  });
+
+  it("strips punctuation and keeps numbers", () => {
+    expect(filenameFor("Why: attention — became 'the' product!", "markdown")).toBe(
+      "why-attention-became-the-product.md",
+    );
+    expect(filenameFor("Episode 12 — 2026 Review", "markdown")).toBe("episode-12-2026-review.md");
+  });
+
+  it("falls back when a title has nothing usable", () => {
+    expect(filenameFor("", "markdown")).toBe("podmind-export.md");
+    expect(filenameFor("!!! ???", "markdown", "fr")).toBe("podmind-export-fr.md");
   });
 });

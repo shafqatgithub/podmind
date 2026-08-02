@@ -213,7 +213,10 @@ export class ExportService {
     const content = render(document, format);
     this.logger.log({ kind: doc.kind, format, language: language ?? null, bytes: content.length });
     return {
-      filename: filenameFor(document.title, format),
+      // Named from the original title, not the translated one: the file is
+      // still "the fitness episode", and a user scanning downloads should
+      // recognise it without first reading the language they exported into.
+      filename: filenameFor(doc.title, format, language),
       mime: FORMAT_META[format].mime,
       content,
       creditsSpent,

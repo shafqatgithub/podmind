@@ -240,13 +240,34 @@ export function render(doc: ExportDocument, format: ExportFormat): string {
   }
 }
 
-/** Safe, readable download filename. */
-export function filenameFor(title: string, format: ExportFormat): string {
+/**
+ * Safe, readable download filename.
+ *
+ * Built from the document's own title so a folder of exports can be read at a
+ * glance, with the language appended when the file was translated — someone
+ * shipping the same episode in four languages ends up with four
+ * distinguishable files rather than four copies of one name.
+ *
+ * Unicode letters are kept rather than stripped. The previous rule allowed
+ * only a-z0-9, which quietly erased every character of an Urdu or Japanese
+ * title and left the fallback name behind, so exactly the users who most
+ * needed to tell their files apart got identical ones.
+ */
+export function filenameFor(
+  title: string,
+  format: ExportFormat,
+  /** BCP-47 code of the language the file was translated into, if any. */
+  language?: string | null,
+): string {
   const slug =
     title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
+      // Keep letters and numbers from any script; everything else separates.
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "podmind-export";
-  return `${slug}.${FORMAT_META[format].extension}`;
+      .slice(0, 60)
+      .replace(/-+$/g, "") || "podmind-export";
+
+  const suffix = language ? `-${language.toLowerCase()}` : "";
+  return `${slug}${suffix}.${FORMAT_META[format].extension}`;
 }

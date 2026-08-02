@@ -51,9 +51,23 @@ export async function downloadExport(
   }
 
   // Prefer the server's filename; it already handles punctuation and length.
+  //
+  // Read `filename*` first: it carries the real, percent-encoded name, while
+  // the plain `filename` is an ASCII-only fallback for old clients. Reading
+  // only the fallback would throw away every non-Latin title — precisely the
+  // ones a user exporting into Urdu or Japanese needs to tell apart.
   const disposition = response.headers.get("content-disposition") ?? "";
-  const match = /filename="([^"]+)"/.exec(disposition);
-  const filename = match?.[1] ?? `podmind-export.${format === "markdown" ? "md" : format}`;
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  const plain = /filename="([^"]+)"/.exec(disposition)?.[1];
+
+  let filename = plain ?? `podmind-export.${format === "markdown" ? "md" : format}`;
+  if (encoded) {
+    try {
+      filename = decodeURIComponent(encoded);
+    } catch {
+      // Malformed encoding: the ASCII fallback is still a working name.
+    }
+  }
 
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
