@@ -20,6 +20,11 @@ async function bootstrap(): Promise<void> {
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type", "X-Request-Id", "Idempotency-Key"],
+    // Without this the browser hides Content-Disposition from JavaScript on a
+    // cross-origin response, and every download falls back to a generic name
+    // no matter what the server sent. The API and the web app are on separate
+    // origins, so exports depend on it.
+    exposedHeaders: ["Content-Disposition"],
   });
 
   // Documented routing: /api/v1/... (30-API-SDK-Plan §Versioning)
