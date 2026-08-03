@@ -54,9 +54,11 @@ export class FactCheckService {
     let text: string;
     let title: string;
     let context: string;
+    let scriptLanguage: string | null = null;
 
     if (dto.script_id) {
       const script = await this.repository.findScriptText(tenant, dto.script_id);
+      scriptLanguage = script.language;
       text = script.content ?? "";
       title = dto.title ?? `Fact check: ${script.title}`;
       context = "A podcast script that is about to be recorded.";
@@ -86,7 +88,9 @@ export class FactCheckService {
       task: "fact_check",
       messages: buildFactCheckMessages({
         text: text.slice(0, 60000),
-        language: project.language,
+        // Explanations must come back in the language the claims were made
+        // in, or the report is unreadable to the person who wrote the script.
+        language: scriptLanguage ?? project.language,
         context,
       }),
       projectId: project.id,

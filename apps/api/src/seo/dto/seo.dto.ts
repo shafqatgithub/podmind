@@ -1,4 +1,5 @@
 import { IsIn, IsOptional, IsString, IsUUID, Length } from "class-validator";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
 
 /** POST /api/v1/seo — generate metadata for an episode. */
@@ -29,6 +30,11 @@ export class CreateSeoDto {
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)
   provider?: SelectableProvider;
+
+  /** Defaults to the source script's language, then the project's. */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 }
 
 export class ListSeoQueryDto {

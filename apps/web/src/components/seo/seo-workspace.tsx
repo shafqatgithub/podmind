@@ -145,6 +145,9 @@ function SeoResult({
         </header>
 
         <Section icon={Search} title={`Titles (${set.titles.length})`}>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Pick the one you will publish with — your choice is saved.
+          </p>
           <p className="-mt-1 text-xs text-muted-foreground">
             Scores are the model&apos;s judgement of search fit and click appeal — not measured
             data. Pick the one that is true to your episode.
@@ -160,13 +163,34 @@ function SeoResult({
                       : "border-border/60 hover:border-primary-500/30",
                   )}
                 >
+                  {/* A radio marker, because the previous version was a plain
+                      block of text: nothing showed it could be chosen, so the
+                      choice looked broken rather than unmade. */}
                   <button
                     type="button"
+                    role="radio"
                     disabled={busy || t.selected}
                     onClick={() => void pick({ title_id: t.id })}
-                    aria-pressed={t.selected}
-                    className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-default"
+                    aria-checked={t.selected}
+                    title={t.selected ? "Selected" : "Use this title"}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-start gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                      t.selected ? "cursor-default" : "cursor-pointer",
+                      busy && "opacity-60",
+                    )}
                   >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                        t.selected
+                          ? "border-primary-500 bg-primary-500"
+                          : "border-muted-foreground/50",
+                      )}
+                    >
+                      {t.selected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{t.title}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-2">
                       <CharCount value={t.title} limit={TITLE_LIMIT} />
@@ -180,6 +204,7 @@ function SeoResult({
                         <Badge className="bg-primary-500/15 text-primary-300">Selected</Badge>
                       ) : null}
                     </p>
+                    </span>
                   </button>
                   <CopyButton value={t.title} label="title" />
                 </div>
@@ -202,18 +227,37 @@ function SeoResult({
                 >
                   <button
                     type="button"
+                    role="radio"
                     disabled={busy || d.selected}
                     onClick={() => void pick({ description_id: d.id })}
-                    aria-pressed={d.selected}
-                    className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-default"
+                    aria-checked={d.selected}
+                    title={d.selected ? "Selected" : "Use this description"}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-start gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                      d.selected ? "cursor-default" : "cursor-pointer",
+                      busy && "opacity-60",
+                    )}
                   >
-                    <p className="text-sm">{d.description}</p>
-                    <p className="mt-1 flex items-center gap-2">
-                      <CharCount value={d.description} limit={DESCRIPTION_LIMIT} />
-                      {d.selected ? (
-                        <Badge className="bg-primary-500/15 text-primary-300">Selected</Badge>
-                      ) : null}
-                    </p>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                        d.selected
+                          ? "border-primary-500 bg-primary-500"
+                          : "border-muted-foreground/50",
+                      )}
+                    >
+                      {d.selected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <p className="text-sm">{d.description}</p>
+                      <p className="mt-1 flex items-center gap-2">
+                        <CharCount value={d.description} limit={DESCRIPTION_LIMIT} />
+                        {d.selected ? (
+                          <Badge className="bg-primary-500/15 text-primary-300">Selected</Badge>
+                        ) : null}
+                      </p>
+                    </span>
                   </button>
                   <CopyButton value={d.description} label="description" />
                 </div>
@@ -409,7 +453,18 @@ export function SeoWorkspace() {
 
   const select = async (body: { title_id?: string; description_id?: string }) => {
     if (!detail) return;
-    setDetail(await seoApi.select(detail.id, body));
+    // Without this the request could fail and the click would simply do
+    // nothing — no selection, no error, nothing to act on.
+    setError(null);
+    try {
+      setDetail(await seoApi.select(detail.id, body));
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not save that choice. Try again.",
+      );
+    }
   };
 
   const remove = async (id: string) => {

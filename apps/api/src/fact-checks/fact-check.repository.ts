@@ -69,8 +69,9 @@ export class FactCheckRepository {
       title: string;
       content: string | null;
       project_id: string;
+      language: string | null;
     }>(
-      `select s.id, s.title, s.content, s.project_id
+      `select s.id, s.title, s.content, s.project_id, s.language::text as language
          from public.scripts s
          join public.projects p on p.id = s.project_id
          join public.workspaces w on w.id = p.workspace_id

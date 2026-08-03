@@ -39,9 +39,19 @@ export class SeoService {
     const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
 
     let sourceText: string | null = null;
+    let sourceLanguage: string | null = null;
     if (dto.script_id) {
-      sourceText = await this.repository.findScriptText(project.id, dto.script_id);
+      const source = await this.repository.findScriptSource(project.id, dto.script_id);
+      sourceText = source.content;
+      sourceLanguage = source.language;
     }
+
+    /**
+     * Explicit request, then the script being described, then the project.
+     * Metadata written in a different language from the episode is unusable:
+     * nobody searching for an Urdu show types an English title.
+     */
+    const language = dto.language ?? sourceLanguage ?? project.language;
 
     // Without a script or a topic there is nothing to describe.
     const topic = dto.topic?.trim() || project.title;
@@ -62,7 +72,7 @@ export class SeoService {
         audience: project.audience,
         niche: project.niche,
         targetKeyword: dto.target_keyword,
-        language: project.language,
+        language,
       }),
       projectId: project.id,
       jsonMode: true,
@@ -146,7 +156,7 @@ export class SeoService {
         secondaryKeywords: keywords.map((k) => k.keyword),
         searchIntent: searchIntent && INTENTS.has(searchIntent) ? searchIntent : null,
         targetCountry: dto.target_country ?? null,
-        targetLanguage: project.language,
+        targetLanguage: language,
         score: headScore,
         metadata: {
           provider: routed.provider,

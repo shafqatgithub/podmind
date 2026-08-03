@@ -70,15 +70,27 @@ export class SeoRepository {
   }
 
   /** Loads a script's text, confirming it belongs to the same project. */
-  async findScriptText(projectId: string, scriptId: string): Promise<string | null> {
-    const { rows } = await this.pool.query<{ content: string | null }>(
-      `select content from public.scripts where id = $1 and project_id = $2`,
+  /**
+   * Source text plus the language it is written in.
+   *
+   * The language matters as much as the text: metadata for an Urdu episode
+   * has to be in Urdu to be searched for, and the script is the only place
+   * that language is recorded once it diverges from the project.
+   */
+  async findScriptSource(
+    projectId: string,
+    scriptId: string,
+  ): Promise<{ content: string | null; language: string | null }> {
+    const { rows } = await this.pool.query<{ content: string | null; language: string | null }>(
+      `select content, language::text as language
+         from public.scripts where id = $1 and project_id = $2`,
       [scriptId, projectId],
     );
-    if (rows.length === 0) {
+    const row = rows[0];
+    if (!row) {
       throw new NotFoundException({ code: "NOT_FOUND", message: "Script not found" });
     }
-    return rows[0]!.content;
+    return row;
   }
 
   /** One transaction so a set of metadata is never half-written. */

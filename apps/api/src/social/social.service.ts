@@ -33,8 +33,11 @@ export class SocialService {
     const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
 
     let sourceText: string | null = null;
+    let sourceLanguage: string | null = null;
     if (dto.script_id) {
-      sourceText = await this.repository.findScriptText(project.id, dto.script_id);
+      const source = await this.repository.findScriptSource(project.id, dto.script_id);
+      sourceText = source.content;
+      sourceLanguage = source.language;
     }
 
     const topic = dto.topic?.trim() || project.title;
@@ -55,7 +58,9 @@ export class SocialService {
         tone: dto.tone ?? "friendly",
         podcastName: project.podcast_name,
         audience: project.audience,
-        language: project.language,
+        // Posts promoting an Urdu episode have to be in Urdu; the script is
+        // where that language is recorded once it differs from the project.
+        language: sourceLanguage ?? project.language,
       }),
       projectId: project.id,
       jsonMode: true,
