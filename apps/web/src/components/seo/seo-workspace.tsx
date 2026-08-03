@@ -43,6 +43,7 @@ import { seoApi, type SeoSet, type SeoSetDetail } from "@/lib/api/seo";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
+import { ExportMenu } from "@/components/common/export-menu";
 
 /** Limits that matter when the text is pasted into a real platform. */
 const TITLE_LIMIT = 60;
@@ -142,6 +143,7 @@ function SeoResult({
             <Badge className="bg-cyan-500/15 text-cyan-300">{set.target_keyword}</Badge>
           ) : null}
           {set.search_intent ? <Badge className="capitalize">{set.search_intent}</Badge> : null}
+          <ExportMenu kind="seo" id={set.id} className="ml-auto" />
         </header>
 
         <Section icon={Search} title={`Titles (${set.titles.length})`}>

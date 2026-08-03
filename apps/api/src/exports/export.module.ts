@@ -8,10 +8,12 @@ import { ResearchRepository } from "../research/research.repository";
 import { ExportController } from "./export.controller";
 import { ExportService } from "./export.service";
 import { ExportTranslator } from "./export.translator";
+import { SeoRepository } from "../seo/seo.repository";
+import { SeoModule } from "../seo/seo.module";
 import { AiModule } from "../ai/ai.module";
 
 @Module({
-  imports: [ScriptModule, OutlineModule, ResearchModule, AiModule],
+  imports: [ScriptModule, OutlineModule, ResearchModule, SeoModule, AiModule],
   controllers: [ExportController],
   providers: [
     ExportService,
@@ -19,6 +21,7 @@ import { AiModule } from "../ai/ai.module";
     ScriptRepository,
     OutlineRepository,
     ResearchRepository,
+    SeoRepository,
   ],
 })
 export class ExportModule {}
