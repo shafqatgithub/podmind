@@ -48,6 +48,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ExportMenu } from "@/components/common/export-menu";
 
 const PLATFORM_META: Record<SocialPlatform, { label: string; limit: number; accent: string }> =
   Object.fromEntries(
@@ -414,6 +415,12 @@ export function SocialWorkspace() {
         {detail && !running ? (
           <Appear>
             <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <h2 className="min-w-0 flex-1 truncate font-display font-semibold">
+                  {detail.title}
+                </h2>
+                <ExportMenu kind="social" id={detail.id} />
+              </div>
               <Reveal className="flex flex-col gap-4">
                 {detail.posts.map((post) => (
                   <Item key={post.id}>

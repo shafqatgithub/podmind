@@ -4,6 +4,7 @@ import { OutlineRepository } from "../outlines/outline.repository";
 import { ResearchRepository } from "../research/research.repository";
 import type { TenantContext } from "../tenancy/tenancy.service";
 import { SeoRepository } from "../seo/seo.repository";
+import { SocialRepository } from "../social/social.repository";
 import { ExportTranslator } from "./export.translator";
 import {
   filenameFor,
@@ -37,6 +38,7 @@ export class ExportService {
     private readonly outlines: OutlineRepository,
     private readonly research: ResearchRepository,
     private readonly seo: SeoRepository,
+    private readonly social: SocialRepository,
     private readonly translator: ExportTranslator,
   ) {}
 
@@ -272,6 +274,47 @@ export class ExportService {
   }
 
   /**
+   * A social campaign as a document.
+   *
+   * One section per platform, because that is how the posts get used: opened
+   * side by side and pasted one at a time. Hashtags sit with their post rather
+   * than in a pile at the end, since they are part of what gets copied.
+   */
+  async exportSocial(tenant: TenantContext, id: string, format: ExportFormat, language?: string) {
+    const campaign = await this.social.findOne(tenant, id);
+
+    const facts: ExportDocument["facts"] = [
+      { label: "Posts", value: String(campaign.posts.length) },
+    ];
+    const meta = (campaign.metadata ?? {}) as Record<string, unknown>;
+    const tone = asString(meta.tone);
+    if (tone) facts.push({ label: "Tone", value: tone });
+
+    return this.finish(
+      {
+        kind: "social",
+        language: asString(meta.language),
+        title: campaign.title,
+        subtitle: campaign.description,
+        facts,
+        sections: campaign.posts.map((post) => {
+          const hashtags = Array.isArray(post.hashtags) ? (post.hashtags as string[]) : [];
+          return {
+            title: PLATFORM_NAMES[post.platform] ?? post.platform,
+            content: [post.title, post.content, hashtags.join(" ")]
+              .filter((part) => typeof part === "string" && part.trim())
+              .join("\n\n"),
+            notes: post.character_count ? `${post.character_count} characters` : null,
+          };
+        }),
+      },
+      format,
+      tenant,
+      language,
+    );
+  }
+
+  /**
    * Translate if asked, then render.
    *
    * Translation sits here rather than in each export method so every source
@@ -314,3 +357,14 @@ function formatTimestamp(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
+
+/** Platform keys are lowercase slugs; headings should not be. */
+const PLATFORM_NAMES: Record<string, string> = {
+  linkedin: "LinkedIn",
+  x: "X (Twitter)",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  threads: "Threads",
+  youtube: "YouTube",
+  newsletter: "Newsletter",
+};

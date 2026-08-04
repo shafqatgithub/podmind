@@ -7,6 +7,7 @@ import {
   buildSocialMessages, PLATFORM_RULES, SOCIAL_MAX_TOKENS, type SocialPlatform,
 } from "./social.prompt";
 import type { CreateSocialDto } from "./dto/social.dto";
+import { stripMarkdown } from "./strip-markdown";
 
 function str(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
@@ -82,21 +83,30 @@ export class SocialService {
 
     for (const raw of objArray(parsed.posts)) {
       const platform = str(raw.platform)?.toLowerCase();
-      const content = str(raw.content);
+      // Strip before the length check: markdown characters would otherwise
+      // count towards a platform limit they never reach the reader in.
+      const raw_content = str(raw.content);
+      const content = raw_content ? stripMarkdown(raw_content) : raw_content;
       // Ignore platforms the user did not ask for, and empty posts.
       if (!platform || !requested.has(platform) || !content) continue;
 
       const limit = PLATFORM_RULES[platform as SocialPlatform].limit;
       posts.push({
         platform,
-        title: str(raw.title),
+        title: (() => {
+          const t = str(raw.title);
+          return t ? stripMarkdown(t) : t;
+        })(),
         // Enforce the limit ourselves; a model that overshoots would
         // otherwise produce a post the platform silently rejects.
         content: content.length > limit ? `${content.slice(0, limit - 1).trimEnd()}…` : content,
         hashtags: strArray(raw.hashtags).map((h) =>
           h.startsWith("#") ? h.replace(/\s+/g, "") : `#${h.replace(/\s+/g, "")}`,
         ),
-        cta: str(raw.cta),
+        cta: (() => {
+          const cta = str(raw.cta);
+          return cta ? stripMarkdown(cta) : cta;
+        })(),
       });
     }
 
@@ -118,6 +128,9 @@ export class SocialService {
           provider: routed.provider,
           model: routed.model,
           tone: dto.tone ?? "friendly",
+          // Recorded so exports can set text direction and translation knows
+          // what it is starting from.
+          language: sourceLanguage ?? project.language,
           thread: strArray(parsed.thread),
           carousel_ideas: strArray(parsed.carousel_ideas),
           emoji_notes: strArray(parsed.emoji_notes),

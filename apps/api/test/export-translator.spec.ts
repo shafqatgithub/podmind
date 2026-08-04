@@ -1,5 +1,6 @@
 import { ExportTranslator } from "../src/exports/export.translator";
 import type { AiRouterService } from "../src/ai/routing/ai-router.service";
+import { stripMarkdown } from "../src/social/strip-markdown";
 import { filenameFor, toHtml, type ExportDocument } from "../src/exports/export.renderers";
 
 /**
@@ -243,5 +244,38 @@ describe("toHtml", () => {
     expect(html.match(/Intro/g)).toHaveLength(1);
     // A rounded duration of zero is noise, not information.
     expect(html).not.toContain("0 min");
+  });
+});
+
+/**
+ * Social platforms render no markup, so a post containing `*   **Bold:**`
+ * shows exactly that. The prompt asks for plain text; this is the guarantee.
+ */
+describe("stripMarkdown", () => {
+  it("turns a markdown bullet into a plain one", () => {
+    expect(stripMarkdown("*   **A Clear Map:** Get a toolkit.")).toBe(
+      "• A Clear Map: Get a toolkit.",
+    );
+  });
+
+  it("unwraps emphasis without losing the words", () => {
+    expect(stripMarkdown("This is **important**")).toBe("This is important");
+    expect(stripMarkdown("This is _really_ good")).toBe("This is really good");
+    expect(stripMarkdown("***wow***")).toBe("wow");
+  });
+
+  it("keeps emoji, hashtags and non-Latin text", () => {
+    expect(stripMarkdown("🎙️ **New episode** out now!")).toBe("🎙️ New episode out now!");
+    expect(stripMarkdown("Great episode #Fitness")).toBe("Great episode #Fitness");
+    expect(stripMarkdown("**فٹنس** کے لیے")).toBe("فٹنس کے لیے");
+  });
+
+  it("keeps numbered lists, which carry order", () => {
+    expect(stripMarkdown("1. first\n2. second")).toBe("1. first\n2. second");
+  });
+
+  it("leaves plain text alone", () => {
+    const post = "Just a normal post 🎧\n\nSecond paragraph.";
+    expect(stripMarkdown(post)).toBe(post);
   });
 });
