@@ -45,8 +45,26 @@ export async function downloadExport(
   );
 
   if (!response.ok) {
+    // Surface what the server actually said. Replacing every failure with
+    // "The export failed." hid the reason from the user and from anyone
+    // debugging it — an out-of-credits translation and a missing record
+    // looked identical.
+    let detail: string | null = null;
+    try {
+      const body = (await response.json()) as { message?: unknown; error?: { message?: unknown } };
+      const message = body.error?.message ?? body.message;
+      if (typeof message === "string" && message.trim()) detail = message;
+    } catch {
+      // Non-JSON body: fall through to the status-based message.
+    }
+
+    if (detail) throw new Error(detail);
     throw new Error(
-      response.status === 404 ? "That item no longer exists." : "The export failed.",
+      response.status === 404
+        ? "That item no longer exists."
+        : response.status === 401
+          ? "Your session expired — sign in again."
+          : `The export failed (${response.status}).`,
     );
   }
 

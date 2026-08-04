@@ -36,6 +36,7 @@ export class ExportTranslator {
     targetLanguage: string,
     organizationId: string,
   ): Promise<{ doc: ExportDocument; creditsSpent: number }> {
+    this.logger.log({ message: "translating export", kind: doc.kind, to: targetLanguage });
     const strings: string[] = [];
     /** Records where each string came from, so it can be written back. */
     const restore: ((value: string) => void)[] = [];

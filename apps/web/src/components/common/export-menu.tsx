@@ -63,7 +63,7 @@ export function ExportMenu({
       setOpen(false);
     } catch (err) {
       setError(
-        err instanceof Error
+        err instanceof Error && err.message
           ? err.message
           : language
             ? "The translated export failed. Your credits were not charged for a failed run."
