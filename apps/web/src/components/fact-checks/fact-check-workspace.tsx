@@ -516,13 +516,13 @@ export function FactCheckWorkspace() {
                     No checkable factual claims were found in this text.
                   </p>
                 ) : (
-                  <Reveal className="flex flex-col gap-3">
+                  <Appear className="flex flex-col gap-3">
                     {[...claims].sort(byRisk).map((claim) => (
                       <Item key={claim.id}>
                         <ClaimCard claim={claim} />
                       </Item>
                     ))}
-                  </Reveal>
+                  </Appear>
                 )}
               </CardContent>
             </Card>

@@ -39,8 +39,45 @@ export const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
 };
 
-/** Section that reveals when scrolled into view, staggering its children. */
+/**
+ * Section that staggers its children in.
+ *
+ * This used to animate on scroll via `whileInView`, which had a serious
+ * consequence: anything below the fold stayed at opacity 0 until the reader
+ * happened to scroll to it. On a marketing page that is a flourish; on a
+ * workspace it meant a finished result — or half the billing page — looked
+ * like it had simply failed to load. People reported "nothing happened" and
+ * scrolled only by accident.
+ *
+ * So it animates on mount instead. The stagger still reads as motion, and
+ * content is never hidden from someone who has no reason to scroll. The
+ * scroll-triggered behaviour remains available through `RevealOnScroll` for
+ * the landing page, where it belongs.
+ */
 export function Reveal({
+  children,
+  className,
+  as = "div",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  as?: "div" | "section";
+  /** @deprecated Ignored — kept so existing call sites keep compiling. */
+  amount?: number;
+}) {
+  const Tag = as === "section" ? m.section : m.div;
+  return (
+    <Tag className={className} variants={stagger} initial="hidden" animate="visible">
+      {children}
+    </Tag>
+  );
+}
+
+/**
+ * Scroll-triggered variant, for long marketing pages where content arriving
+ * as the reader reaches it is the point.
+ */
+export function RevealOnScroll({
   children,
   className,
   as = "div",

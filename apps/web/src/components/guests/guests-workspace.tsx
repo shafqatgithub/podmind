@@ -829,7 +829,7 @@ export function GuestsWorkspace() {
                 </Card>
               ) : null}
 
-              <Reveal className="flex flex-col gap-3">
+              <Appear className="flex flex-col gap-3">
                 {suggestions.map((s) => (
                   <Item key={s.id}>
                     <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-4 sm:p-5">
@@ -937,7 +937,7 @@ export function GuestsWorkspace() {
                     </div>
                   </Item>
                 ))}
-              </Reveal>
+              </Appear>
 
               {discoveryMeta?.notes.length ? (
                 <Card>

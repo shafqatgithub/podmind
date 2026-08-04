@@ -481,7 +481,7 @@ export function AgentsWorkspace() {
         {runs.length === 0 ? (
           <p className="text-sm text-muted-foreground">Your pipeline runs will appear here.</p>
         ) : (
-          <Reveal className="flex flex-col gap-2">
+          <Appear className="flex flex-col gap-2">
             {runs.map((r) => (
               <Item key={r.id}>
                 <button
@@ -511,7 +511,7 @@ export function AgentsWorkspace() {
                 </button>
               </Item>
             ))}
-          </Reveal>
+          </Appear>
         )}
       </aside>
     </div>

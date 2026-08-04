@@ -614,7 +614,7 @@ export function SeoWorkspace() {
         {sets.length === 0 ? (
           <p className="text-sm text-muted-foreground">Your SEO sets will appear here.</p>
         ) : (
-          <Reveal className="flex flex-col gap-2">
+          <Appear className="flex flex-col gap-2">
             {sets.map((s) => (
               <Item key={s.id}>
                 <div
@@ -646,7 +646,7 @@ export function SeoWorkspace() {
                 </div>
               </Item>
             ))}
-          </Reveal>
+          </Appear>
         )}
       </aside>
     </div>

@@ -446,7 +446,7 @@ export function TopicsWorkspace() {
                 </Card>
               ) : null}
 
-              <Reveal className="flex flex-col gap-3">
+              <Appear className="flex flex-col gap-3">
                 {discovery.topics.map((topic) => (
                   <Item key={topic.id}>
                     <TopicCard
@@ -456,7 +456,7 @@ export function TopicsWorkspace() {
                     />
                   </Item>
                 ))}
-              </Reveal>
+              </Appear>
 
               {meta.gaps?.length || meta.avoid?.length ? (
                 <div className="grid gap-4 sm:grid-cols-2">

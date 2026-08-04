@@ -421,13 +421,13 @@ export function SocialWorkspace() {
                 </h2>
                 <ExportMenu kind="social" id={detail.id} />
               </div>
-              <Reveal className="flex flex-col gap-4">
+              <Appear className="flex flex-col gap-4">
                 {detail.posts.map((post) => (
                   <Item key={post.id}>
                     <PostCard post={post} />
                   </Item>
                 ))}
-              </Reveal>
+              </Appear>
 
               {meta.thread?.length ? (
                 <Card>

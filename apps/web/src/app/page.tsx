@@ -14,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { Badge, Button, Card, CardContent, cn } from "@podmind/ui";
-import { Item, LiftCard, MotionProvider, Reveal } from "@/components/motion/motion";
+import { Item, LiftCard, MotionProvider, Reveal, RevealOnScroll } from "@/components/motion/motion";
 import { LogoLockup } from "@/components/brand/logo";
 
 /**
@@ -152,7 +152,7 @@ export default function LandingPage() {
         <div id="features" />
         {/* Two per row from the smallest screen. Padding and type step down
             with it, so a narrow column reads as compact rather than cramped. */}
-        <Reveal as="section" amount={0.1} className="grid grid-cols-2 gap-3 pb-24 sm:gap-4 lg:grid-cols-4">
+        <RevealOnScroll as="section" amount={0.1} className="grid grid-cols-2 gap-3 pb-24 sm:gap-4 lg:grid-cols-4">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <LiftCard key={title}>
               <Card className="h-full transition-colors hover:border-primary-500/50 hover:shadow-glow-blue/60 hover:bg-hover">
@@ -166,12 +166,12 @@ export default function LandingPage() {
               </Card>
             </LiftCard>
           ))}
-        </Reveal>
+        </RevealOnScroll>
 
 
         {/* Pricing */}
         <div id="pricing" />
-        <Reveal as="section" amount={0.1} className="flex flex-col items-center gap-3 pb-10">
+        <RevealOnScroll as="section" amount={0.1} className="flex flex-col items-center gap-3 pb-10">
           <Item>
             <h2 className="text-center font-display text-3xl font-bold tracking-tight">
               Simple, credit-based pricing
@@ -183,9 +183,9 @@ export default function LandingPage() {
               request fails, the credits come back.
             </p>
           </Item>
-        </Reveal>
+        </RevealOnScroll>
 
-        <Reveal as="section" amount={0.1} className="grid grid-cols-2 gap-3 pb-24 sm:gap-4 lg:grid-cols-4">
+        <RevealOnScroll as="section" amount={0.1} className="grid grid-cols-2 gap-3 pb-24 sm:gap-4 lg:grid-cols-4">
           {PLANS.map((plan) => (
             <LiftCard key={plan.name}>
               <Card
@@ -230,7 +230,7 @@ export default function LandingPage() {
               </Card>
             </LiftCard>
           ))}
-        </Reveal>
+        </RevealOnScroll>
 
         <footer className="flex flex-col items-center gap-4 border-t border-border py-8 text-sm text-muted-foreground">
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2" aria-label="Footer">
