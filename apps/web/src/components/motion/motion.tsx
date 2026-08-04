@@ -131,12 +131,15 @@ export function Item({
 export function Appear({
   children,
   className,
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
+  /** Lets callers target the block, e.g. to scroll a result into view. */
+  id?: string;
 }) {
   return (
-    <m.div className={className} variants={stagger} initial="hidden" animate="visible">
+    <m.div id={id} className={className} variants={stagger} initial="hidden" animate="visible">
       {children}
     </m.div>
   );

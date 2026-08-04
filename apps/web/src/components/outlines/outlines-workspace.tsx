@@ -237,7 +237,20 @@ export function OutlinesWorkspace() {
   React.useEffect(() => {
     if (!requestedId || openedRef.current === requestedId) return;
     openedRef.current = requestedId;
-    void outlinesApi.get(requestedId).then(setDetail).catch(() => undefined);
+    void outlinesApi
+      .get(requestedId)
+      .then((record) => {
+        setDetail(record);
+        // The result panel sits below the form, so arriving here from a link
+        // would otherwise land on the form with the requested item off-screen
+        // — indistinguishable from the link having done nothing.
+        requestAnimationFrame(() =>
+          document
+            .getElementById("result-panel")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+      })
+      .catch(() => undefined);
   }, [requestedId]);
 
   const loadOutlines = React.useCallback(async (signal?: AbortSignal) => {
@@ -261,7 +274,11 @@ export function OutlinesWorkspace() {
         setProjects(projectPage.items.filter((p) => !p.is_archived));
         setResearch(researchPage.items as ResearchSession[]);
         const latest = items[0];
-        if (latest) setDetail(await outlinesApi.get(latest.id, controller.signal));
+        // Skip when a specific outline was requested: opening the newest
+        // one instead would silently replace what the user asked for.
+        if (latest && !requestedId) {
+          setDetail(await outlinesApi.get(latest.id, controller.signal));
+        }
       } catch (err) {
         if (err instanceof ApiError && !err.isUnreachable) setError(err.message);
       } finally {
@@ -269,7 +286,7 @@ export function OutlinesWorkspace() {
       }
     })();
     return () => controller.abort();
-  }, [loadOutlines]);
+  }, [loadOutlines, requestedId]);
 
   const selectedProject = React.useMemo(
     () => projects.find((p) => p.id === projectId) ?? null,
@@ -527,7 +544,7 @@ export function OutlinesWorkspace() {
         {generating ? <GeneratingCard minutes={duration} /> : null}
 
         {detail && !generating ? (
-          <Appear className="flex flex-col gap-4">
+          <Appear className="flex flex-col gap-4" id="result-panel">
             <Item>
               <OutlineView outline={detail} />
             </Item>

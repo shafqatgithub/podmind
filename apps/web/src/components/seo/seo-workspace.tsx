@@ -375,7 +375,20 @@ export function SeoWorkspace() {
   React.useEffect(() => {
     if (!requestedId || openedRef.current === requestedId) return;
     openedRef.current = requestedId;
-    void seoApi.get(requestedId).then(setDetail).catch(() => undefined);
+    void seoApi
+      .get(requestedId)
+      .then((record) => {
+        setDetail(record);
+        // The result panel sits below the form, so arriving here from a link
+        // would otherwise land on the form with the requested item off-screen
+        // — indistinguishable from the link having done nothing.
+        requestAnimationFrame(() =>
+          document
+            .getElementById("result-panel")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+      })
+      .catch(() => undefined);
   }, [requestedId]);
 
   const loadSets = React.useCallback(async () => {
@@ -604,7 +617,7 @@ export function SeoWorkspace() {
         ) : null}
 
         {detail && !running ? (
-          <Appear>
+          <Appear className="scroll-mt-4" id="result-panel">
             <SeoResult set={detail} onSelect={select} />
           </Appear>
         ) : null}

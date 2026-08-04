@@ -406,7 +406,20 @@ export function ResearchWorkspace() {
   React.useEffect(() => {
     if (!requestedId || openedRef.current === requestedId) return;
     openedRef.current = requestedId;
-    void researchApi.get(requestedId).then(setDetail).catch(() => undefined);
+    void researchApi
+      .get(requestedId)
+      .then((record) => {
+        setDetail(record);
+        // The result panel sits below the form, so arriving here from a link
+        // would otherwise land on the form with the requested item off-screen
+        // — indistinguishable from the link having done nothing.
+        requestAnimationFrame(() =>
+          document
+            .getElementById("result-panel")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+      })
+      .catch(() => undefined);
   }, [requestedId]);
   const [loadingDetail, setLoadingDetail] = React.useState(false);
 
@@ -460,7 +473,7 @@ export function ResearchWorkspace() {
       // Reopen the most recent session so returning to the page (or a
       // refresh) shows the last briefing instead of an empty form.
       const latest = existing[0];
-      if (latest) {
+      if (latest && !requestedId) {
         try {
           setDetail(await researchApi.get(latest.id, controller.signal));
         } catch {
@@ -469,7 +482,7 @@ export function ResearchWorkspace() {
       }
     })();
     return () => controller.abort();
-  }, [loadSessions]);
+  }, [loadSessions, requestedId]);
 
   const run = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -668,7 +681,7 @@ export function ResearchWorkspace() {
         {loadingDetail ? <Skeleton className="h-64 rounded-lg" /> : null}
 
         {detail && !running ? (
-          <Appear className="flex flex-col gap-4">
+          <Appear className="flex flex-col gap-4" id="result-panel">
             <Item>
               <div className="flex items-center justify-end">
                 <ExportMenu kind="research" id={detail.id} />

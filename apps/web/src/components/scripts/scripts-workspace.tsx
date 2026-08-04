@@ -197,7 +197,20 @@ export function ScriptsWorkspace() {
   React.useEffect(() => {
     if (!requestedId || openedRef.current === requestedId) return;
     openedRef.current = requestedId;
-    void scriptsApi.get(requestedId).then(setDetail).catch(() => undefined);
+    void scriptsApi
+      .get(requestedId)
+      .then((record) => {
+        setDetail(record);
+        // The result panel sits below the form, so arriving here from a link
+        // would otherwise land on the form with the requested item off-screen
+        // — indistinguishable from the link having done nothing.
+        requestAnimationFrame(() =>
+          document
+            .getElementById("result-panel")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+      })
+      .catch(() => undefined);
   }, [requestedId]);
 
   const loadScripts = React.useCallback(async (signal?: AbortSignal) => {
@@ -220,7 +233,9 @@ export function ScriptsWorkspace() {
         setProjects(projectPage.items.filter((p) => !p.is_archived));
         setOutlines(outlinePage.items as Outline[]);
         const latest = items[0];
-        if (latest) setDetail(await scriptsApi.get(latest.id, controller.signal));
+        if (latest && !requestedId) {
+          setDetail(await scriptsApi.get(latest.id, controller.signal));
+        }
       } catch (err) {
         if (err instanceof ApiError && !err.isUnreachable) setError(err.message);
       } finally {
@@ -228,7 +243,7 @@ export function ScriptsWorkspace() {
       }
     })();
     return () => controller.abort();
-  }, [loadScripts]);
+  }, [loadScripts, requestedId]);
 
   const write = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -471,7 +486,7 @@ export function ScriptsWorkspace() {
         ) : null}
 
         {detail && !writing ? (
-          <Appear className="flex flex-col gap-4">
+          <Appear className="flex flex-col gap-4" id="result-panel">
             <Item>
               <ScriptView script={detail} />
             </Item>

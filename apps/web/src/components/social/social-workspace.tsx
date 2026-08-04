@@ -167,7 +167,20 @@ export function SocialWorkspace() {
   React.useEffect(() => {
     if (!requestedId || openedRef.current === requestedId) return;
     openedRef.current = requestedId;
-    void socialApi.get(requestedId).then(setDetail).catch(() => undefined);
+    void socialApi
+      .get(requestedId)
+      .then((record) => {
+        setDetail(record);
+        // The result panel sits below the form, so arriving here from a link
+        // would otherwise land on the form with the requested item off-screen
+        // — indistinguishable from the link having done nothing.
+        requestAnimationFrame(() =>
+          document
+            .getElementById("result-panel")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+      })
+      .catch(() => undefined);
   }, [requestedId]);
 
   const loadCampaigns = React.useCallback(async () => {
@@ -424,7 +437,7 @@ export function SocialWorkspace() {
         ) : null}
 
         {detail && !running ? (
-          <Appear>
+          <Appear className="scroll-mt-4" id="result-panel">
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <h2 className="min-w-0 flex-1 truncate font-display font-semibold">
