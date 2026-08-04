@@ -112,7 +112,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       envelope.error?.message ?? `Request failed (${response.status})`,
       response.status,
       envelope.request_id,
-      envelope.error?.details,
+      // The envelope types this as nullable; ApiError takes undefined.
+      envelope.error?.details ?? undefined,
     );
   }
 
