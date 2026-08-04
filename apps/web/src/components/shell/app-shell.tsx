@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  Download,
   CalendarDays,
   Compass,
   CreditCard,
@@ -76,6 +77,7 @@ const NAV_GROUPS = [
       { href: "/projects", label: "Projects", icon: FolderKanban },
       { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
       { href: "/memory", label: "AI Memory", icon: Brain },
+      { href: "/exports", label: "Export Center", icon: Download },
     ],
   },
   {
