@@ -35,13 +35,20 @@ export class SocialService {
 
     let sourceText: string | null = null;
     let sourceLanguage: string | null = null;
+    let sourceTitle: string | null = null;
     if (dto.script_id) {
       const source = await this.repository.findScriptSource(project.id, dto.script_id);
       sourceText = source.content;
       sourceLanguage = source.language;
+      sourceTitle = source.title;
     }
 
-    const topic = dto.topic?.trim() || project.title;
+    /**
+     * The episode this describes, not the show. Falling back to the project
+     * title gave every set in a project the same name — "My First Project"
+     * five times over — which is useless in a list you are choosing from.
+     */
+    const topic = dto.topic?.trim() || sourceTitle || project.title;
     if (!topic && !sourceText) {
       throw new BadRequestException({
         code: "INVALID_REQUEST",

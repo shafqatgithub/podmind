@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { OutlinesWorkspace } from "@/components/outlines/outlines-workspace";
 
@@ -11,7 +12,10 @@ export default function Page() {
         title="Outline Builder"
         description="Turn a topic — or your research — into a running order you can record from."
       />
-      <OutlinesWorkspace />
+      {/* Suspense is required: the workspace reads ?open=<id>. */}
+      <Suspense>
+        <OutlinesWorkspace />
+      </Suspense>
     </>
   );
 }

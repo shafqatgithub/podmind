@@ -9,6 +9,7 @@
  */
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   CheckCheck,
@@ -188,6 +189,16 @@ export function ScriptsWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  // /?open=<id> — the Export Center links here so a user can confirm they are
+  // downloading the right thing before they download it.
+  const requestedId = useSearchParams().get("open");
+  const openedRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!requestedId || openedRef.current === requestedId) return;
+    openedRef.current = requestedId;
+    void scriptsApi.get(requestedId).then(setDetail).catch(() => undefined);
+  }, [requestedId]);
 
   const loadScripts = React.useCallback(async (signal?: AbortSignal) => {
     const page = await scriptsApi.list(undefined, signal);

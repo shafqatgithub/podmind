@@ -59,9 +59,13 @@ export class SocialRepository {
   async findScriptSource(
     projectId: string,
     scriptId: string,
-  ): Promise<{ content: string | null; language: string | null }> {
-    const { rows } = await this.pool.query<{ content: string | null; language: string | null }>(
-      `select content, language::text as language
+  ): Promise<{ content: string | null; language: string | null; title: string }> {
+    const { rows } = await this.pool.query<{
+      content: string | null;
+      language: string | null;
+      title: string;
+    }>(
+      `select content, language::text as language, title
          from public.scripts where id = $1 and project_id = $2`,
       [scriptId, projectId],
     );

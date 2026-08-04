@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { ScriptsWorkspace } from "@/components/scripts/scripts-workspace";
 
@@ -11,7 +12,10 @@ export default function Page() {
         title="Script Builder"
         description="Turn an outline into words you can read straight into the microphone."
       />
-      <ScriptsWorkspace />
+      {/* Suspense is required: the workspace reads ?open=<id>. */}
+      <Suspense>
+        <ScriptsWorkspace />
+      </Suspense>
     </>
   );
 }

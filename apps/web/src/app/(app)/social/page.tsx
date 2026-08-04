@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { SocialWorkspace } from "@/components/social/social-workspace";
 
@@ -11,7 +12,10 @@ export default function Page() {
         title="Social Media Engine"
         description="Posts written for each platform on its own terms — not one draft reworded."
       />
-      <SocialWorkspace />
+      {/* Suspense is required: the workspace reads ?open=<id>. */}
+      <Suspense>
+        <SocialWorkspace />
+      </Suspense>
     </>
   );
 }

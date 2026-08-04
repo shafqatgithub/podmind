@@ -14,6 +14,7 @@
  */
 
 import * as React from "react";
+import Link from "next/link";
 import {
   FileText,
   Hash,
@@ -35,6 +36,15 @@ import type { ExportKind } from "@/lib/api/exports";
 import { ExportMenu } from "@/components/common/export-menu";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item } from "@/components/motion/motion";
+
+/** Module route for a kind, used to link a row back to what it came from. */
+const KIND_ROUTES: Record<ExportKind, string> = {
+  research: "/research",
+  outlines: "/outlines",
+  scripts: "/scripts",
+  seo: "/seo",
+  social: "/social",
+};
 
 interface Row {
   id: string;
@@ -279,17 +289,27 @@ export function ExportsWorkspace() {
             const project = projectName(row.projectId);
             return (
               <Item key={`${row.kind}-${row.id}`}>
-                <Card>
+                <Card className="transition-colors hover:border-primary-500/40">
                   <CardContent className="flex items-center gap-3 p-3">
-                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{row.title}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {[label, project, row.meta, formatDate(row.createdAt)]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    </div>
+                    {/* The row opens what it describes: nobody should have to
+                        download a file to find out whether it was the right
+                        one. The export button sits outside the link so it
+                        still works as its own control. */}
+                    <Link
+                      href={`${KIND_ROUTES[row.kind]}?open=${row.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                      title={`Open ${row.title}`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{row.title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {[label, project, row.meta, formatDate(row.createdAt)]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </span>
+                    </Link>
                     <ExportMenu kind={row.kind} id={row.id} />
                   </CardContent>
                 </Card>

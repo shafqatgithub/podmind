@@ -9,6 +9,7 @@
  */
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   BookOpen,
@@ -398,6 +399,15 @@ export function ResearchWorkspace() {
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  // /research?open=<id> — linked from the Export Center.
+  const requestedId = useSearchParams().get("open");
+  const openedRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!requestedId || openedRef.current === requestedId) return;
+    openedRef.current = requestedId;
+    void researchApi.get(requestedId).then(setDetail).catch(() => undefined);
+  }, [requestedId]);
   const [loadingDetail, setLoadingDetail] = React.useState(false);
 
   const loadSessions = React.useCallback(async () => {
