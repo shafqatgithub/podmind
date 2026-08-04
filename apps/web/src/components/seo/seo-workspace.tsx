@@ -44,6 +44,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { ExportMenu } from "@/components/common/export-menu";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 /** Limits that matter when the text is pasted into a real platform. */
 const TITLE_LIMIT = 60;
@@ -364,6 +365,7 @@ export function SeoWorkspace() {
   const [running, setRunning] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadSets = React.useCallback(async () => {
     try {
@@ -418,6 +420,7 @@ export function SeoWorkspace() {
     }
     setRunning(true);
     setError(null);
+    setCreditError(null);
     setDetail(null);
     try {
       const scriptId = String(form.get("script_id") ?? "");
@@ -461,6 +464,7 @@ export function SeoWorkspace() {
     try {
       setDetail(await seoApi.select(detail.id, body));
     } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
       setError(
         err instanceof ApiError
           ? err.message
@@ -560,11 +564,13 @@ export function SeoWorkspace() {
                 </div>
               </div>
 
-              {error ? (
-                <p role="alert" className="text-sm text-error-400">
-                  {error}
-                </p>
-              ) : null}
+              {creditError ? (
+  <OutOfCreditsNotice required={requiredCredits(creditError)} />
+) : error ? (
+  <p role="alert" className="text-sm text-error-400">
+    {error}
+  </p>
+) : null}
 
               <div className="flex items-center gap-3">
                 <Button type="submit" loading={running} disabled={projects.length === 0}>

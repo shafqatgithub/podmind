@@ -46,6 +46,7 @@ import {
 } from "@/lib/api/topics";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 const MOMENTUM_STYLE: Record<Momentum, { label: string; className: string }> = {
   rising: { label: "Rising", className: "bg-success-500/15 text-success-300" },
@@ -171,6 +172,7 @@ export function TopicsWorkspace() {
   const [running, setRunning] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadHistory = React.useCallback(async () => {
     try {
@@ -224,6 +226,7 @@ export function TopicsWorkspace() {
 
     setRunning(true);
     setError(null);
+    setCreditError(null);
     setDiscovery(null);
     try {
       const result = await topicsApi.discover({
@@ -243,6 +246,7 @@ export function TopicsWorkspace() {
       await loadHistory();
     } catch (err) {
       if (err instanceof ApiError) {
+        setCreditError(isOutOfCredits(err) ? err : null);
         setError(
           err.code === "SEARCH_UNAVAILABLE"
             ? "Topic discovery needs a provider with web search. Add an Anthropic API key to enable it."
@@ -387,7 +391,9 @@ export function TopicsWorkspace() {
                 </div>
               </div>
 
-              {error ? (
+              {creditError ? (
+                <OutOfCreditsNotice required={requiredCredits(creditError)} />
+              ) : error ? (
                 <p role="alert" className="text-sm text-error-400">
                   {error}
                 </p>

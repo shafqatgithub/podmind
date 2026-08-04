@@ -48,6 +48,7 @@ import {
 } from "@/lib/api/fact-checks";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 /* -------------------------------------------------------- verdicts */
 
@@ -232,6 +233,7 @@ export function FactCheckWorkspace() {
   const [running, setRunning] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadChecks = React.useCallback(async (project?: string) => {
     try {
@@ -302,6 +304,7 @@ export function FactCheckWorkspace() {
 
     setRunning(true);
     setError(null);
+    setCreditError(null);
     setDetail(null);
     try {
       const result = await factChecksApi.create({
@@ -313,6 +316,7 @@ export function FactCheckWorkspace() {
       await loadChecks();
     } catch (err) {
       if (err instanceof ApiError) {
+        setCreditError(isOutOfCredits(err) ? err : null);
         setError(
           err.code === "INSUFFICIENT_CREDITS"
             ? "You are out of AI credits."
@@ -459,7 +463,9 @@ export function FactCheckWorkspace() {
                 </div>
               )}
 
-              {error ? (
+              {creditError ? (
+                <OutOfCreditsNotice required={requiredCredits(creditError)} />
+              ) : error ? (
                 <p role="alert" className="text-sm text-error-400">
                   {error}
                 </p>

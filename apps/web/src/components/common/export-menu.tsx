@@ -11,6 +11,7 @@ import * as React from "react";
 import { Check, Download, Loader2 } from "lucide-react";
 import { Button, Select, cn } from "@podmind/ui";
 import { LANGUAGES } from "@/lib/api/projects";
+import { OutOfCreditsNotice } from "@/components/common/credit-error";
 import {
   downloadExport,
   EXPORT_FORMATS,
@@ -31,6 +32,9 @@ export function ExportMenu({
   const [busy, setBusy] = React.useState<ExportFormat | null>(null);
   const [done, setDone] = React.useState<ExportFormat | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // Downloads go through fetch, not the API client, so the code arrives as
+  // text; match on it rather than on an ApiError instance.
+  const [noCredits, setNoCredits] = React.useState(false);
   // Empty means "as written" — the stored text, no AI call, no credits.
   const [language, setLanguage] = React.useState("");
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -56,12 +60,15 @@ export function ExportMenu({
   const run = async (format: ExportFormat) => {
     setBusy(format);
     setError(null);
+    setNoCredits(false);
     try {
       await downloadExport(kind, id, format, language || undefined);
       setDone(format);
       setTimeout(() => setDone(null), 2000);
       setOpen(false);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      setNoCredits(/credit/i.test(message));
       setError(
         err instanceof Error && err.message
           ? err.message
@@ -138,7 +145,11 @@ export function ExportMenu({
             </button>
           ))}
 
-          {error ? (
+          {noCredits ? (
+            <div className="px-1.5 pb-1 pt-2">
+              <OutOfCreditsNotice action="translating this export" />
+            </div>
+          ) : error ? (
             <p role="alert" className="px-2.5 py-1.5 text-xs text-error-400">
               {error}
             </p>

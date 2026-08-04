@@ -48,6 +48,7 @@ import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 import { aiApi, type AiStatus } from "@/lib/api/ai";
 import { CreditHint } from "@/components/common/credit-hint";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 function readabilityLabel(score: number): { label: string; className: string } {
   if (score >= 70) return { label: "Easy to say aloud", className: "bg-success-500/15 text-success-300" };
@@ -186,6 +187,7 @@ export function ScriptsWorkspace() {
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadScripts = React.useCallback(async (signal?: AbortSignal) => {
     const page = await scriptsApi.list(undefined, signal);
@@ -236,6 +238,7 @@ export function ScriptsWorkspace() {
 
     setWriting(true);
     setError(null);
+    setCreditError(null);
     setDetail(null);
     try {
       const created = await scriptsApi.create({
@@ -251,6 +254,7 @@ export function ScriptsWorkspace() {
       setDetail(await scriptsApi.get(created.id));
       await loadScripts();
     } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
       setError(
         err instanceof ApiError
           ? err.code === "INSUFFICIENT_CREDITS"
@@ -417,11 +421,13 @@ export function ScriptsWorkspace() {
                 ) : null}
               </div>
 
-              {error ? (
-                <p role="alert" className="text-sm text-error-400">
-                  {error}
-                </p>
-              ) : null}
+              {creditError ? (
+  <OutOfCreditsNotice required={requiredCredits(creditError)} />
+) : error ? (
+  <p role="alert" className="text-sm text-error-400">
+    {error}
+  </p>
+) : null}
 
               <div className="flex items-center gap-3">
                 <Button type="submit" loading={writing}>

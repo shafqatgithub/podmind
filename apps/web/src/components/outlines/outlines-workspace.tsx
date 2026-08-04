@@ -43,6 +43,7 @@ import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 import { aiApi, type AiStatus } from "@/lib/api/ai";
 import { CreditHint } from "@/components/common/credit-hint";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 function GeneratingCard({ minutes }: { minutes: number }) {
   const [elapsed, setElapsed] = React.useState(0);
@@ -226,6 +227,7 @@ export function OutlinesWorkspace() {
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadOutlines = React.useCallback(async (signal?: AbortSignal) => {
     const page = await outlinesApi.list(undefined, signal);
@@ -285,6 +287,7 @@ export function OutlinesWorkspace() {
 
     setGenerating(true);
     setError(null);
+    setCreditError(null);
     setDetail(null);
     try {
       const created = await outlinesApi.create({
@@ -299,6 +302,7 @@ export function OutlinesWorkspace() {
       setDetail(await outlinesApi.get(created.id));
       await loadOutlines();
     } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
       setError(
         err instanceof ApiError
           ? err.code === "INSUFFICIENT_CREDITS"
@@ -490,11 +494,13 @@ export function OutlinesWorkspace() {
                 ) : null}
               </div>
 
-              {error ? (
-                <p role="alert" className="text-sm text-error-400">
-                  {error}
-                </p>
-              ) : null}
+              {creditError ? (
+  <OutOfCreditsNotice required={requiredCredits(creditError)} />
+) : error ? (
+  <p role="alert" className="text-sm text-error-400">
+    {error}
+  </p>
+) : null}
 
               <div className="flex items-center gap-3">
                 <Button type="submit" loading={generating}>

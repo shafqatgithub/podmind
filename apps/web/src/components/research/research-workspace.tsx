@@ -52,6 +52,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 /* --------------------------------------------------------- progress */
 
@@ -396,6 +397,7 @@ export function ResearchWorkspace() {
   const [depth, setDepth] = React.useState<ResearchDepth>("standard");
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
   const [loadingDetail, setLoadingDetail] = React.useState(false);
 
   const loadSessions = React.useCallback(async () => {
@@ -478,6 +480,7 @@ export function ResearchWorkspace() {
 
     setRunning(true);
     setError(null);
+    setCreditError(null);
     setDetail(null);
     try {
       const session = await researchApi.create({
@@ -493,6 +496,7 @@ export function ResearchWorkspace() {
       await loadSessions();
     } catch (err) {
       if (err instanceof ApiError) {
+        setCreditError(isOutOfCredits(err) ? err : null);
         setError(
           err.code === "INSUFFICIENT_CREDITS"
             ? "You are out of AI credits for this month."
@@ -631,7 +635,9 @@ export function ResearchWorkspace() {
                 </div>
               </div>
 
-              {error ? (
+              {creditError ? (
+                <OutOfCreditsNotice required={requiredCredits(creditError)} />
+              ) : error ? (
                 <p role="alert" className="text-sm text-error-400">
                   {error}
                 </p>

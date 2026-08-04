@@ -16,6 +16,12 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly requestId?: string,
+    /**
+     * Structured payload from the API — e.g. how many credits a run needed
+     * against what was available. Dropped previously, which left the UI able
+     * to say only "not enough credits" with no figures to act on.
+     */
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -106,6 +112,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       envelope.error?.message ?? `Request failed (${response.status})`,
       response.status,
       envelope.request_id,
+      envelope.error?.details,
     );
   }
 

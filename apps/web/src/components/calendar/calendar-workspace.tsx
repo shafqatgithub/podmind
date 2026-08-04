@@ -42,6 +42,7 @@ import {
 } from "@/lib/api/calendar";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear } from "@/components/motion/motion";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 const STATUS_STYLE: Record<CalendarStatus, string> = {
   planned: "bg-neutral-500/15 text-neutral-300",
@@ -80,6 +81,7 @@ export function CalendarWorkspace() {
   const [cursor, setCursor] = React.useState(() => new Date());
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
   const [showAdd, setShowAdd] = React.useState(false);
   const [showPlan, setShowPlan] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
@@ -138,6 +140,7 @@ export function CalendarWorkspace() {
     const form = new FormData(event.currentTarget);
     setBusy(true);
     setError(null);
+    setCreditError(null);
     try {
       await calendarApi.create({
         project_id: projectId,
@@ -203,6 +206,7 @@ export function CalendarWorkspace() {
       await calendarApi.run(entry.id);
       await load();
     } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
       setError(
         err instanceof ApiError
           ? err.code === "INSUFFICIENT_CREDITS"
@@ -315,11 +319,13 @@ export function CalendarWorkspace() {
         </div>
       </div>
 
-      {error ? (
-        <p role="alert" className="text-sm text-error-400">
-          {error}
-        </p>
-      ) : null}
+      {creditError ? (
+  <OutOfCreditsNotice required={requiredCredits(creditError)} />
+) : error ? (
+  <p role="alert" className="text-sm text-error-400">
+    {error}
+  </p>
+) : null}
 
       {showPlan ? (
         <Appear>

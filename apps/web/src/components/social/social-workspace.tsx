@@ -47,6 +47,7 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 const PLATFORM_META: Record<SocialPlatform, { label: string; limit: number; accent: string }> =
   Object.fromEntries(
@@ -155,6 +156,7 @@ export function SocialWorkspace() {
   const [running, setRunning] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadCampaigns = React.useCallback(async () => {
     try {
@@ -221,6 +223,7 @@ export function SocialWorkspace() {
 
     setRunning(true);
     setError(null);
+    setCreditError(null);
     setDetail(null);
     try {
       const scriptId = String(form.get("script_id") ?? "");
@@ -240,6 +243,7 @@ export function SocialWorkspace() {
       await loadCampaigns();
     } catch (err) {
       if (err instanceof ApiError) {
+        setCreditError(isOutOfCredits(err) ? err : null);
         setError(
           err.code === "INSUFFICIENT_CREDITS"
             ? "You are out of AI credits."
@@ -379,7 +383,9 @@ export function SocialWorkspace() {
                 </p>
               </fieldset>
 
-              {error ? (
+              {creditError ? (
+                <OutOfCreditsNotice required={requiredCredits(creditError)} />
+              ) : error ? (
                 <p role="alert" className="text-sm text-error-400">
                   {error}
                 </p>

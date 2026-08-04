@@ -47,6 +47,7 @@ import {
 } from "@/lib/api/agents";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 const DEFAULT_STEPS: PipelineStep[] = ["research", "outline", "script"];
 
@@ -208,6 +209,7 @@ export function AgentsWorkspace() {
   const [starting, setStarting] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadRuns = React.useCallback(async () => {
     try {
@@ -287,6 +289,7 @@ export function AgentsWorkspace() {
 
     setStarting(true);
     setError(null);
+    setCreditError(null);
     try {
       const started = await agentsApi.createRun({
         project_id: projectId,
@@ -299,6 +302,7 @@ export function AgentsWorkspace() {
       setRun(started);
       await loadRuns();
     } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
       setError(
         err instanceof ApiError
           ? err.code === "INSUFFICIENT_CREDITS"
@@ -429,11 +433,13 @@ export function AgentsWorkspace() {
                 </p>
               </fieldset>
 
-              {error ? (
-                <p role="alert" className="text-sm text-error-400">
-                  {error}
-                </p>
-              ) : null}
+              {creditError ? (
+  <OutOfCreditsNotice required={requiredCredits(creditError)} />
+) : error ? (
+  <p role="alert" className="text-sm text-error-400">
+    {error}
+  </p>
+) : null}
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button

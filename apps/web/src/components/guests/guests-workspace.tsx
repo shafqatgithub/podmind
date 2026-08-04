@@ -53,6 +53,7 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
+import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 
 function Section({
   icon: Icon,
@@ -417,6 +418,7 @@ export function GuestsWorkspace() {
   const [running, setRunning] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [creditError, setCreditError] = React.useState<unknown>(null);
 
   const loadGuests = React.useCallback(async (project?: string) => {
     try {
@@ -471,6 +473,7 @@ export function GuestsWorkspace() {
 
     setRunning(true);
     setError(null);
+    setCreditError(null);
 
     if (mode === "discover") {
       try {
@@ -493,6 +496,7 @@ export function GuestsWorkspace() {
         });
         setDetail(null);
       } catch (err) {
+        setCreditError(isOutOfCredits(err) ? err : null);
         setError(
           err instanceof ApiError
             ? err.code === "SEARCH_UNAVAILABLE"
@@ -588,6 +592,7 @@ export function GuestsWorkspace() {
       );
       await loadGuests();
     } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
       setError(
         err instanceof ApiError
           ? err.code === "INSUFFICIENT_CREDITS"
@@ -757,11 +762,13 @@ export function GuestsWorkspace() {
                 )}
               </div>
 
-              {error ? (
-                <p role="alert" className="text-sm text-error-400">
-                  {error}
-                </p>
-              ) : null}
+              {creditError ? (
+  <OutOfCreditsNotice required={requiredCredits(creditError)} />
+) : error ? (
+  <p role="alert" className="text-sm text-error-400">
+    {error}
+  </p>
+) : null}
 
               <div className="flex items-center gap-3">
                 <Button type="submit" loading={running} disabled={projects.length === 0}>
