@@ -126,6 +126,9 @@ export class AiRouterService {
     );
 
     const fallbacksUsed: ProviderSlug[] = [];
+    // Recorded so a failure caused by "nobody here can search" can say so,
+    // rather than reporting a generic outage the operator cannot act on.
+    const skippedForSearch: ProviderSlug[] = [];
     let lastError: ProviderError | null = null;
 
     for (const candidate of plan) {
@@ -139,6 +142,7 @@ export class AiRouterService {
       // as current research. Skipping is honest; silently downgrading is not.
       if (request.webSearch && provider.supportsWebSearch?.() !== true) {
         this.logger.debug({ provider: candidate.provider }, "skipping provider without web search");
+        skippedForSearch.push(candidate.provider);
         continue;
       }
 
@@ -257,8 +261,14 @@ export class AiRouterService {
       code: "AI_UNAVAILABLE",
       message:
         lastError?.message ??
-        "No AI provider is available for this task — check provider configuration",
-      details: { task: request.task, tried: fallbacksUsed },
+        (skippedForSearch.length > 0
+          ? "This feature needs live web search, which none of the available providers offer right now."
+          : "No AI provider is available for this task — check provider configuration"),
+      details: {
+        task: request.task,
+        tried: fallbacksUsed,
+        ...(skippedForSearch.length ? { skipped_no_web_search: skippedForSearch } : {}),
+      },
     });
   }
 

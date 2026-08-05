@@ -26,6 +26,16 @@ export class AnthropicProvider extends BaseHttpProvider {
     return true;
   }
 
+  /**
+   * Newer Claude models reject `temperature` outright — the API answers with
+   * "`temperature` is deprecated for this model" and a 400, so every request
+   * carrying it fails before any work is done. Older models still accept it,
+   * so the parameter is sent only where it is understood.
+   */
+  private static acceptsTemperature(model: string): boolean {
+    return /^claude-(3|2|instant)/.test(model);
+  }
+
   protected buildRequest(options: CompletionOptions) {
     const systemParts = options.messages.filter((m) => m.role === "system").map((m) => m.content);
     if (options.jsonMode) systemParts.push(JSON_INSTRUCTION);
@@ -39,7 +49,9 @@ export class AnthropicProvider extends BaseHttpProvider {
       body: {
         model: options.model,
         max_tokens: options.maxTokens ?? 4096,
-        temperature: options.temperature ?? 0.7,
+        ...(AnthropicProvider.acceptsTemperature(options.model)
+          ? { temperature: options.temperature ?? 0.7 }
+          : {}),
         messages: options.messages
           .filter((m) => m.role !== "system")
           .map((m) => ({ role: m.role, content: m.content })),
