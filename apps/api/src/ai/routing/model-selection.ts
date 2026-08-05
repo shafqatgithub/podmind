@@ -82,6 +82,16 @@ export const TASK_ROUTES: Record<AiTask, RouteCandidate[]> = {
   ],
 };
 
+/**
+ * Web-search override. All three providers can search now, so a task needing
+ * live results is no longer tied to one account having balance.
+ */
+export const WEB_SEARCH_ROUTE: RouteCandidate[] = [
+  { provider: "openai", family: "gpt-5" },
+  { provider: "anthropic", family: "claude-sonnet" },
+  { provider: "google", family: "gemini-flash" },
+];
+
 /** Long Context override — OpenAI leads, then Gemini and Claude. */
 export const LONG_CONTEXT_ROUTE: RouteCandidate[] = [
   { provider: "openai", family: "gpt-5" },
@@ -115,9 +125,16 @@ export function buildRoutePlan(
   task: AiTask,
   promptChars: number,
   preferredProvider?: ProviderSlug | null,
+  webSearch = false,
 ): RouteCandidate[] {
-  const base =
-    promptChars >= LONG_CONTEXT_CHAR_THRESHOLD ? LONG_CONTEXT_ROUTE : TASK_ROUTES[task];
+  // A request that must search uses the search chain: the ordinary chain can
+  // lead with a model whose provider searches, but on a family that does not,
+  // and every candidate would then be skipped.
+  const base = webSearch
+    ? WEB_SEARCH_ROUTE
+    : promptChars >= LONG_CONTEXT_CHAR_THRESHOLD
+      ? LONG_CONTEXT_ROUTE
+      : TASK_ROUTES[task];
 
   // De-duplicate while preserving order, then hoist the org preference.
   const plan = [...base];

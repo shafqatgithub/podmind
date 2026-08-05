@@ -8,8 +8,16 @@ import {
   ProviderError,
   type ProviderSlug,
   type StreamEvent,
+  JSON_INSTRUCTION,
 } from "./provider.types";
 import type { Env } from "../../config/env";
+
+/**
+ * The only model that searches on the Chat Completions path. Named here rather
+ * than in the model catalogue because it is an implementation detail of how
+ * this provider searches, not a model anyone picks.
+ */
+const OPENAI_SEARCH_MODEL = "gpt-5-search-api";
 
 /** OpenAI adapter — Chat Completions API with native JSON mode. */
 @Injectable()
@@ -30,7 +38,16 @@ export class OpenAiProvider extends BaseHttpProvider {
     return /^(gpt-5|o\d)/.test(model);
   }
 
+  supportsWebSearch(): boolean {
+    return true;
+  }
+
   protected buildRequest(options: CompletionOptions) {
+    // Chat Completions only searches through a dedicated search model, which
+    // always retrieves before answering. Swapping the model here keeps the
+    // rest of the pipeline unaware that a search happened.
+    if (options.webSearch) return this.buildSearchRequest(options);
+
     const reasoning = OpenAiProvider.isReasoningModel(options.model);
     const maxTokens = options.maxTokens ?? 4096;
 
@@ -52,6 +69,31 @@ export class OpenAiProvider extends BaseHttpProvider {
             }
           : { max_tokens: maxTokens, temperature: options.temperature ?? 0.7 }),
         ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
+      },
+    };
+  }
+
+  /**
+   * Web-search request.
+   *
+   * The search model path accepts a deliberately small set of parameters —
+   * no temperature, no reasoning effort, no token cap — so the payload stays
+   * minimal. JSON is asked for in the prompt instead of through
+   * `response_format`, which this path does not accept; the shared extractor
+   * pulls the object back out of the reply.
+   */
+  private buildSearchRequest(options: CompletionOptions) {
+    const messages = options.jsonMode
+      ? [...options.messages, { role: "system" as const, content: JSON_INSTRUCTION }]
+      : options.messages;
+
+    return {
+      url: "https://api.openai.com/v1/chat/completions",
+      headers: { authorization: `Bearer ${this.apiKey}` },
+      body: {
+        model: OPENAI_SEARCH_MODEL,
+        messages,
+        web_search_options: {},
       },
     };
   }

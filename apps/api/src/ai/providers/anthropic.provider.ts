@@ -10,9 +10,6 @@ import {
 } from "./provider.types";
 import type { Env } from "../../config/env";
 
-const JSON_INSTRUCTION =
-  "Respond with a single valid JSON object only — no prose, no markdown fences.";
-
 /** Anthropic Claude adapter — Messages API (system prompt is a top-level field). */
 @Injectable()
 export class AnthropicProvider extends BaseHttpProvider {

@@ -109,3 +109,13 @@ export interface AiProvider {
    */
   stream?(options: CompletionOptions): AsyncIterable<StreamEvent>;
 }
+
+/**
+ * Asks for JSON in the prompt rather than through a native response format.
+ *
+ * Web-search modes and structured-output modes are mutually exclusive on more
+ * than one provider, so when a request needs both, the format has to be asked
+ * for in words and extracted from the reply.
+ */
+export const JSON_INSTRUCTION =
+  "Respond with a single valid JSON object only — no prose, no markdown fences.";

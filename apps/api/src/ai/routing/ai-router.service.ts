@@ -115,7 +115,12 @@ export class AiRouterService {
   async route(request: RouteRequest): Promise<RouteResult> {
     const hold = TASK_MIN_CREDITS[request.task];
     const promptChars = request.messages.reduce((n, m) => n + m.content.length, 0);
-    const plan = buildRoutePlan(request.task, promptChars, request.preferredProvider);
+    const plan = buildRoutePlan(
+      request.task,
+      promptChars,
+      request.preferredProvider,
+      request.webSearch,
+    );
 
     // Charge first, refund on total failure: prevents free retries and keeps
     // the ledger honest under concurrency.
@@ -379,7 +384,12 @@ export class AiRouterService {
   async *routeStream(request: RouteRequest): AsyncIterable<StreamEvent> {
     const hold = TASK_MIN_CREDITS[request.task];
     const promptChars = request.messages.reduce((n, m) => n + m.content.length, 0);
-    const plan = buildRoutePlan(request.task, promptChars, request.preferredProvider);
+    const plan = buildRoutePlan(
+      request.task,
+      promptChars,
+      request.preferredProvider,
+      request.webSearch,
+    );
 
     const creditTx = await this.credits.consume(
       request.organizationId,

@@ -6,6 +6,7 @@ import {
   type CompletionResult,
   ProviderError,
   type ProviderSlug,
+  JSON_INSTRUCTION,
 } from "./provider.types";
 import type { Env } from "../../config/env";
 
@@ -18,8 +19,16 @@ export class GoogleProvider extends BaseHttpProvider {
     super(config.get("GEMINI_API_KEY", { infer: true }));
   }
 
+  supportsWebSearch(): boolean {
+    return true;
+  }
+
   protected buildRequest(options: CompletionOptions) {
     const system = options.messages.filter((m) => m.role === "system").map((m) => m.content);
+    // Grounding and structured output cannot be combined, so when searching,
+    // JSON is requested in words and recovered by the shared extractor.
+    if (options.webSearch && options.jsonMode) system.push(JSON_INSTRUCTION);
+
     return {
       // Key travels in a header, never the URL, so it cannot leak into logs.
       url: `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:generateContent`,
@@ -32,10 +41,15 @@ export class GoogleProvider extends BaseHttpProvider {
             parts: [{ text: m.content }],
           })),
         ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
+        // Grounding with Google Search: the model decides when to search and
+        // returns an answer with its sources already folded in.
+        ...(options.webSearch ? { tools: [{ google_search: {} }] } : {}),
         generationConfig: {
           temperature: options.temperature ?? 0.7,
           maxOutputTokens: options.maxTokens ?? 4096,
-          ...(options.jsonMode ? { responseMimeType: "application/json" } : {}),
+          ...(options.jsonMode && !options.webSearch
+            ? { responseMimeType: "application/json" }
+            : {}),
         },
       },
     };
