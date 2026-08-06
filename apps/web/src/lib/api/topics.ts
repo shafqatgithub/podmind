@@ -51,6 +51,7 @@ export interface Discovery {
 
 export interface DiscoverySummary {
   id: string;
+  project_id: string;
   niche: string;
   country: string | null;
   created_at: string;

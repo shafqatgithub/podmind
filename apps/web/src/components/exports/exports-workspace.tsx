@@ -19,6 +19,7 @@ import {
   FileText,
   Hash,
   ListTree,
+  Lightbulb,
   Megaphone,
   Microscope,
   RefreshCw,
@@ -31,6 +32,7 @@ import { researchApi } from "@/lib/api/research";
 import { scriptsApi } from "@/lib/api/scripts";
 import { seoApi } from "@/lib/api/seo";
 import { socialApi } from "@/lib/api/social";
+import { topicsApi } from "@/lib/api/topics";
 import { projectsApi, type Project } from "@/lib/api/projects";
 import type { ExportKind } from "@/lib/api/exports";
 import { ExportMenu } from "@/components/common/export-menu";
@@ -44,6 +46,7 @@ const KIND_ROUTES: Record<ExportKind, string> = {
   scripts: "/scripts",
   seo: "/seo",
   social: "/social",
+  topics: "/topics",
 };
 
 interface Row {
@@ -65,6 +68,7 @@ const KINDS: {
   { kind: "scripts", label: "Scripts", icon: FileText },
   { kind: "seo", label: "SEO", icon: Hash },
   { kind: "social", label: "Social", icon: Megaphone },
+  { kind: "topics", label: "Topic ideas", icon: Lightbulb },
 ];
 
 function formatDate(value: string | null): string {
@@ -95,13 +99,14 @@ export function ExportsWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const [projectPage, research, outlines, scripts, seo, social] = await Promise.all([
+      const [projectPage, research, outlines, scripts, seo, social, topics] = await Promise.all([
         safe(async () => (await projectsApi.list({ limit: 100 })).items),
         safe(async () => (await researchApi.list({ limit: 100 })).items),
         safe(async () => (await outlinesApi.list()).items),
         safe(async () => (await scriptsApi.list()).items),
         safe(async () => (await seoApi.list({})).items),
         safe(async () => (await socialApi.list({})).items),
+        safe(async () => (await topicsApi.list()).items),
       ]);
 
       setProjects(projectPage);
@@ -145,6 +150,14 @@ export function ExportsWorkspace() {
           projectId: c.project_id,
           meta: c.post_count ? `${c.post_count} posts` : null,
           createdAt: c.created_at,
+        })),
+        ...topics.map<Row>((d) => ({
+          id: d.id,
+          kind: "topics",
+          title: d.niche ? `Ideas for ${d.niche}` : "Topic ideas",
+          projectId: d.project_id,
+          meta: d.topic_count ? `${d.topic_count} ideas` : null,
+          createdAt: d.created_at,
         })),
       ]);
     } catch (err) {
