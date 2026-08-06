@@ -26,7 +26,7 @@ export interface ExportSection {
 }
 
 export interface ExportDocument {
-  kind: "script" | "outline" | "research" | "seo" | "social";
+  kind: "script" | "outline" | "research" | "seo" | "social" | "topics";
   /** Language the body is written in — drives `lang` and text direction. */
   language?: string | null;
   title: string;

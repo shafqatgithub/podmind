@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { GuestsWorkspace } from "@/components/guests/guests-workspace";
 
@@ -11,7 +12,10 @@ export default function Page() {
         title="Guest Intelligence"
         description="Walk into every interview prepared — background, questions and what to verify."
       />
-      <GuestsWorkspace />
+      {/* Suspense is required: the workspace reads search params. */}
+      <Suspense>
+        <GuestsWorkspace />
+      </Suspense>
     </>
   );
 }

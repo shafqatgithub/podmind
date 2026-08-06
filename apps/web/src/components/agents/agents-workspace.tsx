@@ -11,6 +11,7 @@
  */
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowRight,
@@ -210,6 +211,16 @@ export function AgentsWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /**
+   * Arriving from Topic Discovery's "Make this episode".
+   *
+   * The link already carried the topic and project; nothing read them, so the
+   * button landed the user on an empty form and asked them to retype the idea
+   * they had just chosen.
+   */
+  const params = useSearchParams();
+  const [topic, setTopic] = React.useState(params.get("topic") ?? "");
+  const requestedProject = params.get("project");
 
   const loadRuns = React.useCallback(async () => {
     try {
@@ -227,7 +238,10 @@ export function AgentsWorkspace() {
         const page = await projectsApi.list({ limit: 100 }, controller.signal);
         const active = page.items.filter((p) => !p.is_archived);
         setProjects(active);
-        if (active[0]) setProjectId(active[0].id);
+        // Honour the project the user was already working in, if the link
+        // named one; otherwise fall back to the first.
+        const linked = requestedProject && active.find((p) => p.id === requestedProject);
+        setProjectId(linked ? linked.id : (active[0]?.id ?? ""));
       } catch (err) {
         if (err instanceof ApiError && !err.isUnreachable) setError(err.message);
       } finally {
@@ -241,7 +255,7 @@ export function AgentsWorkspace() {
       await loadRuns();
     })();
     return () => controller.abort();
-  }, [loadRuns]);
+  }, [loadRuns, requestedProject]);
 
   // Poll while a run is in flight; stop the moment it settles.
   React.useEffect(() => {
@@ -373,6 +387,8 @@ export function AgentsWorkspace() {
                     name="topic"
                     placeholder="Why attention became the scarcest resource"
                     maxLength={500}
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
                     required
                   />
                 </div>

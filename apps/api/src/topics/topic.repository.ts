@@ -22,6 +22,11 @@ export interface TopicRow {
   why_now: string | null;
   audience_fit: string | null;
   momentum: string | null;
+  audience_score: number | null;
+  demand_score: number | null;
+  competition_score: number | null;
+  overall_score: number | null;
+  score_rationale: string | null;
   search_terms: string[] | null;
   sources: { title?: string; url?: string; publisher?: string; date?: string }[] | null;
   sort_order: number;
@@ -97,6 +102,11 @@ export class TopicRepository {
       why_now: string | null;
       audience_fit: string | null;
       momentum: string | null;
+      audienceScore: number | null;
+      demandScore: number | null;
+      competitionScore: number | null;
+      overallScore: number | null;
+      scoreRationale: string | null;
       search_terms: string[];
       sources: unknown[];
     }[],
@@ -127,8 +137,10 @@ export class TopicRepository {
         await client.query(
           `insert into public.discovered_topics
              (discovery_id, title, angle, why_now, audience_fit, momentum,
+              audience_score, demand_score, competition_score, overall_score,
+              score_rationale,
               search_terms, sources, sort_order)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
           [
             discoveryId,
             topic.title,
@@ -136,6 +148,11 @@ export class TopicRepository {
             topic.why_now,
             topic.audience_fit,
             topic.momentum,
+            topic.audienceScore,
+            topic.demandScore,
+            topic.competitionScore,
+            topic.overallScore,
+            topic.scoreRationale,
             topic.search_terms,
             JSON.stringify(topic.sources),
             index,
@@ -189,6 +206,8 @@ export class TopicRepository {
 
     const topics = await this.pool.query<TopicRow>(
       `select id, title, angle, why_now, audience_fit, momentum,
+              audience_score, demand_score, competition_score, overall_score,
+              score_rationale,
               search_terms, sources, sort_order, is_saved
          from public.discovered_topics
         where discovery_id = $1

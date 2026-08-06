@@ -47,6 +47,41 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { LANGUAGES } from "@/lib/api/projects";
+import { ExportMenu } from "@/components/common/export-menu";
+
+/**
+ * Colour by band, so a glance separates a strong idea from a weak one without
+ * reading the number. Deliberately three bands: finer gradations would imply
+ * a precision these scores do not have.
+ */
+function scoreStyle(score: number): string {
+  if (score >= 75) return "bg-success-500/15 text-success-300";
+  if (score >= 50) return "bg-amber-500/15 text-amber-300";
+  return "bg-neutral-500/15 text-neutral-300";
+}
+
+/** One dimension of the score, shown as a labelled bar. */
+function ScoreBar({ label, value }: { label: string; value: number | null }) {
+  if (value === null) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-xs tabular-nums text-foreground">{value}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-border/60">
+        <div
+          className={cn(
+            "h-full rounded-full",
+            value >= 75 ? "bg-success-500" : value >= 50 ? "bg-amber-500" : "bg-neutral-500",
+          )}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 const MOMENTUM_STYLE: Record<Momentum, { label: string; className: string }> = {
   rising: { label: "Rising", className: "bg-success-500/15 text-success-300" },
@@ -72,6 +107,11 @@ function TopicCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            {topic.overall_score !== null ? (
+              <Badge className={scoreStyle(topic.overall_score)}>
+                {topic.overall_score}/100
+              </Badge>
+            ) : null}
             {momentum ? (
               <Badge className={momentum.className}>
                 <TrendingUp className="mr-1 h-3 w-3" aria-hidden />
@@ -95,6 +135,21 @@ function TopicCard({
       </div>
 
       {topic.angle ? <p className="text-sm">{topic.angle}</p> : null}
+
+      {topic.overall_score !== null ? (
+        <div className="flex flex-col gap-2 rounded-md border border-border/50 bg-hover/30 p-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <ScoreBar label="Audience fit" value={topic.audience_score} />
+            <ScoreBar label="Demand now" value={topic.demand_score} />
+            <ScoreBar label="Open ground" value={topic.competition_score} />
+          </div>
+          {topic.score_rationale ? (
+            <p className="text-xs leading-snug text-muted-foreground">
+              {topic.score_rationale}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2 text-sm">
         {topic.why_now ? (
@@ -173,6 +228,7 @@ export function TopicsWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  const [language, setLanguage] = React.useState("");
 
   const loadHistory = React.useCallback(async () => {
     try {
@@ -238,6 +294,7 @@ export function TopicsWorkspace() {
         ...(String(form.get("country") ?? "").trim()
           ? { country: String(form.get("country")).trim() }
           : {}),
+        ...(language ? { language } : {}),
         ...(String(form.get("provider") ?? "")
           ? { provider: String(form.get("provider")) as "openai" | "anthropic" | "google" }
           : {}),
@@ -378,6 +435,22 @@ export function TopicsWorkspace() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="language">Output language</Label>
+                  <Select
+                    id="language"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    <option value="">Project default</option>
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
                   <Label htmlFor="country">Country (optional)</Label>
                   <Input
                     id="country"
@@ -429,8 +502,14 @@ export function TopicsWorkspace() {
         ) : null}
 
         {discovery && !running ? (
-          <Appear>
+          <Appear id="result-panel">
             <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <h2 className="min-w-0 flex-1 truncate font-display font-semibold">
+                  {discovery.niche ? `Ideas for ${discovery.niche}` : "Topic ideas"}
+                </h2>
+                <ExportMenu kind="topics" id={discovery.id} />
+              </div>
               {meta.summary ? (
                 <Card>
                   <CardContent className="flex flex-col gap-2 p-5">

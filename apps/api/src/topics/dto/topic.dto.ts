@@ -1,5 +1,6 @@
 import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Length } from "class-validator";
 import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 
 /** POST /api/v1/topics/discover */
 export class DiscoverTopicsDto {
@@ -23,6 +24,11 @@ export class DiscoverTopicsDto {
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)
   provider?: SelectableProvider;
+
+  /** Defaults to the project's language. */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 }
 
 export class ListDiscoveriesQueryDto {

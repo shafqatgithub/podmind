@@ -11,6 +11,7 @@
  */
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Award,
@@ -405,6 +406,14 @@ export function GuestsWorkspace() {
   const [detail, setDetail] = React.useState<GuestDetail | null>(null);
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [projectId, setProjectId] = React.useState("");
+  /**
+   * Arriving from Topic Discovery's "Find guests": the topic and project came
+   * with the link but were never read, so the form opened blank.
+   */
+  const params = useSearchParams();
+  const linkedTopic = params.get("topic");
+  const requestedProject = params.get("project");
+  const [fullName, setFullName] = React.useState(linkedTopic ?? "");
   const [mode, setMode] = React.useState<"discover" | "research" | "manual">("discover");
   const [suggestions, setSuggestions] = React.useState<GuestSuggestion[] | null>(null);
   const [discoveryMeta, setDiscoveryMeta] = React.useState<{
@@ -436,7 +445,8 @@ export function GuestsWorkspace() {
         const page = await projectsApi.list({ limit: 100 }, controller.signal);
         const active = page.items.filter((p) => !p.is_archived);
         setProjects(active);
-        if (active[0]) setProjectId(active[0].id);
+        const linked = requestedProject && active.find((p) => p.id === requestedProject);
+        setProjectId(linked ? linked.id : (active[0]?.id ?? ""));
       } catch (err) {
         if (err instanceof ApiError && !err.isUnreachable) setError(err.message);
       } finally {
@@ -455,7 +465,7 @@ export function GuestsWorkspace() {
       await loadGuests();
     })();
     return () => controller.abort();
-  }, [loadGuests]);
+  }, [loadGuests, requestedProject]);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -713,6 +723,8 @@ export function GuestsWorkspace() {
                         ? "Why attention became the scarcest resource"
                         : undefined
                     }
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     required
                   />
                 </div>

@@ -17,6 +17,13 @@ export interface DiscoveredTopic {
   why_now: string | null;
   audience_fit: string | null;
   momentum: Momentum | null;
+  /** Model judgement, 0-100. Null when the model gave nothing usable. */
+  audience_score: number | null;
+  demand_score: number | null;
+  /** Higher means less saturated — a clearer run at the topic. */
+  competition_score: number | null;
+  overall_score: number | null;
+  score_rationale: string | null;
   search_terms: string[] | null;
   sources: TopicSource[] | null;
   is_saved: boolean;
@@ -59,6 +66,8 @@ export const topicsApi = {
     niche: string;
     audience?: string;
     country?: string;
+    /** Defaults to the project language. */
+    language?: string;
     provider?: SelectableProvider;
   }) => apiRequest<Discovery>("/topics/discover", { method: "POST", body }),
 

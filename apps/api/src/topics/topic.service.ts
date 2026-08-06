@@ -65,7 +65,7 @@ export class TopicService {
         country: dto.country,
         podcastName: project.podcast_name,
         avoidRecent,
-        language: project.language,
+        language: dto.language ?? project.language,
       }),
       projectId: project.id,
       jsonMode: true,
@@ -91,6 +91,11 @@ export class TopicService {
         audience_fit: str(t.audience_fit),
         // Only the documented values; anything else is dropped rather than
         // shown to the user as a confident-looking label.
+        audienceScore: score(t.audience_fit_score),
+        demandScore: score(t.demand_score),
+        competitionScore: score(t.competition_score),
+        overallScore: score(t.overall_score),
+        scoreRationale: str(t.score_rationale),
         momentum: MOMENTUM.has(String(t.momentum ?? "").toLowerCase())
           ? String(t.momentum).toLowerCase()
           : null,
@@ -153,4 +158,17 @@ export class TopicService {
     await this.repository.remove(tenant, id);
     return { deleted: true };
   }
+}
+
+/**
+ * A 0-100 score, or null when the model gave something unusable.
+ *
+ * Clamped rather than rejected: a model that answers 120 meant "very high",
+ * and discarding the signal would be a worse reading of its intent than
+ * capping it.
+ */
+function score(value: unknown): number | null {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(100, Math.round(n)));
 }

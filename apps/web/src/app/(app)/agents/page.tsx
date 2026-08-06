@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { AgentsWorkspace } from "@/components/agents/agents-workspace";
 
@@ -11,7 +12,10 @@ export default function Page() {
         title="Episode Pipeline"
         description="One topic in, a full episode package out — research, outline, script, SEO and social."
       />
-      <AgentsWorkspace />
+      {/* Suspense is required: the workspace reads search params. */}
+      <Suspense>
+        <AgentsWorkspace />
+      </Suspense>
     </>
   );
 }

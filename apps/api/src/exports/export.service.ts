@@ -5,6 +5,7 @@ import { ResearchRepository } from "../research/research.repository";
 import type { TenantContext } from "../tenancy/tenancy.service";
 import { SeoRepository } from "../seo/seo.repository";
 import { SocialRepository } from "../social/social.repository";
+import { TopicRepository } from "../topics/topic.repository";
 import { ExportTranslator } from "./export.translator";
 import {
   filenameFor,
@@ -39,6 +40,7 @@ export class ExportService {
     private readonly research: ResearchRepository,
     private readonly seo: SeoRepository,
     private readonly social: SocialRepository,
+    private readonly topics: TopicRepository,
     private readonly translator: ExportTranslator,
   ) {}
 
@@ -307,6 +309,78 @@ export class ExportService {
             notes: post.character_count ? `${post.character_count} characters` : null,
           };
         }),
+      },
+      format,
+      tenant,
+      language,
+    );
+  }
+
+  /**
+   * A topic discovery as a document.
+   *
+   * Ordered by score rather than by the model's original sequence: the point
+   * of the scores is to say which idea to make, and a document that buries the
+   * strongest one third from the top argues against itself.
+   */
+  async exportTopics(tenant: TenantContext, id: string, format: ExportFormat, language?: string) {
+    const discovery = await this.topics.findOne(tenant, id);
+    const meta = (discovery.metadata ?? {}) as Record<string, unknown>;
+
+    const facts: ExportDocument["facts"] = [
+      { label: "Topics", value: String(discovery.topics.length) },
+    ];
+    if (discovery.niche) facts.push({ label: "Niche", value: discovery.niche });
+    if (discovery.audience) facts.push({ label: "Audience", value: discovery.audience });
+    if (discovery.country) facts.push({ label: "Country", value: discovery.country });
+
+    const ranked = [...discovery.topics].sort(
+      (a, b) => (b.overall_score ?? -1) - (a.overall_score ?? -1),
+    );
+
+    const lists: ExportDocument["lists"] = [];
+    const gaps = asStringArray(meta.gaps);
+    if (gaps.length) lists.push({ heading: "Gaps nobody is covering", items: gaps });
+    const avoid = asStringArray(meta.avoid);
+    if (avoid.length) lists.push({ heading: "Saturated — avoid", items: avoid });
+
+    return this.finish(
+      {
+        kind: "topics",
+        language: asString(meta.language),
+        title: `Topic ideas: ${discovery.niche ?? "discovery"}`,
+        subtitle: asString(meta.summary),
+        facts,
+        sections: ranked.map((topic) => {
+          const parts: string[] = [];
+          if (topic.angle) parts.push(topic.angle);
+          if (topic.why_now) parts.push(`Why now: ${topic.why_now}`);
+          if (topic.audience_fit) parts.push(`Audience fit: ${topic.audience_fit}`);
+          if (topic.score_rationale) parts.push(topic.score_rationale);
+
+          const scores = [
+            topic.overall_score !== null ? `Overall ${topic.overall_score}` : null,
+            topic.audience_score !== null ? `Audience ${topic.audience_score}` : null,
+            topic.demand_score !== null ? `Demand ${topic.demand_score}` : null,
+            topic.competition_score !== null ? `Open ground ${topic.competition_score}` : null,
+            topic.momentum,
+          ].filter(Boolean);
+
+          const sources = Array.isArray(topic.sources) ? topic.sources : [];
+
+          return {
+            title: topic.title,
+            content: parts.join("\n\n"),
+            notes: scores.length ? scores.join(" · ") : null,
+            bullets: sources
+              .map((raw) => {
+                const source = raw as { title?: string; url?: string; publisher?: string };
+                return [source.title, source.publisher, source.url].filter(Boolean).join(" — ");
+              })
+              .filter(Boolean),
+          };
+        }),
+        lists,
       },
       format,
       tenant,
