@@ -79,6 +79,15 @@ export function buildGuestDiscoveryMessages(input: GuestDiscoveryPromptInput): A
       `Prefer people in or closely connected to ${input.country}, but include the strongest international voices too if the local pool is thin — say which is which.`,
     );
   }
+  // Search in the show's language too: a guest who is prominent in Urdu or
+  // Spanish media may be invisible to an English-only search, and those are
+  // exactly the voices a show in that language wants.
+  if (language !== "English") {
+    context.push(
+      `The show is in ${language}. Search in ${language} as well as English, and prefer guests who can hold a conversation in ${language}.`,
+    );
+  }
+
   if (input.excludeNames?.length) {
     context.push(`Already suggested, do not repeat: ${input.excludeNames.slice(0, 15).join("; ")}`);
   }

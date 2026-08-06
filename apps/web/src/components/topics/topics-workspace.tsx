@@ -435,7 +435,7 @@ export function TopicsWorkspace() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="language">Output language</Label>
+                  <Label htmlFor="language">Search &amp; output language</Label>
                   <Select
                     id="language"
                     value={language}
@@ -448,6 +448,9 @@ export function TopicsWorkspace() {
                       </option>
                     ))}
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Searches sources in this language, and writes the ideas in it.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">

@@ -267,7 +267,7 @@ export class GuestService {
         podcastName: project.podcast_name,
         audience: project.audience,
         excludeNames,
-        language: project.language,
+        language: dto.language ?? project.language,
       }),
       projectId: project.id,
       jsonMode: true,

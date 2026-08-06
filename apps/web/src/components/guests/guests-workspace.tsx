@@ -42,7 +42,7 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
-import { projectsApi, type Project } from "@/lib/api/projects";
+import { LANGUAGES, projectsApi, type Project } from "@/lib/api/projects";
 import { aiApi, PROVIDER_LABELS, type AiStatus } from "@/lib/api/ai";
 import {
   guestsApi,
@@ -414,6 +414,7 @@ export function GuestsWorkspace() {
   const linkedTopic = params.get("topic");
   const requestedProject = params.get("project");
   const [fullName, setFullName] = React.useState(linkedTopic ?? "");
+  const [language, setLanguage] = React.useState("");
   const [mode, setMode] = React.useState<"discover" | "research" | "manual">("discover");
   const [suggestions, setSuggestions] = React.useState<GuestSuggestion[] | null>(null);
   const [discoveryMeta, setDiscoveryMeta] = React.useState<{
@@ -490,6 +491,7 @@ export function GuestsWorkspace() {
         const result = await guestsApi.discover({
           project_id: projectId,
           topic: fullName,
+          ...(language ? { language } : {}),
           ...(String(form.get("context") ?? "").trim()
             ? { country: String(form.get("context")).trim() }
             : {}),
@@ -730,6 +732,26 @@ export function GuestsWorkspace() {
                 </div>
 
                 {mode === "discover" ? (
+                  <>
+                  <div className="flex flex-col gap-1.5 sm:col-span-2">
+                    <Label htmlFor="language">Search &amp; output language</Label>
+                    <Select
+                      id="language"
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                    >
+                      <option value="">Project default</option>
+                      {LANGUAGES.map((l) => (
+                        <option key={l.code} value={l.code}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Finds guests who work in this language, not only English speakers.
+                    </p>
+                  </div>
+
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="context">Country (optional)</Label>
                     <Input
@@ -742,6 +764,7 @@ export function GuestsWorkspace() {
                       Prefers local voices, and says which suggestions are international.
                     </p>
                   </div>
+                  </>
                 ) : mode === "research" ? (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="context">Identifying details</Label>

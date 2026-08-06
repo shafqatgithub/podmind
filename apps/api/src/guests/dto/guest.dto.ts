@@ -1,6 +1,7 @@
 import { IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from "class-validator";
 import { Transform } from "class-transformer";
 import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 
 /** POST /api/v1/guests — research a person and save the briefing. */
 export class CreateGuestDto {
@@ -39,6 +40,11 @@ export class DiscoverGuestsDto {
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)
   provider?: SelectableProvider;
+
+  /** Defaults to the project's language. */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 }
 
 /** POST /api/v1/guests/suggestions/:id/promote — turn a lead into a briefing. */

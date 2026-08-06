@@ -138,6 +138,8 @@ export const guestsApi = {
     topic: string;
     country?: string;
     provider?: SelectableProvider;
+    /** Defaults to the project language. */
+    language?: string;
   }) => apiRequest<GuestDiscovery>("/guests/discover", { method: "POST", body }),
 
   suggestions: (query: { project_id?: string; topic?: string } = {}, signal?: AbortSignal) =>

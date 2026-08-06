@@ -81,6 +81,16 @@ export function buildTopicMessages(input: TopicPromptInput): AiMessage[] {
       `Audience is primarily in ${input.country} — prefer stories that matter there, and include local sources where they exist.`,
     );
   }
+  // Search in the audience's language, not only write in it. Searching in
+  // English and translating the findings surfaces whatever the anglophone
+  // press covered and misses the stories that actually moved in that
+  // language's own media.
+  if (language !== "English") {
+    context.push(
+      `The show is in ${language}. Run your searches in ${language} as well as English, and prefer ${language}-language sources and outlets. A story covered widely in ${language} media matters more here than one covered only in English.`,
+    );
+  }
+
   if (input.avoidRecent?.length) {
     context.push(
       `Already covered recently, do not repeat: ${input.avoidRecent.slice(0, 12).join("; ")}`,
