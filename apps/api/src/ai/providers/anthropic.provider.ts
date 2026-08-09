@@ -7,6 +7,7 @@ import {
   ProviderError,
   type ProviderSlug,
   type StreamEvent,
+  JSON_INSTRUCTION,
 } from "./provider.types";
 import type { Env } from "../../config/env";
 
