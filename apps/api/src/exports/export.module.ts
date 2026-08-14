@@ -13,11 +13,13 @@ import { SocialRepository } from "../social/social.repository";
 import { SocialModule } from "../social/social.module";
 import { TopicRepository } from "../topics/topic.repository";
 import { TopicModule } from "../topics/topic.module";
+import { GuestRepository } from "../guests/guest.repository";
+import { GuestModule } from "../guests/guest.module";
 import { SeoModule } from "../seo/seo.module";
 import { AiModule } from "../ai/ai.module";
 
 @Module({
-  imports: [ScriptModule, OutlineModule, ResearchModule, SeoModule, SocialModule, TopicModule, AiModule],
+  imports: [ScriptModule, OutlineModule, ResearchModule, SeoModule, SocialModule, TopicModule, GuestModule, AiModule],
   controllers: [ExportController],
   providers: [
     ExportService,
@@ -28,6 +30,7 @@ import { AiModule } from "../ai/ai.module";
     SeoRepository,
     SocialRepository,
     TopicRepository,
+    GuestRepository,
   ],
 })
 export class ExportModule {}

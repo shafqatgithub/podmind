@@ -60,6 +60,8 @@ export const agentsApi = {
     steps: PipelineStep[];
     duration_minutes?: number;
     guest_name?: string;
+  /** Applies to every step. Defaults to the project language. */
+  language?: string;
     provider?: SelectableProvider;
   }) => apiRequest<AgentRun>("/agents/runs", { method: "POST", body }),
 

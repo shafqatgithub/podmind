@@ -1,6 +1,7 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsOptional, IsString, IsUUID, Length } from "class-validator";
 import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
 import { SOCIAL_PLATFORMS, type SocialPlatform } from "../social.prompt";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 
 export const TONES = [
   "professional", "friendly", "formal", "casual", "humorous", "motivational", "technical",
@@ -33,6 +34,11 @@ export class CreateSocialDto {
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)
   provider?: SelectableProvider;
+
+  /** Defaults to the source script's language, then the project's. */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 }
 
 export class ListSocialQueryDto {

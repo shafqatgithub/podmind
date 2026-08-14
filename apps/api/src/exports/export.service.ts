@@ -6,6 +6,7 @@ import type { TenantContext } from "../tenancy/tenancy.service";
 import { SeoRepository } from "../seo/seo.repository";
 import { SocialRepository } from "../social/social.repository";
 import { TopicRepository } from "../topics/topic.repository";
+import { GuestRepository } from "../guests/guest.repository";
 import { ExportTranslator } from "./export.translator";
 import {
   filenameFor,
@@ -41,6 +42,7 @@ export class ExportService {
     private readonly seo: SeoRepository,
     private readonly social: SocialRepository,
     private readonly topics: TopicRepository,
+    private readonly guests: GuestRepository,
     private readonly translator: ExportTranslator,
   ) {}
 
@@ -380,6 +382,117 @@ export class ExportService {
               .filter(Boolean),
           };
         }),
+        lists,
+      },
+      format,
+      tenant,
+      language,
+    );
+  }
+
+  /**
+   * A guest briefing as a document.
+   *
+   * This is the one export people print and carry into the room, so it is
+   * ordered the way an interview runs: who they are, where they have already
+   * told their story, then the questions. Past appearances sit high because
+   * their main use is negative — knowing which ground has been covered so the
+   * host does not spend the first ten minutes on it.
+   */
+  async exportGuest(tenant: TenantContext, id: string, format: ExportFormat, language?: string) {
+    const guest = await this.guests.findOne(tenant, id);
+    const meta = (guest.metadata ?? {}) as Record<string, unknown>;
+
+    const facts: ExportDocument["facts"] = [];
+    if (guest.job_title) facts.push({ label: "Role", value: guest.job_title });
+    if (guest.company) facts.push({ label: "Company", value: guest.company });
+    if (guest.industry) facts.push({ label: "Industry", value: guest.industry });
+    if (guest.country) facts.push({ label: "Country", value: guest.country });
+
+    const sections: ExportDocument["sections"] = [];
+    if (guest.biography) sections.push({ title: "Background", content: guest.biography });
+
+    if (guest.companies.length) {
+      sections.push({
+        title: "Roles",
+        content: "",
+        bullets: guest.companies.map((c: Record<string, unknown>) =>
+          [c.company_name, c.role, c.is_current ? "current" : null]
+            .filter(Boolean)
+            .join(" — "),
+        ),
+      });
+    }
+
+    if (guest.interviews.length) {
+      sections.push({
+        title: "Podcasts and interviews they have done",
+        content: "",
+        bullets: guest.interviews.map((i: Record<string, unknown>) =>
+          [i.platform, i.interview_title, i.summary, i.interview_url]
+            .filter(Boolean)
+            .join(" — "),
+        ),
+      });
+    }
+
+    if (guest.social_profiles.length) {
+      sections.push({
+        title: "Where to find them",
+        content: "",
+        bullets: guest.social_profiles.map((p: Record<string, unknown>) =>
+          [p.platform, p.username ? `@${String(p.username)}` : null, p.profile_url]
+            .filter(Boolean)
+            .join(" — "),
+        ),
+      });
+    }
+
+    if (guest.books.length) {
+      sections.push({
+        title: "Books",
+        content: "",
+        bullets: guest.books.map((b: Record<string, unknown>) =>
+          [b.title, b.publisher].filter(Boolean).join(" — "),
+        ),
+      });
+    }
+
+    // Questions grouped by kind: a host works through them in that order.
+    const byType = new Map<string, string[]>();
+    for (const q of guest.questions as Record<string, unknown>[]) {
+      const type = String(q.question_type ?? "question");
+      byType.set(type, [...(byType.get(type) ?? []), String(q.question)]);
+    }
+    const lists: ExportDocument["lists"] = [...byType.entries()].map(([type, items]) => ({
+      heading: `${type.charAt(0).toUpperCase()}${type.slice(1).replace(/_/g, " ")} questions`,
+      items,
+    }));
+
+    for (const [key, heading] of [
+      ["interesting_facts", "Worth knowing"],
+      ["conversation_opportunities", "Angles to explore"],
+      ["uncertainties", "Unverified — check before airing"],
+    ] as const) {
+      const items = asStringArray(meta[key]);
+      if (items.length) lists.push({ heading, items });
+    }
+
+    if (guest.notes.length) {
+      lists.push({
+        heading: "Your notes",
+        items: guest.notes.map((n: Record<string, unknown>) => String(n.note)),
+      });
+    }
+
+    return this.finish(
+      {
+        kind: "guest",
+        language: asString(meta.language),
+        title: guest.full_name,
+        subtitle: guest.headline,
+        facts,
+        sections,
         lists,
       },
       format,

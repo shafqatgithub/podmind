@@ -22,6 +22,7 @@ import {
   Lightbulb,
   Megaphone,
   Microscope,
+  Users,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import { scriptsApi } from "@/lib/api/scripts";
 import { seoApi } from "@/lib/api/seo";
 import { socialApi } from "@/lib/api/social";
 import { topicsApi } from "@/lib/api/topics";
+import { guestsApi } from "@/lib/api/guests";
 import { projectsApi, type Project } from "@/lib/api/projects";
 import type { ExportKind } from "@/lib/api/exports";
 import { ExportMenu } from "@/components/common/export-menu";
@@ -47,6 +49,7 @@ const KIND_ROUTES: Record<ExportKind, string> = {
   seo: "/seo",
   social: "/social",
   topics: "/topics",
+  guests: "/guests",
 };
 
 interface Row {
@@ -69,6 +72,7 @@ const KINDS: {
   { kind: "seo", label: "SEO", icon: Hash },
   { kind: "social", label: "Social", icon: Megaphone },
   { kind: "topics", label: "Topic ideas", icon: Lightbulb },
+  { kind: "guests", label: "Guests", icon: Users },
 ];
 
 function formatDate(value: string | null): string {
@@ -99,7 +103,8 @@ export function ExportsWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const [projectPage, research, outlines, scripts, seo, social, topics] = await Promise.all([
+      const [projectPage, research, outlines, scripts, seo, social, topics, guests] =
+        await Promise.all([
         safe(async () => (await projectsApi.list({ limit: 100 })).items),
         safe(async () => (await researchApi.list({ limit: 100 })).items),
         safe(async () => (await outlinesApi.list()).items),
@@ -107,6 +112,7 @@ export function ExportsWorkspace() {
         safe(async () => (await seoApi.list({})).items),
         safe(async () => (await socialApi.list({})).items),
         safe(async () => (await topicsApi.list()).items),
+        safe(async () => (await guestsApi.list()).items),
       ]);
 
       setProjects(projectPage);
@@ -158,6 +164,14 @@ export function ExportsWorkspace() {
           projectId: d.project_id,
           meta: d.topic_count ? `${d.topic_count} ideas` : null,
           createdAt: d.created_at,
+        })),
+        ...guests.map<Row>((g) => ({
+          id: g.id,
+          kind: "guests",
+          title: g.full_name,
+          projectId: g.project_id,
+          meta: g.headline,
+          createdAt: g.created_at,
         })),
       ]);
     } catch (err) {

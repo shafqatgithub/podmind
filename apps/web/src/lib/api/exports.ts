@@ -8,7 +8,7 @@ export const EXPORT_FORMATS = [
 ] as const;
 
 export type ExportFormat = (typeof EXPORT_FORMATS)[number]["value"];
-export type ExportKind = "scripts" | "outlines" | "research" | "seo" | "social" | "topics";
+export type ExportKind = "scripts" | "outlines" | "research" | "seo" | "social" | "topics" | "guests";
 
 /**
  * Download an export.

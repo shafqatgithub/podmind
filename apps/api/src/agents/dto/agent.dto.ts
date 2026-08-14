@@ -1,4 +1,5 @@
 import { ArrayNotEmpty, IsArray, IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from "class-validator";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
 import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
 
 /**
@@ -32,6 +33,16 @@ export class CreateRunDto {
   @IsString()
   @Length(1, 200)
   guest_name?: string;
+
+  /**
+   * Output language for the whole run. Defaults to the project's.
+   *
+   * Set here rather than per step: a pipeline that researched in Urdu and
+   * wrote the script in English would produce an episode nobody can use.
+   */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)

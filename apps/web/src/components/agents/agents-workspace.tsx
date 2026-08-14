@@ -36,7 +36,7 @@ import {
 } from "@podmind/ui";
 import Link from "next/link";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
-import { projectsApi, type Project } from "@/lib/api/projects";
+import { LANGUAGES, projectsApi, type Project } from "@/lib/api/projects";
 import { aiApi, PROVIDER_LABELS, type AiStatus } from "@/lib/api/ai";
 import {
   agentsApi,
@@ -220,6 +220,7 @@ export function AgentsWorkspace() {
    */
   const params = useSearchParams();
   const [topic, setTopic] = React.useState(params.get("topic") ?? "");
+  const [language, setLanguage] = React.useState("");
   const requestedProject = params.get("project");
 
   const loadRuns = React.useCallback(async () => {
@@ -308,6 +309,7 @@ export function AgentsWorkspace() {
       const started = await agentsApi.createRun({
         project_id: projectId,
         topic,
+        ...(language ? { language } : {}),
         steps,
         ...(duration ? { duration_minutes: duration } : {}),
         ...(guest ? { guest_name: guest } : {}),
@@ -391,6 +393,25 @@ export function AgentsWorkspace() {
                     onChange={(e) => setTopic(e.target.value)}
                     required
                   />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="language">Output language</Label>
+                  <Select
+                    id="language"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    <option value="">Project default</option>
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Applies to every step — research, outline, script, SEO and posts.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">

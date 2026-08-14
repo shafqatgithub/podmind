@@ -167,6 +167,9 @@ export class AgentService {
     context: PipelineContext,
   ): Promise<Record<string, unknown>> {
     const provider = dto.provider;
+    // Passed to every step so the whole run stays in one language. Social
+    // takes it from the script it promotes, so it is not repeated there.
+    const language = dto.language;
 
     switch (step) {
       case "research": {
@@ -174,6 +177,7 @@ export class AgentService {
           project_id: dto.project_id,
           topic: dto.topic,
           depth: "standard",
+          ...(language ? { language } : {}),
           ...(provider ? { provider } : {}),
         });
         context.researchSessionId = result.id;
@@ -189,6 +193,7 @@ export class AgentService {
             : {}),
           ...(dto.duration_minutes ? { duration_minutes: dto.duration_minutes } : {}),
           ...(dto.guest_name ? { guest_name: dto.guest_name } : {}),
+          ...(language ? { language } : {}),
           ...(provider ? { provider } : {}),
         });
         context.outlineId = result.id;
@@ -201,6 +206,7 @@ export class AgentService {
           ...(context.outlineId ? { outline_id: context.outlineId } : { topic: dto.topic }),
           ...(dto.duration_minutes ? { duration_minutes: dto.duration_minutes } : {}),
           ...(dto.guest_name ? { guest_name: dto.guest_name } : {}),
+          ...(language ? { language } : {}),
           ...(provider ? { provider } : {}),
         });
         context.scriptId = result.id;
@@ -211,6 +217,7 @@ export class AgentService {
         const result = await this.seo.create(tenant, {
           project_id: dto.project_id,
           ...(context.scriptId ? { script_id: context.scriptId } : { topic: dto.topic }),
+          ...(language ? { language } : {}),
           ...(provider ? { provider } : {}),
         });
         return { seo_id: result.id };
@@ -221,6 +228,7 @@ export class AgentService {
           project_id: dto.project_id,
           platforms: ["x", "linkedin", "instagram"],
           ...(context.scriptId ? { script_id: context.scriptId } : { topic: dto.topic }),
+          ...(language ? { language } : {}),
           ...(provider ? { provider } : {}),
         });
         return { social_id: result.id };

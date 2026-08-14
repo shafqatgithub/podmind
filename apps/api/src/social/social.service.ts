@@ -68,7 +68,7 @@ export class SocialService {
         audience: project.audience,
         // Posts promoting an Urdu episode have to be in Urdu; the script is
         // where that language is recorded once it differs from the project.
-        language: sourceLanguage ?? project.language,
+        language: dto.language ?? sourceLanguage ?? project.language,
       }),
       projectId: project.id,
       jsonMode: true,
@@ -137,7 +137,7 @@ export class SocialService {
           tone: dto.tone ?? "friendly",
           // Recorded so exports can set text direction and translation knows
           // what it is starting from.
-          language: sourceLanguage ?? project.language,
+          language: dto.language ?? sourceLanguage ?? project.language,
           thread: strArray(parsed.thread),
           carousel_ideas: strArray(parsed.carousel_ideas),
           emoji_notes: strArray(parsed.emoji_notes),

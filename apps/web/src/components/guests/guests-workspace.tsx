@@ -55,6 +55,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ExportMenu } from "@/components/common/export-menu";
 
 function Section({
   icon: Icon,
@@ -994,7 +995,13 @@ export function GuestsWorkspace() {
         ) : null}
 
         {detail && !running ? (
-          <Appear>
+          <Appear id="result-panel">
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="min-w-0 flex-1 truncate font-display font-semibold">
+                {detail.full_name}
+              </h2>
+              <ExportMenu kind="guests" id={detail.id} />
+            </div>
             <GuestBriefing guest={detail} onAddNote={addNote} />
           </Appear>
         ) : null}

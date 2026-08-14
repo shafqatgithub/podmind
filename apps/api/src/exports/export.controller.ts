@@ -115,6 +115,18 @@ export class ExportController {
     this.send(res, await this.exports.exportTopics(tenant, id, query.format, query.language));
   }
 
+  @Get("guests/:id")
+  @Header("cache-control", "no-store")
+  async guest(
+    @CurrentUser() user: AuthUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: ExportQueryDto,
+    @Res() res: Response,
+  ) {
+    const tenant = await this.tenancy.resolve(user.id);
+    this.send(res, await this.exports.exportGuest(tenant, id, query.format, query.language));
+  }
+
   @Get("research/:id")
   @Header("cache-control", "no-store")
   async research(
