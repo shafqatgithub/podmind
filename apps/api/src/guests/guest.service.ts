@@ -299,14 +299,27 @@ export class GuestService {
           : null,
         profile_urls: objArray(g.profile_urls).filter((u) => str(u.url)),
         sources: objArray(g.sources).filter((src) => str(src.url) ?? str(src.title)),
-        confidence:
-          typeof g.confidence === "number" && Number.isFinite(g.confidence)
-            ? Math.min(Math.max(g.confidence, 0), 1)
-            : null,
+        // Identity confidence, kept for the "is this the right person" warning.
+        // Older responses used `confidence` for the same thing.
+        confidence: (() => {
+          const raw = g.identity_confidence ?? g.confidence;
+          return typeof raw === "number" && Number.isFinite(raw)
+            ? Math.min(Math.max(raw, 0), 1)
+            : null;
+        })(),
+        // How good a guest they would be — the figure worth ranking on.
+        fit_score: (() => {
+          const raw = g.fit_score;
+          if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
+          return Math.round(Math.min(Math.max(raw, 0), 100));
+        })(),
       }))
       // A person with no source is a guess, not a lead — and guessing about
       // real people is the one thing this feature must never do.
-      .filter((g) => g.full_name && g.sources.length > 0);
+      .filter((g) => g.full_name && g.sources.length > 0)
+      // Best fit first, so the list reads as a recommendation rather than an
+      // inventory. Unscored entries fall to the end rather than the top.
+      .sort((a, b) => (b.fit_score ?? -1) - (a.fit_score ?? -1));
 
     if (suggestions.length === 0) {
       throw new ServiceUnavailableException({

@@ -392,6 +392,7 @@ export class GuestRepository {
       profile_urls: unknown[];
       sources: unknown[];
       confidence: number | null;
+      fit_score: number | null;
     }[],
   ): Promise<void> {
     const client: PoolClient = await this.pool.connect();
@@ -401,8 +402,9 @@ export class GuestRepository {
         await client.query(
           `insert into public.guest_suggestions
              (project_id, created_by, topic, country, full_name, headline, why_them,
-              expertise, reachability, profile_urls, sources, confidence, sort_order)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+              expertise, reachability, profile_urls, sources, confidence, fit_score,
+              sort_order)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
           [
             projectId,
             tenant.userId,
@@ -416,6 +418,7 @@ export class GuestRepository {
             JSON.stringify(s.profile_urls),
             JSON.stringify(s.sources),
             s.confidence,
+            s.fit_score,
             index,
           ],
         );
@@ -451,7 +454,8 @@ export class GuestRepository {
     const { rows } = await this.pool.query(
       `select s.id, s.project_id, s.topic, s.country, s.full_name, s.headline,
               s.why_them, s.expertise, s.reachability, s.profile_urls, s.sources,
-              s.confidence, s.guest_id, s.created_at
+              s.confidence,
+            s.fit_score, s.guest_id, s.created_at
          from public.guest_suggestions s
         where ${where.join(" and ")}
         order by s.created_at desc, s.sort_order

@@ -890,9 +890,30 @@ export function GuestsWorkspace() {
                             {s.reachability} to book
                           </Badge>
                         ) : null}
-                        {s.confidence !== null ? (
-                          <span className="text-xs text-muted-foreground">
-                            {Math.round(s.confidence * 100)}% confident
+                        {/* Fit leads, because it is the judgement that decides
+                            whether to book. Identity confidence is shown only
+                            when it is low enough to matter — once sources are
+                            found it sits near 100 for everyone and ranking on
+                            it told the host nothing. */}
+                        {s.fit_score !== null ? (
+                          <Badge
+                            className={cn(
+                              s.fit_score >= 75
+                                ? "bg-success-500/15 text-success-300"
+                                : s.fit_score >= 50
+                                  ? "bg-amber-500/15 text-amber-300"
+                                  : "bg-neutral-500/15 text-neutral-300",
+                            )}
+                          >
+                            {s.fit_score}/100 fit
+                          </Badge>
+                        ) : null}
+                        {s.confidence !== null && s.confidence < 0.7 ? (
+                          <span
+                            className="text-xs text-warning-300"
+                            title="How sure the model is it found the right person"
+                          >
+                            {Math.round(s.confidence * 100)}% sure it&rsquo;s the right person
                           </span>
                         ) : null}
                       </div>

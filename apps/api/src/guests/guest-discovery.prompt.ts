@@ -46,7 +46,8 @@ const OUTPUT_CONTRACT = `Return ONE valid JSON object and nothing else — no pr
       "sources": [
         { "title": "Where you found them", "url": "https://...", "publisher": "if known" }
       ],
-      "confidence": 0.0
+      "fit_score": 0-100 — how strong a guest THIS person would be for THIS episode,
+      "identity_confidence": 0.0-1.0 — separately, how sure you are you have the right person
     }
   ],
   "angles": ["Interview angles that would suit this kind of guest"],
@@ -55,7 +56,11 @@ const OUTPUT_CONTRACT = `Return ONE valid JSON object and nothing else — no pr
 
 Rules for the fields:
 - Return between 3 and 8 guests. Real ones only.
-- "confidence" is 0 to 1: how sure you are this is a real, correctly identified person suited to this topic.
+- Order the list by fit_score, strongest first.
+- Two different judgements, kept apart because they answer different questions:
+  - "identity_confidence" is only about identification: are you sure this is a real person and that the details belong to them, not to a namesake. Once you have found solid sources this will often be high, and that is correct — it says nothing about whether to book them.
+  - "fit_score" is the useful one: how good a guest they would be for this episode. It must discriminate. Rank the guests first, then score so the strongest sits in the 80s and the weakest below 50; the spread across the set must be at least 30 points, at most two may exceed 80, and no two may share a score.
+  - A famous, perfectly identified expert who is unreachable, has said the same thing on twenty podcasts, or only glances off the topic should score poorly on fit. Say so in "why_them".
 - Write all human-readable text in {{LANGUAGE}}.`;
 
 export interface GuestDiscoveryPromptInput {

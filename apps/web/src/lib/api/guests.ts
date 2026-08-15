@@ -115,7 +115,10 @@ export interface GuestSuggestion {
   reachability: "easy" | "moderate" | "hard" | null;
   profile_urls: { platform?: string; url?: string }[] | null;
   sources: { title?: string; url?: string; publisher?: string }[] | null;
+  /** Identity confidence 0-1: is this the right person. Not a quality score. */
   confidence: number | null;
+  /** How strong a guest they would be for this episode, 0-100. */
+  fit_score: number | null;
   guest_id: string | null;
   created_at: string;
 }
