@@ -71,7 +71,7 @@ export class GuestService {
         podcastName: project.podcast_name,
         audience: project.audience,
         niche: project.niche,
-        language: project.language,
+        language: dto.language ?? project.language,
       }),
       projectId: project.id,
       jsonMode: true,
@@ -163,6 +163,9 @@ export class GuestService {
     const metadata = {
       model: routed.model,
       provider: routed.provider,
+      // Recorded so the export can set text direction and translation knows
+      // what language it is starting from.
+      language: dto.language ?? project.language,
       confidence_score: confidence,
       career_timeline: objArray(parsed.career_timeline),
       awards: strArray(parsed.awards),

@@ -159,6 +159,8 @@ export const guestsApi = {
     project_id: string;
     full_name: string;
     context?: string;
+    /** Defaults to the project language. */
+    language?: string;
     provider?: SelectableProvider;
   }) => apiRequest<GuestDetail>("/guests", { method: "POST", body }),
 

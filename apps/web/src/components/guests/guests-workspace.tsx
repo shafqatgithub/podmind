@@ -531,6 +531,7 @@ export function GuestsWorkspace() {
           ? await guestsApi.research({
               project_id: projectId,
               full_name: fullName,
+              ...(language ? { language } : {}),
               ...(String(form.get("context") ?? "").trim()
                 ? { context: String(form.get("context")).trim() }
                 : {}),
@@ -732,8 +733,10 @@ export function GuestsWorkspace() {
                   />
                 </div>
 
-                {mode === "discover" ? (
-                  <>
+                {/* Applies to discovery and research alike: a briefing on a
+                    guest is as useless in the wrong language as a list of
+                    suggestions is. Only manual entry has nothing to write. */}
+                {mode !== "manual" ? (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="language">Search &amp; output language</Label>
                     <Select
@@ -749,10 +752,14 @@ export function GuestsWorkspace() {
                       ))}
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      Finds guests who work in this language, not only English speakers.
+                      {mode === "discover"
+                        ? "Finds guests who work in this language, not only English speakers."
+                        : "Searches sources in this language, and writes the briefing in it."}
                     </p>
                   </div>
+                ) : null}
 
+                {mode === "discover" ? (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="context">Country (optional)</Label>
                     <Input
@@ -765,7 +772,6 @@ export function GuestsWorkspace() {
                       Prefers local voices, and says which suggestions are international.
                     </p>
                   </div>
-                  </>
                 ) : mode === "research" ? (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="context">Identifying details</Label>

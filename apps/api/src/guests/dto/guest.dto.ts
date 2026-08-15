@@ -21,6 +21,11 @@ export class CreateGuestDto {
   @IsOptional()
   @IsIn(SELECTABLE_PROVIDERS)
   provider?: SelectableProvider;
+
+  /** Defaults to the project's language. */
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
 }
 
 /** POST /api/v1/guests/discover — find candidate guests for a topic. */
