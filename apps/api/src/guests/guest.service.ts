@@ -335,6 +335,7 @@ export class GuestService {
       dto.topic,
       dto.country ?? null,
       suggestions,
+      dto.language ?? project.language,
     );
 
     this.logger.log({
@@ -380,6 +381,10 @@ export class GuestService {
       context: [suggestion.headline, suggestion.expertise, suggestion.country]
         .filter(Boolean)
         .join(" — "),
+      // Inherit the language the discovery ran in. Without this, an Urdu
+      // discovery produced an English briefing the moment a suggestion was
+      // promoted — the choice was made once and then quietly dropped.
+      ...(suggestion.language ? { language: suggestion.language } : {}),
       ...(provider ? { provider } : {}),
     });
 

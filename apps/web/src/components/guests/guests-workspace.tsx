@@ -42,6 +42,7 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
+import { COUNTRIES } from "@podmind/types";
 import { LANGUAGES, projectsApi, type Project } from "@/lib/api/projects";
 import { aiApi, PROVIDER_LABELS, type AiStatus } from "@/lib/api/ai";
 import {
@@ -762,14 +763,19 @@ export function GuestsWorkspace() {
                 {mode === "discover" ? (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
                     <Label htmlFor="context">Country (optional)</Label>
-                    <Input
-                      id="context"
-                      name="context"
-                      maxLength={100}
-                      placeholder="Pakistan"
-                    />
+                    {/* A list rather than a text box: a typed country had to be
+                        interpreted, and every interpretation is a chance for the
+                        search to drift somewhere else. */}
+                    <Select id="context" name="context" defaultValue="">
+                      <option value="">Anywhere</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </Select>
                     <p className="text-xs text-muted-foreground">
-                      Prefers local voices, and says which suggestions are international.
+                      Every suggestion will be from here. Leave on Anywhere for a global search.
                     </p>
                   </div>
                 ) : mode === "research" ? (

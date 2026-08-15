@@ -77,11 +77,23 @@ export function buildGuestDiscoveryMessages(input: GuestDiscoveryPromptInput): A
   const today = new Date().toISOString().slice(0, 10);
 
   const context: string[] = [];
-  if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);
-  if (input.audience) context.push(`Audience: ${input.audience}`);
+
+  // Country leads and binds. It used to sit after the project's audience and
+  // ask the model to merely "prefer" a country, so a show whose audience field
+  // said Pakistan kept returning Pakistani guests however explicitly India was
+  // asked for — the request was being outvoted by standing context.
   if (input.country) {
     context.push(
-      `Prefer people in or closely connected to ${input.country}, but include the strongest international voices too if the local pool is thin — say which is which.`,
+      `COUNTRY REQUIREMENT: the host has asked for guests from ${input.country}. Every suggestion must be based in ${input.country}, from ${input.country}, or working directly on ${input.country}. This overrides any audience or market named elsewhere in this brief. If you cannot find enough people who meet it, return fewer guests and explain the shortage in "notes" — do not fill the list with people from somewhere else.`,
+    );
+  }
+
+  if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);
+  if (input.audience) {
+    context.push(
+      input.country
+        ? `Audience: ${input.audience} (context only — it does not change the country requirement above)`
+        : `Audience: ${input.audience}`,
     );
   }
   // Search in the show's language too: a guest who is prominent in Urdu or

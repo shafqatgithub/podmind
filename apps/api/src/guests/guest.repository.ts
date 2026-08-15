@@ -394,6 +394,8 @@ export class GuestRepository {
       confidence: number | null;
       fit_score: number | null;
     }[],
+    /** Language the discovery ran in; promoted briefings inherit it. */
+    language: string | null,
   ): Promise<void> {
     const client: PoolClient = await this.pool.connect();
     try {
@@ -403,8 +405,8 @@ export class GuestRepository {
           `insert into public.guest_suggestions
              (project_id, created_by, topic, country, full_name, headline, why_them,
               expertise, reachability, profile_urls, sources, confidence, fit_score,
-              sort_order)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+              language, sort_order)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::language_code,$15)`,
           [
             projectId,
             tenant.userId,
@@ -419,6 +421,7 @@ export class GuestRepository {
             JSON.stringify(s.sources),
             s.confidence,
             s.fit_score,
+            language,
             index,
           ],
         );
@@ -468,7 +471,7 @@ export class GuestRepository {
   async findSuggestion(tenant: TenantContext, id: string) {
     const { rows } = await this.pool.query(
       `select s.id, s.project_id, s.topic, s.country, s.full_name, s.headline,
-              s.expertise, s.guest_id
+              s.expertise, s.language::text as language, s.guest_id
          from public.guest_suggestions s
         where s.id = $2
           and s.project_id in (
@@ -491,6 +494,8 @@ export class GuestRepository {
       full_name: string;
       headline: string | null;
       expertise: string | null;
+      /** Language the discovery ran in; a promoted briefing inherits it. */
+      language: string | null;
       guest_id: string | null;
     };
   }

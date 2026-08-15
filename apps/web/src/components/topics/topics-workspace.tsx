@@ -47,6 +47,7 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { COUNTRIES } from "@podmind/types";
 import { LANGUAGES } from "@/lib/api/projects";
 import { ExportMenu } from "@/components/common/export-menu";
 
@@ -455,12 +456,14 @@ export function TopicsWorkspace() {
 
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="country">Country (optional)</Label>
-                  <Input
-                    id="country"
-                    name="country"
-                    maxLength={100}
-                    placeholder="Pakistan"
-                  />
+                  <Select id="country" name="country" defaultValue="">
+                    <option value="">Anywhere</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
                   <p className="text-xs text-muted-foreground">
                     Prefers stories and sources that matter there.
                   </p>

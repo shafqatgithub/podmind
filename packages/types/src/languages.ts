@@ -138,3 +138,35 @@ export function isSupportedLanguage(code: string | null | undefined): boolean {
   if (!code) return false;
   return BY_CODE.has(code.toLowerCase());
 }
+
+/**
+ * Countries, for narrowing a guest search.
+ *
+ * A free-text box invited typos and half-names ("UAE", "the Emirates",
+ * "Dubai") that a model then had to interpret, which is one more place for a
+ * search to quietly go wrong. A fixed list makes the constraint unambiguous.
+ *
+ * Names are the common English forms rather than official long titles,
+ * because that is what people type and what sources use.
+ */
+export const COUNTRIES: readonly string[] = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia", "Austria",
+  "Azerbaijan", "Bahrain", "Bangladesh", "Belarus", "Belgium", "Bolivia",
+  "Bosnia and Herzegovina", "Botswana", "Brazil", "Bulgaria", "Cambodia", "Cameroon",
+  "Canada", "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Cuba", "Cyprus",
+  "Czechia", "Denmark", "Dominican Republic", "Ecuador", "Egypt", "El Salvador",
+  "Estonia", "Ethiopia", "Finland", "France", "Georgia", "Germany", "Ghana", "Greece",
+  "Guatemala", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia",
+  "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan",
+  "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon",
+  "Libya", "Lithuania", "Luxembourg", "Malaysia", "Maldives", "Malta", "Mexico",
+  "Moldova", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Nepal",
+  "Netherlands", "New Zealand", "Nicaragua", "Nigeria", "North Macedonia", "Norway",
+  "Oman", "Pakistan", "Palestine", "Panama", "Paraguay", "Peru", "Philippines",
+  "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saudi Arabia",
+  "Senegal", "Serbia", "Singapore", "Slovakia", "Slovenia", "Somalia", "South Africa",
+  "South Korea", "Spain", "Sri Lanka", "Sudan", "Sweden", "Switzerland", "Syria",
+  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Tunisia", "Turkey", "Turkmenistan",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+  "Uruguay", "Uzbekistan", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe",
+] as const;
