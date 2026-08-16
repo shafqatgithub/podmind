@@ -55,6 +55,22 @@ const CONVERSATION_COLUMNS = `c.id, c.project_id, c.user_id, c.title,
 export class ChatRepository {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
+  /** The person asking, so the assistant does not have to guess at them. */
+  async findUserContext(userId: string) {
+    const { rows } = await this.pool.query<{
+      full_name: string | null;
+      job_title: string | null;
+      company: string | null;
+      country: string | null;
+      language: string | null;
+    }>(
+      `select full_name, job_title, company, country, language::text as language
+         from public.profiles where id = $1`,
+      [userId],
+    );
+    return rows[0] ?? null;
+  }
+
   async assertProjectInTenant(tenant: TenantContext, projectId: string) {
     const { rows } = await this.pool.query(
       `select p.id, p.title, p.podcast_name, p.audience, p.niche,

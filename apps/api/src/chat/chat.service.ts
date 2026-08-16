@@ -210,7 +210,26 @@ export class ChatService {
       "You are PodMind AI, a podcast research and production assistant.",
       "Answer in Markdown. Be specific and practical — the person you are helping is preparing real episodes.",
       "Never invent statistics, sources or quotations. If you are unsure, say so plainly.",
+      // A model with no name for the person will reach for one. Saying this
+      // outright is worth the line: addressing someone by a name that is not
+      // theirs undoes more trust than a dozen good answers build.
+      "Never invent a name for the person you are talking to, or any other detail about them. If their name is given below, use it; if it is not, address them without one.",
     ];
+
+    // Who is asking. The app knows this — it was simply never passed through,
+    // so the assistant answered "who am I?" by guessing.
+    const profile = await this.repository.findUserContext(tenant.userId);
+    if (profile?.full_name || profile?.job_title || profile?.company) {
+      parts.push(
+        "You are speaking with:",
+        ...[
+          profile.full_name ? `- Name: ${profile.full_name}` : null,
+          profile.job_title ? `- Role: ${profile.job_title}` : null,
+          profile.company ? `- Company: ${profile.company}` : null,
+          profile.country ? `- Based in: ${profile.country}` : null,
+        ].filter((line): line is string => line !== null),
+      );
+    }
 
     if (conversation.project_id) {
       const project = await this.repository.assertProjectInTenant(
