@@ -38,6 +38,38 @@ export class CalendarRepository {
        )
     )`;
 
+  /** Project context for planning, plus the titles already on the calendar. */
+  async findProjectContext(tenant: TenantContext, projectId: string) {
+    const { rows } = await this.pool.query<{
+      title: string;
+      podcast_name: string | null;
+      niche: string | null;
+      audience: string | null;
+      language: string | null;
+    }>(
+      `select p.title, p.podcast_name, p.niche, p.audience, p.language::text as language
+         from public.projects p
+        where p.id = $2
+          and p.workspace_id in (
+            select w.id from public.workspaces w where w.organization_id = $1
+          )`,
+      [tenant.organizationId, projectId],
+    );
+    const project = rows[0];
+    if (!project) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "Project not found" });
+    }
+
+    // Anything already scheduled, so a proposal does not repeat it.
+    const planned = await this.pool.query<{ title: string }>(
+      `select title from public.content_calendar
+        where project_id = $1 order by scheduled_for desc limit 40`,
+      [projectId],
+    );
+
+    return { ...project, existingTitles: planned.rows.map((r) => r.title) };
+  }
+
   async assertProjectInTenant(tenant: TenantContext, projectId: string): Promise<void> {
     const { rowCount } = await this.pool.query(
       `select 1 from public.projects p

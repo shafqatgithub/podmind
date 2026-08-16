@@ -16,6 +16,7 @@ import {
   CreateEntryDto,
   ListEntriesQueryDto,
   PlanScheduleDto,
+  SuggestScheduleDto,
   UpdateEntryDto,
 } from "./dto/calendar.dto";
 
@@ -44,6 +45,13 @@ export class CalendarController {
   async plan(@CurrentUser() user: AuthUser, @Body() dto: PlanScheduleDto) {
     const tenant = await this.tenancy.resolve(user.id);
     return this.calendar.plan(tenant, dto);
+  }
+
+  /** Proposes a run of episodes. Saves nothing — the host approves first. */
+  @Post("suggest")
+  async suggest(@CurrentUser() user: AuthUser, @Body() dto: SuggestScheduleDto) {
+    const tenant = await this.tenancy.resolve(user.id);
+    return this.calendar.suggest(tenant, dto);
   }
 
   @Patch(":id")

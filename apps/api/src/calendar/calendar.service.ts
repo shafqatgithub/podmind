@@ -1,4 +1,7 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { AiRouterService } from "../ai/routing/ai-router.service";
+import { BaseHttpProvider } from "../ai/providers/base-http.provider";
+import { buildCalendarSuggestMessages } from "./calendar.prompt";
 import { AgentService } from "../agents/agent.service";
 import type { TenantContext } from "../tenancy/tenancy.service";
 import { CalendarRepository } from "./calendar.repository";
@@ -6,8 +9,20 @@ import type {
   CreateEntryDto,
   ListEntriesQueryDto,
   PlanScheduleDto,
+  SuggestScheduleDto,
   UpdateEntryDto,
 } from "./dto/calendar.dto";
+
+const asString = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() ? value.trim() : null;
+
+const asStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string" && !!v.trim()) : [];
+
+const asObjectArray = (value: unknown): Record<string, unknown>[] =>
+  Array.isArray(value)
+    ? value.filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
+    : [];
 
 /** Days between slots for each cadence. */
 const CADENCE_DAYS: Record<PlanScheduleDto["cadence"], number> = {
@@ -34,7 +49,82 @@ export class CalendarService {
   constructor(
     private readonly repository: CalendarRepository,
     private readonly agents: AgentService,
+    private readonly router: AiRouterService,
   ) {}
+
+  /**
+   * Ask the AI for a run of episodes — and save nothing.
+   *
+   * The proposal comes back for the host to change or reject. Writing a
+   * generated schedule straight into someone's calendar would make the
+   * feature a chore to undo rather than a head start, and the host is the one
+   * who knows which weeks they can actually record.
+   */
+  async suggest(tenant: TenantContext, dto: SuggestScheduleDto) {
+    const project = await this.repository.findProjectContext(tenant, dto.project_id);
+
+    const routed = await this.router.route({
+      organizationId: tenant.organizationId,
+      task: "outline",
+      messages: buildCalendarSuggestMessages({
+        count: dto.count ?? 4,
+        cadence: dto.cadence ?? "weekly",
+        niche: project.niche,
+        audience: project.audience,
+        podcastName: project.podcast_name,
+        language: dto.language ?? project.language,
+        existingTitles: project.existingTitles,
+        theme: dto.theme ?? null,
+      }),
+      projectId: dto.project_id,
+      jsonMode: true,
+      maxTokens: 8_000,
+      preferredProvider: dto.provider ?? null,
+    });
+
+    const parsed = BaseHttpProvider.extractJson(routed.text);
+    if (!parsed) {
+      throw new ServiceUnavailableException({
+        code: "AI_INVALID_OUTPUT",
+        message: "The schedule came back unreadable. Please try again.",
+      });
+    }
+
+    const start = dto.start_date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
+    const step = CADENCE_DAYS[dto.cadence ?? "weekly"];
+
+    // Dates are assigned here rather than asked of the model: cadence
+    // arithmetic is exact, and a model that drifts by a day produces a
+    // schedule the host has to check line by line.
+    const episodes = asObjectArray(parsed.episodes)
+      .map((raw, index) => ({
+        title: asString(raw.title) ?? "",
+        topic: asString(raw.topic),
+        angle: asString(raw.angle),
+        format: asString(raw.format),
+        effort: asString(raw.effort),
+        guest_suggestion: asString(raw.guest_suggestion),
+        notes: asString(raw.notes),
+        scheduled_for: addDays(start, index * step),
+      }))
+      .filter((e) => e.title.length > 0);
+
+    if (episodes.length === 0) {
+      throw new ServiceUnavailableException({
+        code: "AI_INVALID_OUTPUT",
+        message: "No usable episodes came back. Please try again.",
+      });
+    }
+
+    return {
+      episodes,
+      arc: asString(parsed.arc),
+      cautions: asStringArray(parsed.cautions),
+      cadence: dto.cadence ?? "weekly",
+      start_date: start,
+      credits_spent: routed.creditsSpent,
+    };
+  }
 
   /** Defaults to the current month, which is what a calendar view wants. */
   async list(tenant: TenantContext, query: ListEntriesQueryDto) {

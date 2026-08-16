@@ -24,6 +24,27 @@ export interface CalendarEntry {
   status: CalendarStatus;
 }
 
+/** One episode in an AI proposal — not saved until the host approves. */
+export interface SuggestedEpisode {
+  title: string;
+  topic: string | null;
+  angle: string | null;
+  format: string | null;
+  effort: string | null;
+  guest_suggestion: string | null;
+  notes: string | null;
+  scheduled_for: string;
+}
+
+export interface ScheduleProposal {
+  episodes: SuggestedEpisode[];
+  arc: string | null;
+  cautions: string[];
+  cadence: "weekly" | "biweekly" | "monthly";
+  start_date: string;
+  credits_spent: number;
+}
+
 export const calendarApi = {
   list: (query: { project_id?: string; from?: string; to?: string } = {}, signal?: AbortSignal) =>
     apiRequest<{ items: CalendarEntry[]; from: string; to: string }>("/calendar", {
@@ -46,12 +67,22 @@ export const calendarApi = {
     project_id: string;
     start_date: string;
     cadence: "weekly" | "biweekly" | "monthly";
-    items: { title: string; topic?: string }[];
+    items: { title: string; topic?: string; notes?: string }[];
     publish_offset_days?: number;
   }) => apiRequest<{ created: number; from: string; to: string }>("/calendar/plan", {
     method: "POST",
     body,
   }),
+
+  /** Ask the AI to propose a run. Nothing is saved until plan() is called. */
+  suggest: (body: {
+    project_id: string;
+    count?: number;
+    cadence?: "weekly" | "biweekly" | "monthly";
+    start_date?: string;
+    theme?: string;
+    language?: string;
+  }) => apiRequest<ScheduleProposal>("/calendar/suggest", { method: "POST", body }),
 
   update: (
     id: string,

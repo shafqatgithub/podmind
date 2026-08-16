@@ -33,16 +33,20 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
-import { projectsApi, type Project } from "@/lib/api/projects";
+import { LANGUAGES, projectsApi, type Project } from "@/lib/api/projects";
 import {
   CALENDAR_STATUSES,
   calendarApi,
   type CalendarEntry,
   type CalendarStatus,
+  type ScheduleProposal,
+  type SuggestedEpisode,
 } from "@/lib/api/calendar";
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear } from "@/components/motion/motion";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ScheduleProposalReview } from "./schedule-proposal";
+import { EntryDetail } from "./entry-detail";
 
 const STATUS_STYLE: Record<CalendarStatus, string> = {
   planned: "bg-neutral-500/15 text-neutral-300",
@@ -84,6 +88,10 @@ export function CalendarWorkspace() {
   const [creditError, setCreditError] = React.useState<unknown>(null);
   const [showAdd, setShowAdd] = React.useState(false);
   const [showPlan, setShowPlan] = React.useState(false);
+  const [proposal, setProposal] = React.useState<ScheduleProposal | null>(null);
+  const [suggesting, setSuggesting] = React.useState(false);
+  const [language, setLanguage] = React.useState("");
+  const [selected, setSelected] = React.useState<CalendarEntry | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [running, setRunning] = React.useState<string | null>(null);
 
@@ -165,35 +173,60 @@ export function CalendarWorkspace() {
     }
   };
 
-  const planSchedule = async (event: React.FormEvent<HTMLFormElement>) => {
+  /** Ask for a proposal. Nothing is written until the host approves it. */
+  const suggestSchedule = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const titles = String(form.get("titles") ?? "")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (titles.length === 0) {
-      setError("Add at least one episode title.");
-      return;
+    setSuggesting(true);
+    setError(null);
+    setCreditError(null);
+    try {
+      const result = await calendarApi.suggest({
+        project_id: projectId,
+        count: Number(form.get("count") ?? 4) || 4,
+        cadence: String(form.get("cadence") ?? "weekly") as "weekly" | "biweekly" | "monthly",
+        ...(String(form.get("start_date") ?? "")
+          ? { start_date: String(form.get("start_date")) }
+          : {}),
+        ...(String(form.get("theme") ?? "").trim()
+          ? { theme: String(form.get("theme")).trim() }
+          : {}),
+        ...(language ? { language } : {}),
+      });
+      setProposal(result);
+      setShowPlan(false);
+    } catch (err) {
+      setCreditError(isOutOfCredits(err) ? err : null);
+      setError(err instanceof ApiError ? err.message : "Could not plan a run.");
+    } finally {
+      setSuggesting(false);
     }
+  };
 
+  /** Save the approved episodes, keeping each one's own date. */
+  const approveProposal = async (episodes: SuggestedEpisode[]) => {
+    if (!proposal) return;
     setBusy(true);
     setError(null);
     try {
-      const result = await calendarApi.plan({
-        project_id: projectId,
-        start_date: String(form.get("start_date") ?? ""),
-        cadence: String(form.get("cadence") ?? "weekly") as "weekly" | "biweekly" | "monthly",
-        items: titles.map((title) => ({ title })),
-        publish_offset_days: Number(form.get("publish_offset_days") ?? 0) || undefined,
-      });
-      setShowPlan(false);
-      // Jump to where the plan starts, so the result is visible immediately.
-      setCursor(new Date(`${result.from}T00:00:00`));
+      // Created one at a time so an episode the host moved keeps its date;
+      // the bulk plan endpoint re-derives dates from the cadence.
+      for (const episode of episodes) {
+        await calendarApi.create({
+          project_id: projectId,
+          title: episode.title,
+          scheduled_for: episode.scheduled_for,
+          ...(episode.topic ? { topic: episode.topic } : {}),
+          ...(episode.notes || episode.angle
+            ? { notes: [episode.angle, episode.notes].filter(Boolean).join("\n\n") }
+            : {}),
+        });
+      }
+      setProposal(null);
+      setCursor(new Date(`${episodes[0]!.scheduled_for}T00:00:00`));
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create the plan.");
+      setError(err instanceof ApiError ? err.message : "Could not save the plan.");
     } finally {
       setBusy(false);
     }
@@ -225,6 +258,21 @@ export function CalendarWorkspace() {
       await calendarApi.update(entry.id, { status });
     } catch {
       await load();
+    }
+  };
+
+  /** Save edits made in the detail panel, keeping it open on the fresh row. */
+  const saveEntry = async (id: string, patch: Record<string, string>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await calendarApi.update(id, patch);
+      setSelected(updated);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not save the changes.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -327,26 +375,69 @@ export function CalendarWorkspace() {
   </p>
 ) : null}
 
+      {selected ? (
+        <Appear>
+          <EntryDetail
+            entry={selected}
+            running={running === selected.id}
+            saving={busy}
+            onRun={(entry) => void runPipeline(entry)}
+            onSave={(id, patch) => void saveEntry(id, patch)}
+            onDelete={(entry) => {
+              setSelected(null);
+              void remove(entry);
+            }}
+            onClose={() => setSelected(null)}
+          />
+        </Appear>
+      ) : null}
+
+      {proposal ? (
+        <Appear>
+          <ScheduleProposalReview
+            proposal={proposal}
+            saving={busy}
+            onApprove={approveProposal}
+            onDiscard={() => setProposal(null)}
+          />
+        </Appear>
+      ) : null}
+
       {showPlan ? (
         <Appear>
           <Card>
             <CardContent className="p-6">
-              <form onSubmit={planSchedule} className="flex flex-col gap-4">
+              <form onSubmit={suggestSchedule} className="flex flex-col gap-4">
                 <div>
-                  <h2 className="font-display font-semibold">Plan several episodes</h2>
+                  <h2 className="font-display font-semibold">Plan a run of episodes</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    One title per line. They are laid out from the start date at your cadence.
+                    PodMind proposes the episodes and the dates. You review them before
+                    anything is added to your calendar.
                   </p>
                 </div>
 
-                <Textarea
-                  name="titles"
-                  rows={5}
-                  required
-                  placeholder={"Why attention became scarce\nThe four-day week, one year on\nWhat focus costs"}
-                />
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="theme">What should this run be about? (optional)</Label>
+                  <Input
+                    id="theme"
+                    name="theme"
+                    maxLength={500}
+                    placeholder="Leave empty and PodMind will use your niche and audience"
+                  />
+                </div>
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="count">How many</Label>
+                    <Input
+                      id="count"
+                      name="count"
+                      type="number"
+                      min={1}
+                      max={12}
+                      defaultValue={4}
+                    />
+                  </div>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="start_date">Start</Label>
                     <Input
@@ -366,21 +457,26 @@ export function CalendarWorkspace() {
                     </Select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="publish_offset_days">Publish after (days)</Label>
-                    <Input
-                      id="publish_offset_days"
-                      name="publish_offset_days"
-                      type="number"
-                      min={0}
-                      max={90}
-                      defaultValue={0}
-                    />
+                    <Label htmlFor="language">Language</Label>
+                    <Select
+                      id="language"
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                    >
+                      <option value="">Project default</option>
+                      {LANGUAGES.map((l) => (
+                        <option key={l.code} value={l.code}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </Select>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Button type="submit" loading={busy}>
-                    Create plan
+                  <Button type="submit" loading={suggesting}>
+                    <Sparkles className="h-4 w-4" />
+                    Plan my episodes
                   </Button>
                   <Button type="button" variant="secondary" onClick={() => setShowPlan(false)}>
                     Cancel
@@ -486,7 +582,21 @@ export function CalendarWorkspace() {
                     {dayEntries.map((entry) => (
                       <div
                         key={entry.id}
-                        className="group rounded bg-card/80 p-1 text-left sm:p-1.5"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelected(entry)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelected(entry);
+                          }
+                        }}
+                        aria-label={`Open ${entry.title}`}
+                        className={cn(
+                          "group cursor-pointer rounded bg-card/80 p-1 text-left transition-colors sm:p-1.5",
+                          "hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                          selected?.id === entry.id && "ring-1 ring-primary-500/50",
+                        )}
                       >
                         <p className="truncate text-[10px] font-medium sm:text-xs">
                           {entry.title}
@@ -517,7 +627,10 @@ export function CalendarWorkspace() {
                             <button
                               type="button"
                               disabled={running !== null}
-                              onClick={() => void runPipeline(entry)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void runPipeline(entry);
+                              }}
                               className="inline-flex items-center gap-0.5 text-[9px] text-primary-400 hover:text-primary-300 disabled:opacity-50"
                             >
                               <Sparkles className="h-2.5 w-2.5" aria-hidden />
@@ -526,9 +639,11 @@ export function CalendarWorkspace() {
                           )}
                           <select
                             value={entry.status}
-                            onChange={(e) =>
-                              void setStatus(entry, e.target.value as CalendarStatus)
-                            }
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              void setStatus(entry, e.target.value as CalendarStatus);
+                            }}
                             aria-label={`Status for ${entry.title}`}
                             className="rounded bg-transparent text-[9px] text-muted-foreground focus-visible:outline-none"
                           >

@@ -13,6 +13,8 @@ import {
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { OUTPUT_LANGUAGES } from "@podmind/types";
+import { SELECTABLE_PROVIDERS, type SelectableProvider } from "../../research/dto/research.dto";
 
 /** Where a planned episode is in the workflow. */
 export const CALENDAR_STATUSES = [
@@ -139,4 +141,41 @@ export class PlanScheduleDto {
   @Min(0)
   @Max(90)
   publish_offset_days?: number;
+}
+
+
+/** POST /api/v1/calendar/suggest — ask the AI to propose a run of episodes. */
+export class SuggestScheduleDto {
+  @IsUUID()
+  project_id!: string;
+
+  /** How many episodes to propose. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  count?: number;
+
+  @IsOptional()
+  @IsIn(["weekly", "biweekly", "monthly"])
+  cadence?: "weekly" | "biweekly" | "monthly";
+
+  /** First recording date; defaults to today. */
+  @IsOptional()
+  @IsDateString()
+  start_date?: string;
+
+  /** Optional steer — a theme for the run. */
+  @IsOptional()
+  @IsString()
+  @Length(2, 500)
+  theme?: string;
+
+  @IsOptional()
+  @IsIn(OUTPUT_LANGUAGES.map((l) => l.code))
+  language?: string;
+
+  @IsOptional()
+  @IsIn(SELECTABLE_PROVIDERS)
+  provider?: SelectableProvider;
 }
