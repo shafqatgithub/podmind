@@ -6,6 +6,8 @@ import type { TenantContext } from "../tenancy/tenancy.service";
 import { TopicRepository } from "./topic.repository";
 import { buildTopicMessages, TOPIC_MAX_TOKENS } from "./topic.prompt";
 import type { DiscoverTopicsDto } from "./dto/topic.dto";
+import { KnowledgeService } from "../knowledge/knowledge.service";
+import { renderKnowledgeContext } from "../knowledge/knowledge.prompt";
 
 function str(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -33,6 +35,7 @@ export class TopicService {
     private readonly repository: TopicRepository,
     private readonly router: AiRouterService,
     private readonly registry: ProviderRegistry,
+      private readonly knowledge: KnowledgeService,
   ) {}
 
   /** Whether any configured provider can actually search the web. */
@@ -56,10 +59,16 @@ export class TopicService {
     const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
     const avoidRecent = await this.repository.recentTitles(project.id);
 
+    // The host's own documents, when they have any.
+    const topicKnowledge = renderKnowledgeContext(
+      await this.knowledge.retrieveForContext(tenant, project.id, [dto.niche, project.audience].filter(Boolean).join(" "), 6),
+    );
+
     const routed = await this.router.route({
       organizationId: tenant.organizationId,
       task: "research",
       messages: buildTopicMessages({
+        knowledge: topicKnowledge,
         niche: dto.niche,
         audience: dto.audience ?? project.audience,
         country: dto.country,

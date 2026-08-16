@@ -13,6 +13,8 @@ import {
   type ScriptTone,
 } from "./script.prompt";
 import type { CreateScriptDto } from "./dto/script.dto";
+import { KnowledgeService } from "../knowledge/knowledge.service";
+import { renderKnowledgeContext } from "../knowledge/knowledge.prompt";
 
 const asString = (value: unknown): string | null =>
   typeof value === "string" && value.trim() ? value.trim() : null;
@@ -31,6 +33,7 @@ export class ScriptService {
   constructor(
     private readonly repository: ScriptRepository,
     private readonly router: AiRouterService,
+      private readonly knowledge: KnowledgeService,
   ) {}
 
   async create(tenant: TenantContext, dto: CreateScriptDto) {
@@ -81,10 +84,16 @@ export class ScriptService {
      */
     const language = dto.language ?? outlineLanguage ?? project.language;
 
+    // The host's own documents, when they have any.
+    const scriptKnowledge = renderKnowledgeContext(
+      await this.knowledge.retrieveForContext(tenant, project.id, topic, 6),
+    );
+
     const routed = await this.router.route({
       organizationId: tenant.organizationId,
       task: "script",
       messages: buildScriptMessages({
+        knowledge: scriptKnowledge,
         topic,
         style,
         tone,

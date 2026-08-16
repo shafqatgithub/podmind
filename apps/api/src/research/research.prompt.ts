@@ -86,6 +86,8 @@ export interface ResearchPromptInput {
   audience?: string | null;
   niche?: string | null;
   language?: string | null;
+  /** Passages from the host's own uploaded documents. */
+  knowledge?: string | null;
 }
 
 export function buildResearchMessages(input: ResearchPromptInput): AiMessage[] {
@@ -96,6 +98,7 @@ export function buildResearchMessages(input: ResearchPromptInput): AiMessage[] {
   if (input.niche) context.push(`Niche: ${input.niche}`);
   if (input.audience) context.push(`Audience: ${input.audience}`);
   if (input.objective) context.push(`Objective for this episode: ${input.objective}`);
+  if (input.knowledge) context.push(input.knowledge);
 
   const userPrompt = [
     `Research this topic for a podcast episode:`,

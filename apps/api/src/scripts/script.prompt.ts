@@ -111,6 +111,8 @@ export interface ScriptPromptInput {
       talkingPoints: string[];
     }[];
   } | null;
+  /** Passages from the host's own uploaded documents. */
+  knowledge?: string | null;
 }
 
 export function buildScriptMessages(input: ScriptPromptInput): AiMessage[] {
@@ -121,6 +123,8 @@ export function buildScriptMessages(input: ScriptPromptInput): AiMessage[] {
   if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);
   if (input.audience) context.push(`Audience: ${input.audience}`);
   if (input.guestName) context.push(`Guest: ${input.guestName}`);
+
+  if (input.knowledge) context.push(input.knowledge);
 
   const outlineBlock: string[] = [];
   if (input.outline) {

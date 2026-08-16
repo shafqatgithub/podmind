@@ -85,6 +85,8 @@ export interface GuestPromptInput {
   audience?: string | null;
   niche?: string | null;
   language?: string | null;
+  /** Passages from the host's own uploaded documents. */
+  knowledge?: string | null;
 }
 
 export function buildGuestMessages(input: GuestPromptInput): AiMessage[] {
@@ -95,6 +97,8 @@ export function buildGuestMessages(input: GuestPromptInput): AiMessage[] {
   if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);
   if (input.niche) context.push(`Niche: ${input.niche}`);
   if (input.audience) context.push(`Audience: ${input.audience}`);
+
+  if (input.knowledge) context.push(input.knowledge);
 
   const userPrompt = [
     `Research this person as a potential podcast guest:`,

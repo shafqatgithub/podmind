@@ -17,6 +17,8 @@ import type {
   ListGuestsQueryDto,
 } from "./dto/guest.dto";
 import type { SelectableProvider } from "../research/dto/research.dto";
+import { KnowledgeService } from "../knowledge/knowledge.service";
+import { renderKnowledgeContext } from "../knowledge/knowledge.prompt";
 
 function str(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -56,16 +58,23 @@ export class GuestService {
     private readonly repository: GuestRepository,
     private readonly router: AiRouterService,
     private readonly registry: ProviderRegistry,
+      private readonly knowledge: KnowledgeService,
   ) {}
 
   /** Research a person and store the full briefing. Consumes 8 credits. */
   async research(tenant: TenantContext, dto: CreateGuestDto) {
     const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
 
+    // The host's own documents, when they have any.
+    const guestKnowledge = renderKnowledgeContext(
+      await this.knowledge.retrieveForContext(tenant, project.id, dto.full_name, 4),
+    );
+
     const routed = await this.router.route({
       organizationId: tenant.organizationId,
       task: "guest",
       messages: buildGuestMessages({
+        knowledge: guestKnowledge,
         fullName: dto.full_name,
         context: dto.context,
         podcastName: project.podcast_name,

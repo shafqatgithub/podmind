@@ -71,6 +71,8 @@ export interface TopicPromptInput {
   podcastName?: string | null;
   avoidRecent?: string[];
   language?: string | null;
+  /** Passages from the host's own uploaded documents. */
+  knowledge?: string | null;
 }
 
 export function buildTopicMessages(input: TopicPromptInput): AiMessage[] {
@@ -80,6 +82,8 @@ export function buildTopicMessages(input: TopicPromptInput): AiMessage[] {
   const context: string[] = [];
   if (input.podcastName) context.push(`Podcast: ${input.podcastName}`);
   if (input.audience) context.push(`Audience: ${input.audience}`);
+
+  if (input.knowledge) context.push(input.knowledge);
   if (input.country) {
     context.push(
       `Audience is primarily in ${input.country} — prefer stories that matter there, and include local sources where they exist.`,

@@ -9,6 +9,8 @@ import {
   type ResearchDepth,
 } from "./research.prompt";
 import type { CreateResearchDto, ListResearchQueryDto } from "./dto/research.dto";
+import { KnowledgeService } from "../knowledge/knowledge.service";
+import { renderKnowledgeContext } from "../knowledge/knowledge.prompt";
 
 /** Shape the model is asked to return; every field is optional defensively. */
 interface RawResearch {
@@ -61,6 +63,7 @@ export class ResearchService {
   constructor(
     private readonly repository: ResearchRepository,
     private readonly router: AiRouterService,
+    private readonly knowledge: KnowledgeService,
   ) {}
 
   /**
@@ -82,6 +85,16 @@ export class ResearchService {
       depth,
     });
 
+    // Anything the host has uploaded on this topic goes in with the brief.
+    // Retrieval never throws and never charges, so research still runs
+    // normally for someone with an empty Knowledge Hub.
+    const hits = await this.knowledge.retrieveForContext(
+      tenant,
+      project.id,
+      [dto.topic, dto.objective].filter(Boolean).join(" "),
+      6,
+    );
+
     const messages = buildResearchMessages({
       topic: dto.topic,
       objective: dto.objective,
@@ -90,6 +103,7 @@ export class ResearchService {
       audience: project.audience,
       niche: project.niche,
       language: project.language,
+      knowledge: renderKnowledgeContext(hits),
     });
 
     const startedAt = Date.now();

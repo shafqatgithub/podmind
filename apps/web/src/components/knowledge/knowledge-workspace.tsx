@@ -14,6 +14,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  Upload,
   Search,
   Sparkles,
   Trash2,
@@ -54,6 +55,9 @@ export function KnowledgeWorkspace() {
   const [status, setStatus] = React.useState<KnowledgeStatus | null>(null);
   const [adding, setAdding] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const [dragging, setDragging] = React.useState(false);
+  const fileInput = React.useRef<HTMLInputElement>(null);
   const [loading, setLoading] = React.useState(true);
   const [query, setQuery] = React.useState("");
   const [searching, setSearching] = React.useState(false);
@@ -97,6 +101,36 @@ export function KnowledgeWorkspace() {
     void loadDocuments(projectId, controller.signal);
     return () => controller.abort();
   }, [projectId, loadDocuments]);
+
+  /**
+   * Upload one or more files.
+   *
+   * Handled one at a time rather than in parallel: each upload chunks and
+   * embeds on the server, and firing five at once mostly buys a rate limit.
+   * A file that fails does not stop the rest — the failures are collected and
+   * reported together at the end.
+   */
+  const uploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !projectId) return;
+
+    setUploading(true);
+    setError(null);
+    const failures: string[] = [];
+
+    for (const file of Array.from(files)) {
+      try {
+        await knowledgeApi.upload({ projectId, file });
+      } catch (err) {
+        failures.push(
+          `${file.name}: ${err instanceof Error ? err.message : "could not be read"}`,
+        );
+      }
+    }
+
+    await loadDocuments(projectId);
+    setUploading(false);
+    if (failures.length) setError(failures.join(" · "));
+  };
 
   const addDocument = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -206,9 +240,31 @@ export function KnowledgeWorkspace() {
           </Select>
         )}
 
-        <Button onClick={() => setAdding((v) => !v)} disabled={!projectId}>
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          accept=".pdf,.docx,.txt,.md,.markdown,.csv,.json,.srt,.vtt"
+          className="hidden"
+          onChange={(e) => {
+            void uploadFiles(e.target.files);
+            // Clear it, or picking the same file twice does nothing.
+            e.target.value = "";
+          }}
+        />
+
+        <Button
+          onClick={() => fileInput.current?.click()}
+          disabled={!projectId || uploading}
+          loading={uploading}
+        >
+          <Upload className="h-4 w-4" />
+          Upload files
+        </Button>
+
+        <Button variant="secondary" onClick={() => setAdding((v) => !v)} disabled={!projectId}>
           <Plus className="h-4 w-4" />
-          Add document
+          Paste text
         </Button>
 
         {status && !status.available ? (

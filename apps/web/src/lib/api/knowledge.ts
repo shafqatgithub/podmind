@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/client";
 import { apiRequest } from "./client";
 
 export interface KnowledgeDocument {
@@ -37,6 +38,52 @@ export const knowledgeApi = {
 
   create: (body: { project_id: string; title: string; content: string; source_url?: string }) =>
     apiRequest<KnowledgeDocument>("/knowledge/documents", { method: "POST", body }),
+
+  /**
+   * Upload a file.
+   *
+   * Goes through fetch rather than the shared client because that one sends
+   * JSON, and a multipart body must not carry a JSON content-type header —
+   * the browser has to set the boundary itself.
+   */
+  upload: async (input: { projectId: string; file: File; title?: string }) => {
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    if (!base) throw new Error("The PodMind API URL is not configured yet.");
+
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+
+    const form = new FormData();
+    form.append("file", input.file);
+    form.append("project_id", input.projectId);
+    if (input.title) form.append("title", input.title);
+
+    const response = await fetch(`${base}/api/v1/knowledge/documents/upload`, {
+      method: "POST",
+      headers: session?.access_token
+        ? { authorization: `Bearer ${session.access_token}` }
+        : {},
+      body: form,
+    });
+
+    const envelope = (await response.json().catch(() => null)) as {
+      success?: boolean;
+      data?: KnowledgeDocument;
+      error?: { message?: string };
+    } | null;
+
+    if (!response.ok || !envelope?.success) {
+      throw new Error(
+        envelope?.error?.message ??
+          (response.status === 413
+            ? "That file is too large."
+            : `The upload failed (${response.status}).`),
+      );
+    }
+    return envelope.data as KnowledgeDocument;
+  },
 
   remove: (id: string) =>
     apiRequest<{ deleted: boolean }>(`/knowledge/documents/${id}`, { method: "DELETE" }),
