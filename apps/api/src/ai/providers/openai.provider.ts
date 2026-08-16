@@ -188,7 +188,7 @@ export class OpenAiProvider extends BaseHttpProvider {
       // information that says what to do about it.
       const detail = await response
         .json()
-        .then((body: { error?: { message?: string } }) => body?.error?.message)
+        .then((body) => (body as { error?: { message?: string } })?.error?.message)
         .catch(() => undefined);
 
       throw new ProviderError(
