@@ -183,11 +183,19 @@ export class OpenAiProvider extends BaseHttpProvider {
 
     if (!response.ok) {
       const status = response.status;
+      // OpenAI explains itself in the body — quota exhausted, model retired,
+      // input too long. Reporting only the status discards the one piece of
+      // information that says what to do about it.
+      const detail = await response
+        .json()
+        .then((body: { error?: { message?: string } }) => body?.error?.message)
+        .catch(() => undefined);
+
       throw new ProviderError(
         this.slug,
         status === 401 || status === 403
-          ? "openai rejected the API key"
-          : `openai embeddings returned HTTP ${status}`,
+          ? `openai rejected the API key${detail ? `: ${detail}` : ""}`
+          : `openai embeddings returned HTTP ${status}${detail ? `: ${detail}` : ""}`,
         ![400, 401, 403, 404, 422].includes(status),
         status,
       );

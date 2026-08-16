@@ -100,7 +100,11 @@ export class EmbeddingService {
   async embed(inputs: string[]): Promise<number[][]> {
     if (inputs.length === 0) return [];
 
-    for (const slug of this.available()) {
+    const configured = this.available();
+    /** Kept so a failure can say what actually went wrong. */
+    let lastFailure: string | null = null;
+
+    for (const slug of configured) {
       const provider = this.registry.get(slug);
       if (!provider?.embed) continue;
       try {
@@ -108,14 +112,27 @@ export class EmbeddingService {
         this.logger.debug({ provider: slug, inputs: inputs.length, tokens: result.totalTokens });
         return result.vectors;
       } catch (err) {
-        this.logger.warn({ provider: slug, err }, "embedding provider failed");
+        lastFailure = err instanceof Error ? err.message : String(err);
+        this.logger.warn({ provider: slug, error: lastFailure }, "embedding provider failed");
       }
     }
 
+    // Two very different situations reached the same message before: nothing
+    // configured, and a configured provider that failed. Telling someone to
+    // add a key they already have sends them looking in the wrong place, so
+    // the two are now reported separately.
+    if (configured.length === 0) {
+      throw new ServiceUnavailableException({
+        code: "EMBEDDINGS_UNAVAILABLE",
+        message:
+          "No provider is configured for embeddings — add an OpenAI API key to enable knowledge search",
+      });
+    }
+
     throw new ServiceUnavailableException({
-      code: "EMBEDDINGS_UNAVAILABLE",
-      message:
-        "No provider is configured for embeddings — add an OpenAI API key to enable knowledge search",
+      code: "EMBEDDINGS_FAILED",
+      message: `The embedding provider rejected this request: ${lastFailure ?? "unknown error"}`,
+      details: { providers: configured, error: lastFailure },
     });
   }
 

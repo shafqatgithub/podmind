@@ -162,7 +162,9 @@ export function KnowledgeWorkspace() {
             ? err.message
             : err.code === "EMBEDDINGS_UNAVAILABLE"
               ? "Knowledge search needs an OpenAI API key on the backend."
-              : err.message
+              : err.code === "EMBEDDINGS_FAILED"
+                ? err.message
+                : err.message
           : "Could not add the document.",
       );
     } finally {
