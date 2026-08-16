@@ -15,6 +15,7 @@ import {
 import type { CreateScriptDto } from "./dto/script.dto";
 import { KnowledgeService } from "../knowledge/knowledge.service";
 import { renderKnowledgeContext } from "../knowledge/knowledge.prompt";
+import { NotificationService } from "../notifications/notification.service";
 
 const asString = (value: unknown): string | null =>
   typeof value === "string" && value.trim() ? value.trim() : null;
@@ -34,6 +35,7 @@ export class ScriptService {
     private readonly repository: ScriptRepository,
     private readonly router: AiRouterService,
       private readonly knowledge: KnowledgeService,
+      private readonly notifications: NotificationService,
   ) {}
 
   async create(tenant: TenantContext, dto: CreateScriptDto) {
@@ -204,6 +206,17 @@ export class ScriptService {
       minutes: estimatedMinutes,
       sections: sections.length,
       credits: routed.creditsSpent,
+    });
+
+    // A full script takes a minute or two — long enough to walk away from.
+    await this.notifications.notify({
+      userId: tenant.userId,
+      organizationId: tenant.organizationId,
+      projectId: project.id,
+      type: "project",
+      title: `Script ready: ${script.title}`,
+      message: `${wordCount.toLocaleString()} words · about ${estimatedMinutes} minutes`,
+      actionUrl: "/scripts",
     });
 
     return {

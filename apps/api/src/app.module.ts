@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { EmailModule } from "./email/email.module";
+import { OrganizationModule } from "./organizations/organization.module";
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
@@ -43,6 +44,7 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
     // Powers the calendar reminder job.
     ScheduleModule.forRoot(),
     EmailModule,
+    OrganizationModule,
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     LoggerModule.forRoot({
       pinoHttp: {

@@ -11,6 +11,7 @@ import {
 import type { CreateResearchDto, ListResearchQueryDto } from "./dto/research.dto";
 import { KnowledgeService } from "../knowledge/knowledge.service";
 import { renderKnowledgeContext } from "../knowledge/knowledge.prompt";
+import { NotificationService } from "../notifications/notification.service";
 
 /** Shape the model is asked to return; every field is optional defensively. */
 interface RawResearch {
@@ -64,6 +65,7 @@ export class ResearchService {
     private readonly repository: ResearchRepository,
     private readonly router: AiRouterService,
     private readonly knowledge: KnowledgeService,
+      private readonly notifications: NotificationService,
   ) {}
 
   /**
@@ -207,6 +209,18 @@ export class ResearchService {
       depth,
       sources: sources.length,
       credits: routed.creditsSpent,
+    });
+
+    // Research runs for a minute or more, which is long enough that people
+    // switch tabs and forget. The notification is how they find out.
+    await this.notifications.notify({
+      userId: tenant.userId,
+      organizationId: tenant.organizationId,
+      projectId: project.id,
+      type: "research",
+      title: `Research ready: ${dto.topic}`,
+      message: `${sources.length} source${sources.length === 1 ? "" : "s"} · ${routed.creditsSpent} credits`,
+      actionUrl: "/research",
     });
 
     return this.assemble(session, [result], routed);

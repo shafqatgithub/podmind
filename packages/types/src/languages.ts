@@ -170,3 +170,63 @@ export const COUNTRIES: readonly string[] = [
   "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
   "Uruguay", "Uzbekistan", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe",
 ] as const;
+
+/**
+ * Default IANA timezone for each country.
+ *
+ * Timezone is a field people get wrong — "Asia/Karachi" is not something
+ * anyone types from memory, and a wrong one silently shifts every reminder.
+ * Picking a country is easy and implies the answer, so the country choice
+ * fills this in.
+ *
+ * Countries spanning several zones get their most populous one, which is the
+ * right guess for most users and still editable by the rest.
+ */
+export const COUNTRY_TIMEZONES: Record<string, string> = {
+  Afghanistan: "Asia/Kabul", Albania: "Europe/Tirane", Algeria: "Africa/Algiers",
+  Argentina: "America/Argentina/Buenos_Aires", Armenia: "Asia/Yerevan",
+  Australia: "Australia/Sydney", Austria: "Europe/Vienna", Azerbaijan: "Asia/Baku",
+  Bahrain: "Asia/Bahrain", Bangladesh: "Asia/Dhaka", Belarus: "Europe/Minsk",
+  Belgium: "Europe/Brussels", Bolivia: "America/La_Paz",
+  "Bosnia and Herzegovina": "Europe/Sarajevo", Botswana: "Africa/Gaborone",
+  Brazil: "America/Sao_Paulo", Bulgaria: "Europe/Sofia", Cambodia: "Asia/Phnom_Penh",
+  Cameroon: "Africa/Douala", Canada: "America/Toronto", Chile: "America/Santiago",
+  China: "Asia/Shanghai", Colombia: "America/Bogota", "Costa Rica": "America/Costa_Rica",
+  Croatia: "Europe/Zagreb", Cuba: "America/Havana", Cyprus: "Asia/Nicosia",
+  Czechia: "Europe/Prague", Denmark: "Europe/Copenhagen",
+  "Dominican Republic": "America/Santo_Domingo", Ecuador: "America/Guayaquil",
+  Egypt: "Africa/Cairo", "El Salvador": "America/El_Salvador", Estonia: "Europe/Tallinn",
+  Ethiopia: "Africa/Addis_Ababa", Finland: "Europe/Helsinki", France: "Europe/Paris",
+  Georgia: "Asia/Tbilisi", Germany: "Europe/Berlin", Ghana: "Africa/Accra",
+  Greece: "Europe/Athens", Guatemala: "America/Guatemala", Honduras: "America/Tegucigalpa",
+  "Hong Kong": "Asia/Hong_Kong", Hungary: "Europe/Budapest", Iceland: "Atlantic/Reykjavik",
+  India: "Asia/Kolkata", Indonesia: "Asia/Jakarta", Iran: "Asia/Tehran",
+  Iraq: "Asia/Baghdad", Ireland: "Europe/Dublin", Israel: "Asia/Jerusalem",
+  Italy: "Europe/Rome", "Ivory Coast": "Africa/Abidjan", Jamaica: "America/Jamaica",
+  Japan: "Asia/Tokyo", Jordan: "Asia/Amman", Kazakhstan: "Asia/Almaty",
+  Kenya: "Africa/Nairobi", Kuwait: "Asia/Kuwait", Kyrgyzstan: "Asia/Bishkek",
+  Laos: "Asia/Vientiane", Latvia: "Europe/Riga", Lebanon: "Asia/Beirut",
+  Libya: "Africa/Tripoli", Lithuania: "Europe/Vilnius", Luxembourg: "Europe/Luxembourg",
+  Malaysia: "Asia/Kuala_Lumpur", Maldives: "Indian/Maldives", Malta: "Europe/Malta",
+  Mexico: "America/Mexico_City", Moldova: "Europe/Chisinau", Mongolia: "Asia/Ulaanbaatar",
+  Montenegro: "Europe/Podgorica", Morocco: "Africa/Casablanca", Mozambique: "Africa/Maputo",
+  Myanmar: "Asia/Yangon", Nepal: "Asia/Kathmandu", Netherlands: "Europe/Amsterdam",
+  "New Zealand": "Pacific/Auckland", Nicaragua: "America/Managua", Nigeria: "Africa/Lagos",
+  "North Macedonia": "Europe/Skopje", Norway: "Europe/Oslo", Oman: "Asia/Muscat",
+  Pakistan: "Asia/Karachi", Palestine: "Asia/Hebron", Panama: "America/Panama",
+  Paraguay: "America/Asuncion", Peru: "America/Lima", Philippines: "Asia/Manila",
+  Poland: "Europe/Warsaw", Portugal: "Europe/Lisbon", Qatar: "Asia/Qatar",
+  Romania: "Europe/Bucharest", Russia: "Europe/Moscow", Rwanda: "Africa/Kigali",
+  "Saudi Arabia": "Asia/Riyadh", Senegal: "Africa/Dakar", Serbia: "Europe/Belgrade",
+  Singapore: "Asia/Singapore", Slovakia: "Europe/Bratislava", Slovenia: "Europe/Ljubljana",
+  Somalia: "Africa/Mogadishu", "South Africa": "Africa/Johannesburg", "South Korea": "Asia/Seoul",
+  Spain: "Europe/Madrid", "Sri Lanka": "Asia/Colombo", Sudan: "Africa/Khartoum",
+  Sweden: "Europe/Stockholm", Switzerland: "Europe/Zurich", Syria: "Asia/Damascus",
+  Taiwan: "Asia/Taipei", Tajikistan: "Asia/Dushanbe", Tanzania: "Africa/Dar_es_Salaam",
+  Thailand: "Asia/Bangkok", Tunisia: "Africa/Tunis", Turkey: "Europe/Istanbul",
+  Turkmenistan: "Asia/Ashgabat", Uganda: "Africa/Kampala", Ukraine: "Europe/Kyiv",
+  "United Arab Emirates": "Asia/Dubai", "United Kingdom": "Europe/London",
+  "United States": "America/New_York", Uruguay: "America/Montevideo",
+  Uzbekistan: "Asia/Tashkent", Venezuela: "America/Caracas", Vietnam: "Asia/Ho_Chi_Minh",
+  Yemen: "Asia/Aden", Zambia: "Africa/Lusaka", Zimbabwe: "Africa/Harare",
+};

@@ -9,6 +9,8 @@
  */
 
 import * as React from "react";
+import { COUNTRIES, COUNTRY_TIMEZONES } from "@podmind/types";
+import { MembersPanel } from "./members-panel";
 import { Building2, Check, CreditCard, Palette, User } from "lucide-react";
 import {
   Badge,
@@ -23,7 +25,6 @@ import {
   cn,
 } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
-import { LANGUAGES } from "@/lib/api/projects";
 import { PROVIDER_LABELS } from "@/lib/api/ai";
 import {
   settingsApi,
@@ -97,6 +98,16 @@ export function SettingsWorkspace() {
   const [savingSection, setSavingSection] = React.useState<string | null>(null);
   const [savedSection, setSavedSection] = React.useState<string | null>(null);
   const [sectionError, setSectionError] = React.useState<Record<string, string | null>>({});
+
+  React.useEffect(() => {
+    if (seeded.current || !data) return;
+    seeded.current = true;
+    setCountry(data.profile.country ?? "");
+    setTimezone(data.profile.timezone ?? "");
+    // A device that has never seen this account should still follow its
+    // theme, not whatever the last person on this browser chose.
+    if (data.preferences.theme) applyTheme(data.preferences.theme);
+  }, [data]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -190,7 +201,6 @@ export function SettingsWorkspace() {
                 timezone: String(form.get("timezone") ?? "") || undefined,
                 website: String(form.get("website") ?? "") || undefined,
                 bio: String(form.get("bio") ?? "") || undefined,
-                language: String(form.get("language") ?? "") || undefined,
               };
               void runSave("profile", async () => {
                 const updated = await settingsApi.updateProfile(patch);
@@ -235,32 +245,43 @@ export function SettingsWorkspace() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="country">Country</Label>
-                <Input
+                <Select
                   id="country"
                   name="country"
-                  defaultValue={profile?.country ?? ""}
-                  maxLength={100}
-                />
+                  value={country}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setCountry(next);
+                    // Nobody types "Asia/Karachi" from memory, and a wrong
+                    // timezone silently shifts every reminder. The country
+                    // implies it, so choosing one fills it in — still
+                    // editable for anyone who travels or lives on a border.
+                    const zone = COUNTRY_TIMEZONES[next];
+                    if (zone) setTimezone(zone);
+                  }}
+                >
+                  <option value="">Not set</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="timezone">Timezone</Label>
                 <Input
                   id="timezone"
                   name="timezone"
-                  defaultValue={profile?.timezone ?? ""}
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
                   placeholder="Asia/Karachi"
                   maxLength={100}
                 />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="language">Language</Label>
-                <Select id="language" name="language" defaultValue={profile?.language ?? "en"}>
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Used for reminder timing. Set from your country — change it if you&rsquo;re
+                  elsewhere.
+                </p>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="website">Website</Label>
@@ -314,13 +335,18 @@ export function SettingsWorkspace() {
               const patch: Partial<Preferences> = {
                 theme: String(form.get("theme") ?? "") || undefined,
                 ai_provider: String(form.get("ai_provider") ?? "") || undefined,
-                default_language: String(form.get("default_language") ?? "") || undefined,
                 writing_tone: String(form.get("writing_tone") ?? "") || undefined,
                 auto_save: form.get("auto_save") === "on",
                 email_notifications: form.get("email_notifications") === "on",
                 push_notifications: form.get("push_notifications") === "on",
                 marketing_emails: form.get("marketing_emails") === "on",
               };
+              // Apply the theme immediately and to localStorage, which is
+              // what the pre-hydration script reads. Saving only to the
+              // database left the setting looking broken: it persisted, and
+              // changed nothing on screen.
+              if (patch.theme) applyTheme(patch.theme);
+
               void runSave("preferences", async () => {
                 const updated = await settingsApi.updatePreferences(patch);
                 setData((d) => (d ? { ...d, preferences: updated } : d));
@@ -354,20 +380,6 @@ export function SettingsWorkspace() {
                 <p className="text-xs text-muted-foreground">
                   A preference, not a rule — PodMind still falls back if it is unavailable.
                 </p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="default_language">Default language</Label>
-                <Select
-                  id="default_language"
-                  name="default_language"
-                  defaultValue={preferences.default_language ?? "en"}
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </Select>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="writing_tone">Writing tone</Label>
@@ -438,7 +450,6 @@ export function SettingsWorkspace() {
                 const form = new FormData(e.currentTarget);
                 const patch: Partial<OrganizationSettings> = {
                   name: String(form.get("name") ?? "") || undefined,
-                  default_language: String(form.get("org_language") ?? "") || undefined,
                   default_ai_provider: String(form.get("org_provider") ?? "") || undefined,
                   allow_member_invites: form.get("allow_member_invites") === "on",
                   allow_public_projects: form.get("allow_public_projects") === "on",
@@ -458,20 +469,6 @@ export function SettingsWorkspace() {
                     defaultValue={organization.name}
                     maxLength={200}
                   />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="org_language">Default language</Label>
-                  <Select
-                    id="org_language"
-                    name="org_language"
-                    defaultValue={organization.default_language ?? "en"}
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </Select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="org_provider">Default AI provider</Label>
@@ -526,6 +523,11 @@ export function SettingsWorkspace() {
         </Item>
       ) : null}
 
+      {/* Team */}
+      <Item>
+        <MembersPanel />
+      </Item>
+
       {/* Usage */}
       <Item>
         <SettingsCard
@@ -579,4 +581,23 @@ export function SettingsWorkspace() {
       </Item>
     </Reveal>
   );
+}
+
+/**
+ * Put the theme on the document and in localStorage.
+ *
+ * The pre-hydration script in the root layout reads localStorage, so that is
+ * the source of truth for what paints on first frame; the database copy is
+ * what makes the choice follow the account onto another device.
+ */
+function applyTheme(theme: string): void {
+  const next = theme === "light" ? "light" : "dark";
+  const root = document.documentElement;
+  root.classList.remove("light", "dark");
+  root.classList.add(next);
+  try {
+    localStorage.setItem("podmind-theme", next);
+  } catch {
+    // Private browsing can refuse storage; the class is already applied.
+  }
 }
