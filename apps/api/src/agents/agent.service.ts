@@ -7,6 +7,7 @@ import { SocialService } from "../social/social.service";
 import type { TenantContext } from "../tenancy/tenancy.service";
 import { AgentRepository } from "./agent.repository";
 import { PIPELINE_STEPS, type CreateRunDto, type PipelineStep } from "./dto/agent.dto";
+import { NotificationService } from "../notifications/notification.service";
 
 /** Which catalogue agent owns each step. */
 const STEP_AGENT: Record<PipelineStep, string> = {
@@ -48,6 +49,7 @@ export class AgentService {
     private readonly outlines: OutlineService,
     private readonly scripts: ScriptService,
     private readonly seo: SeoService,
+    private readonly notifications: NotificationService,
     private readonly social: SocialService,
   ) {}
 
@@ -153,10 +155,32 @@ export class AgentService {
       }
     }
 
-    await this.repository.finishSession(
-      sessionId,
-      failures === 0 ? "completed" : completed.size > 0 ? "partial" : "failed",
-    );
+    const outcome = failures === 0 ? "completed" : completed.size > 0 ? "partial" : "failed";
+    await this.repository.finishSession(sessionId, outcome);
+
+    // A full run takes minutes, which is long enough that nobody watches it.
+    // Without this the notification centre stayed empty and the only way to
+    // learn a run had finished was to go back and look.
+    await this.notifications.notify({
+      userId: tenant.userId,
+      organizationId: tenant.organizationId,
+      projectId: dto.project_id,
+      type: "project",
+      priority: outcome === "failed" ? "high" : "normal",
+      title:
+        outcome === "completed"
+          ? `Your episode is ready: ${dto.topic}`
+          : outcome === "partial"
+            ? `Partly done: ${dto.topic}`
+            : `Couldn't finish: ${dto.topic}`,
+      message:
+        outcome === "completed"
+          ? `Research, outline and script are all done — ${completed.size} steps completed.`
+          : outcome === "partial"
+            ? `${completed.size} of ${tasks.length} steps finished. Open the run to see what stopped.`
+            : "No steps completed. Open the run to see what went wrong.",
+      actionUrl: "/agents",
+    });
   }
 
   /** Runs one step and returns a small summary for the task's output column. */

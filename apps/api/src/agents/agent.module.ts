@@ -3,6 +3,7 @@ import { ResearchModule } from "../research/research.module";
 import { OutlineModule } from "../outlines/outline.module";
 import { ScriptModule } from "../scripts/script.module";
 import { SeoModule } from "../seo/seo.module";
+import { NotificationModule } from "../notifications/notification.module";
 import { SocialModule } from "../social/social.module";
 import { AgentController } from "./agent.controller";
 import { AgentService } from "./agent.service";
@@ -14,7 +15,14 @@ import { AgentRepository } from "./agent.repository";
  * same prompts, same credit metering, same persistence.
  */
 @Module({
-  imports: [ResearchModule, OutlineModule, ScriptModule, SeoModule, SocialModule],
+  imports: [
+    ResearchModule,
+    OutlineModule,
+    ScriptModule,
+    SeoModule,
+    SocialModule,
+    NotificationModule,
+  ],
   controllers: [AgentController],
   providers: [AgentService, AgentRepository],
   exports: [AgentService],

@@ -370,12 +370,38 @@ export function AnalyticsWorkspace() {
                   </dl>
 
                   {data!.tasks.length ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {data!.tasks.map((t) => (
-                        <Badge key={t.task} className="capitalize">
-                          {t.task} · {t.requests}
-                        </Badge>
-                      ))}
+                    <div className="mt-3 flex flex-col gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        Where your credits went
+                      </p>
+                      {/* Bars rather than badges: the question here is which
+                          feature is eating the budget, and a row of counts
+                          makes that a subtraction exercise. */}
+                      {(() => {
+                        const maxCredits = Math.max(
+                          ...data!.tasks.map((t) => t.credits ?? 0),
+                          1,
+                        );
+                        return data!.tasks.map((t) => (
+                          <div key={t.task} className="flex flex-col gap-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span className="text-sm capitalize">{t.task}</span>
+                              <span className="text-xs tabular-nums text-muted-foreground">
+                                {(t.credits ?? 0).toLocaleString()} credits · {t.requests} run
+                                {t.requests === 1 ? "" : "s"}
+                              </span>
+                            </div>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-border/60">
+                              <div
+                                className="h-full rounded-full bg-primary-500"
+                                style={{
+                                  width: `${Math.round(((t.credits ?? 0) / maxCredits) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ));
+                      })()}
                     </div>
                   ) : null}
                 </CardContent>

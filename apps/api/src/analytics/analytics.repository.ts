@@ -26,6 +26,8 @@ export interface TaskUsage {
   requests: number;
   tokens: number;
   cost: number;
+  /** What the user actually spends. Cost in dollars is our unit, not theirs. */
+  credits: number;
 }
 
 export interface Totals {
@@ -181,12 +183,16 @@ export class AnalyticsRepository {
       `select r.task::text as task,
               count(*)::int as requests,
               coalesce(sum(r.total_tokens), 0)::int as tokens,
-              coalesce(sum(r.estimated_cost), 0)::float as cost
+              coalesce(sum(r.estimated_cost), 0)::float as cost,
+              -- Credits are metered from spend at 1 credit = $0.001, so they
+              -- can be derived here rather than stored twice.
+              coalesce(sum(ceil(r.estimated_cost * 1000)), 0)::int as credits
          from public.ai_requests r
         where r.organization_id = $1
           and r.created_at >= now() - ($2 || ' days')::interval
+          and r.success
         group by 1
-        order by requests desc`,
+        order by credits desc`,
       [tenant.organizationId, String(days)],
     );
     return rows;

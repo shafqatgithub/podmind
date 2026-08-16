@@ -39,6 +39,8 @@ export interface TaskUsage {
   requests: number;
   tokens: number;
   cost: number;
+  /** Credits spent on this task in the window. */
+  credits: number;
 }
 
 export interface AnalyticsFailure {
