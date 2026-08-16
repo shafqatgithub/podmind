@@ -60,6 +60,8 @@ export const calendarApi = {
     scheduled_for: string;
     publish_at?: string;
     guest_id?: string;
+    /** Sets how far ahead reminders go out. */
+    cadence?: "daily" | "weekly" | "biweekly" | "monthly";
   }) => apiRequest<CalendarEntry>("/calendar", { method: "POST", body }),
 
   /** Lay several episodes across a cadence in one go. */

@@ -32,6 +32,20 @@ export const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_JWT_AUD: z.string().default("authenticated"),
 
+  // Transactional email. Optional: without a key the API still runs and
+  // simply does not send reminders, rather than failing to boot over a
+  // feature most deployments will not have configured yet.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("PodMind AI <no-reply@podmindai.com>"),
+  /** Where email links point. Must match the deployed frontend. */
+  APP_URL: z.string().url().default("https://podmindai.com"),
+  /** Turns the reminder scheduler on. Off by default so a second instance
+   *  cannot double-send while a deployment is being rolled out. */
+  REMINDERS_ENABLED: z
+    .string()
+    .default("false")
+    .transform((v) => v === "true"),
+
   // Billing. Optional: without a payment provider the billing page shows
   // plans and usage but states plainly that checkout is not available yet.
   STRIPE_SECRET_KEY: z.string().optional(),

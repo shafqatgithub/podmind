@@ -14,6 +14,7 @@
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/schedule": "^6.1.3",
     "@nestjs/terminus": "^11.0.0",
     "@podmind/types": "workspace:*",
     "class-transformer": "^0.5.1",

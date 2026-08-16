@@ -140,12 +140,15 @@ export class CalendarRepository {
       scheduledFor: string;
       publishAt: string | null;
       guestId: string | null;
+      /** Sets the reminder lead time; null falls back to weekly. */
+      cadence?: string | null;
     },
   ): Promise<CalendarEntry> {
     const { rows } = await this.pool.query<{ id: string }>(
       `insert into public.content_calendar
-         (project_id, created_by, title, topic, notes, scheduled_for, publish_at, guest_id)
-       values ($1,$2,$3,$4,$5,$6::date,$7::date,$8)
+         (project_id, created_by, title, topic, notes, scheduled_for, publish_at, guest_id,
+          cadence)
+       values ($1,$2,$3,$4,$5,$6::date,$7::date,$8,$9)
        returning id`,
       [
         input.projectId,
@@ -156,6 +159,7 @@ export class CalendarRepository {
         input.scheduledFor,
         input.publishAt,
         input.guestId,
+        input.cadence ?? null,
       ],
     );
     return this.findOne(tenant, rows[0]!.id);

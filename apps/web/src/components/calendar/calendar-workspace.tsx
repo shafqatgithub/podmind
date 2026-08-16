@@ -216,6 +216,7 @@ export function CalendarWorkspace() {
           project_id: projectId,
           title: episode.title,
           scheduled_for: episode.scheduled_for,
+          cadence: proposal.cadence,
           ...(episode.topic ? { topic: episode.topic } : {}),
           ...(episode.notes || episode.angle
             ? { notes: [episode.angle, episode.notes].filter(Boolean).join("\n\n") }

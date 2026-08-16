@@ -54,6 +54,11 @@ export class CreateEntryDto {
   @IsOptional()
   @IsUUID()
   guest_id?: string;
+
+  /** Publishing rhythm; sets how far ahead the first reminder goes out. */
+  @IsOptional()
+  @IsIn(["daily", "weekly", "biweekly", "monthly"])
+  cadence?: "daily" | "weekly" | "biweekly" | "monthly";
 }
 
 export class UpdateEntryDto {

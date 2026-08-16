@@ -153,6 +153,7 @@ export class CalendarService {
       scheduledFor: dto.scheduled_for.slice(0, 10),
       publishAt: dto.publish_at?.slice(0, 10) ?? null,
       guestId: dto.guest_id ?? null,
+      cadence: dto.cadence ?? null,
     });
   }
 
