@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation";
 import { CircleAlert, Loader2, Users } from "lucide-react";
 import { Badge, Button, Card, CardContent } from "@podmind/ui";
 import { apiRequest, ApiError } from "@/lib/api/client";
+import { createClient } from "@/lib/supabase/client";
 
 interface Preview {
   organization: string;
@@ -32,6 +33,24 @@ export function AcceptInvite() {
   const [joined, setJoined] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [accepting, setAccepting] = React.useState(false);
+  /** undefined until checked; null when nobody is signed in. */
+  const [signedInAs, setSignedInAs] = React.useState<string | null | undefined>(undefined);
+
+  // An invite link is opened from email, usually on a device that is not
+  // signed in. Without this the page offered an Accept button that could only
+  // fail, and reported the failure as "Missing bearer token" — a message
+  // about tokens to someone who was simply not logged in.
+  React.useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) {
+      setSignedInAs(null);
+      return;
+    }
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => setSignedInAs(data.session?.user.email ?? null))
+      .catch(() => setSignedInAs(null));
+  }, []);
 
   React.useEffect(() => {
     if (!token) {
@@ -64,6 +83,8 @@ export function AcceptInvite() {
       setAccepting(false);
     }
   };
+
+  const inviteHref = `/invite?token=${token ?? ""}`;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md items-center px-4">
@@ -123,12 +144,43 @@ export function AcceptInvite() {
                 </p>
               ) : null}
 
-              <Button onClick={() => void accept()} loading={accepting}>
-                Accept invitation
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Sign in as {preview.email} if you aren&rsquo;t already.
-              </p>
+              {signedInAs === undefined ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
+              ) : signedInAs === null ? (
+                <>
+                  <Button asChild>
+                    <Link href={`/login?next=${encodeURIComponent(inviteHref)}`}>
+                      Sign in to accept
+                    </Link>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Sign in as <span className="text-foreground">{preview.email}</span>, or{" "}
+                    <Link
+                      href={`/signup?next=${encodeURIComponent(inviteHref)}`}
+                      className="text-primary-400 hover:text-primary-300"
+                    >
+                      create an account
+                    </Link>{" "}
+                    with that address.
+                  </p>
+                </>
+              ) : signedInAs.toLowerCase() !== preview.email.toLowerCase() ? (
+                <>
+                  <p className="text-sm text-amber-300">
+                    You&rsquo;re signed in as {signedInAs}, but this invitation was sent to{" "}
+                    {preview.email}.
+                  </p>
+                  <Button asChild variant="secondary">
+                    <Link href={`/login?next=${encodeURIComponent(inviteHref)}`}>
+                      Switch account
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => void accept()} loading={accepting}>
+                  Accept invitation
+                </Button>
+              )}
             </>
           )}
         </CardContent>

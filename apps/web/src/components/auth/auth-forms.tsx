@@ -169,9 +169,10 @@ export function LoginForm() {
 
 export function SignupForm() {
   const [state, action, pending] = useActionState(signUpAction, INITIAL);
+  const next = useSearchParams().get("next") ?? "/dashboard";
 
   if (state.codeSentTo) {
-    return <VerifyEmailCodeForm email={state.codeSentTo} />;
+    return <VerifyEmailCodeForm email={state.codeSentTo} next={next} />;
   }
 
   return (
@@ -236,7 +237,7 @@ export function SignupForm() {
  * Verifying the code confirms the account and signs them in (redirect to
  * /dashboard happens inside the server action).
  */
-export function VerifyEmailCodeForm({ email }: { email: string }) {
+export function VerifyEmailCodeForm({ email, next }: { email: string; next?: string }) {
   const [state, action, pending] = useActionState(verifyEmailCodeAction, INITIAL);
   const [resendState, resendAction, resendPending] = useActionState(
     resendSignupCodeAction,
@@ -255,6 +256,7 @@ export function VerifyEmailCodeForm({ email }: { email: string }) {
         </p>
         <form action={action} className="flex flex-col gap-4">
           <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="next" value={next ?? "/dashboard"} />
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="token">Verification code</Label>
             <Input

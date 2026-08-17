@@ -90,7 +90,10 @@ export async function verifyEmailCodeAction(
   if (error) {
     return { error: "That code is invalid or has expired — try again or resend." };
   }
-  redirect("/dashboard");
+  // Honour where they were headed: someone who signed up from an invitation
+  // should land back on it, not on an empty dashboard having lost the link.
+  const next = String(formData.get("next") ?? "/dashboard");
+  redirect(next.startsWith("/") ? next : "/dashboard");
 }
 
 export async function resendSignupCodeAction(
