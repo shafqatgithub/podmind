@@ -15,9 +15,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CircleAlert, Loader2, Users } from "lucide-react";
-import { Badge, Button, Card, CardContent } from "@podmind/ui";
+import { CircleAlert, Eye, EyeOff, Loader2, Users } from "lucide-react";
+import { Badge, Button, Card, CardContent, Input, Label } from "@podmind/ui";
 import { apiRequest, ApiError } from "@/lib/api/client";
+import { organizationApi } from "@/lib/api/organization";
 import { createClient } from "@/lib/supabase/client";
 
 interface Preview {
@@ -35,6 +36,9 @@ export function AcceptInvite() {
   const [accepting, setAccepting] = React.useState(false);
   /** undefined until checked; null when nobody is signed in. */
   const [signedInAs, setSignedInAs] = React.useState<string | null | undefined>(undefined);
+  const [password, setPassword] = React.useState("");
+  const [fullName, setFullName] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
 
   // An invite link is opened from email, usually on a device that is not
   // signed in. Without this the page offered an Accept button that could only
@@ -67,6 +71,47 @@ export function AcceptInvite() {
         );
       });
   }, [token]);
+
+  /**
+   * Create the account, sign in with it, then accept — in that order.
+   *
+   * Membership is recorded against a real session rather than trusted from an
+   * unauthenticated call, so the same check applies to someone joining as to
+   * someone who was already signed in.
+   */
+  const registerAndJoin = async () => {
+    if (!token || !preview) return;
+    setAccepting(true);
+    setError(null);
+    try {
+      await organizationApi.registerFromInvite({
+        token,
+        password,
+        ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
+      });
+
+      const supabase = createClient();
+      const signIn = await supabase?.auth.signInWithPassword({
+        email: preview.email,
+        password,
+      });
+      if (signIn?.error) {
+        setError("Your account was created — please sign in to finish joining.");
+        return;
+      }
+
+      await apiRequest("/organization/invitations/accept", { method: "POST", body: { token } });
+      setJoined(true);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.message
+          ? err.message
+          : "The account could not be created. Try again.",
+      );
+    } finally {
+      setAccepting(false);
+    }
+  };
 
   const accept = async () => {
     if (!token) return;
@@ -147,23 +192,70 @@ export function AcceptInvite() {
               {signedInAs === undefined ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
               ) : signedInAs === null ? (
-                <>
-                  <Button asChild>
-                    <Link href={`/login?next=${encodeURIComponent(inviteHref)}`}>
-                      Sign in to accept
-                    </Link>
+                <div className="flex w-full flex-col gap-3 text-left">
+                  {/* Set a password and join, here. Opening this link already
+                      proved they hold the inbox, so sending them off to sign
+                      up — retyping the address, waiting for a second email,
+                      entering a code — asks for that proof twice. */}
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="invite-email">Email</Label>
+                    <Input id="invite-email" value={preview.email} disabled readOnly />
+                    <p className="text-xs text-muted-foreground">
+                      The invitation is for this address, so it can&rsquo;t be changed.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="invite-name">Your name</Label>
+                    <Input
+                      id="invite-name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="How your teammates will see you"
+                      maxLength={200}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="invite-password">Choose a password</Label>
+                    <div className="relative">
+                      <Input
+                        id="invite-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+                  </div>
+
+                  <Button
+                    onClick={() => void registerAndJoin()}
+                    loading={accepting}
+                    disabled={password.length < 8}
+                  >
+                    Create account and join
                   </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Sign in as <span className="text-foreground">{preview.email}</span>, or{" "}
+                  <p className="text-center text-xs text-muted-foreground">
+                    Already have an account?{" "}
                     <Link
-                      href={`/signup?next=${encodeURIComponent(inviteHref)}`}
+                      href={`/login?next=${encodeURIComponent(inviteHref)}`}
                       className="text-primary-400 hover:text-primary-300"
                     >
-                      create an account
-                    </Link>{" "}
-                    with that address.
+                      Sign in instead
+                    </Link>
                   </p>
-                </>
+                </div>
               ) : signedInAs.toLowerCase() !== preview.email.toLowerCase() ? (
                 <>
                   <p className="text-sm text-amber-300">

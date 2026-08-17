@@ -107,6 +107,19 @@ export class OrganizationController {
     return this.organizations.previewInvite(token);
   }
 
+  /**
+   * Create an account from an invitation.
+   *
+   * Public because the person has no account yet — the token is the
+   * credential. The email comes from the invitation rather than the request
+   * body, so a link cannot be used to register some other address.
+   */
+  @Public()
+  @Post("invitations/register")
+  async registerFromInvite(@Body() body: { token: string; password: string; full_name?: string }) {
+    return this.organizations.registerFromInvite(body.token, body.password ?? "", body.full_name);
+  }
+
   @Post("invitations/accept")
   async accept(@CurrentUser() user: AuthUser, @Body() body: { token: string }) {
     return this.organizations.acceptInvite(user.id, user.email ?? "", body.token);

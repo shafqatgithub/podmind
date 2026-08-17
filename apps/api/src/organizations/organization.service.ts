@@ -48,6 +48,8 @@ const INVITE_TTL_DAYS = 14;
 export class OrganizationService {
   private readonly logger = new Logger(OrganizationService.name);
   private readonly appUrl: string;
+  private readonly supabaseUrl: string;
+  private readonly serviceRoleKey: string;
 
   constructor(
     @Inject(PG_POOL) private readonly pool: Pool,
@@ -55,6 +57,8 @@ export class OrganizationService {
     config: ConfigService<Env, true>,
   ) {
     this.appUrl = config.get("APP_URL", { infer: true }).replace(/\/$/, "");
+    this.supabaseUrl = config.get("SUPABASE_URL", { infer: true }) ?? "";
+    this.serviceRoleKey = config.get("SUPABASE_SERVICE_ROLE_KEY", { infer: true }) ?? "";
   }
 
   /** Members and pending invitations, for the settings page. */
@@ -330,6 +334,80 @@ export class OrganizationService {
 
     this.logger.log({ organization: invite.organization_id, user: userId, role: invite.role });
     return { joined: true, organization_id: invite.organization_id, role: invite.role };
+  }
+
+  /**
+   * Create an account straight from an invitation.
+   *
+   * The recipient already had to open a link that was emailed to them, which
+   * is the same proof a verification code exists to obtain. Sending them
+   * through a separate sign-up — retyping the address, waiting for a second
+   * email, entering a code — asks for that proof twice and loses people in
+   * between. So the account is created already confirmed, and the email is
+   * taken from the invitation rather than from anything they type: a form
+   * they could edit would let one person's link create another's account.
+   */
+  async registerFromInvite(token: string, password: string, fullName?: string) {
+    const invite = await this.findInvite(token);
+
+    if (password.length < 8) {
+      throw new BadRequestException({
+        code: "WEAK_PASSWORD",
+        message: "Choose a password of at least 8 characters.",
+      });
+    }
+    if (!this.supabaseUrl || !this.serviceRoleKey) {
+      throw new BadRequestException({
+        code: "SIGNUP_UNAVAILABLE",
+        message: "Account creation isn't configured. Sign up separately and open this link again.",
+      });
+    }
+
+    const response = await fetch(`${this.supabaseUrl}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        apikey: this.serviceRoleKey,
+        authorization: `Bearer ${this.serviceRoleKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email: invite.email,
+        password,
+        // Confirmed on the strength of the invitation itself.
+        email_confirm: true,
+        user_metadata: fullName?.trim() ? { full_name: fullName.trim() } : {},
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = (await response.json().catch(() => null)) as {
+        msg?: string;
+        message?: string;
+        error_code?: string;
+      } | null;
+      const message = detail?.msg ?? detail?.message ?? "";
+
+      // An address that already has an account is not an error worth a stack
+      // trace — they simply need to sign in.
+      if (response.status === 422 || /already/i.test(message)) {
+        throw new BadRequestException({
+          code: "ACCOUNT_EXISTS",
+          message: `An account already exists for ${invite.email}. Sign in instead, then open this link again.`,
+        });
+      }
+
+      this.logger.error({ status: response.status, message }, "invite signup failed");
+      throw new BadRequestException({
+        code: "SIGNUP_FAILED",
+        message: message || "The account could not be created. Try again.",
+      });
+    }
+
+    this.logger.log({ email: invite.email, organization: invite.organization_id });
+    // Deliberately not accepted here: the client signs in with the password
+    // it just set, then accepts, so membership is recorded against a real
+    // session rather than trusted from an unauthenticated call.
+    return { created: true, email: invite.email };
   }
 
   private async findInvite(token: string) {

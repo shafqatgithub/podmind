@@ -54,6 +54,13 @@ export const organizationApi = {
       invite_url: string;
     }>("/organization/invitations", { method: "POST", body }),
 
+  /** Create an account for the invited address and confirm it in one step. */
+  registerFromInvite: (body: { token: string; password: string; full_name?: string }) =>
+    apiRequest<{ created: boolean; email: string }>("/organization/invitations/register", {
+      method: "POST",
+      body,
+    }),
+
   revokeInvite: (id: string) =>
     apiRequest<{ revoked: boolean }>(`/organization/invitations/${id}`, { method: "DELETE" }),
 
