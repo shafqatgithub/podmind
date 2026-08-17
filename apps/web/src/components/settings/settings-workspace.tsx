@@ -98,9 +98,15 @@ export function SettingsWorkspace() {
   const [savingSection, setSavingSection] = React.useState<string | null>(null);
   const [savedSection, setSavedSection] = React.useState<string | null>(null);
   const [sectionError, setSectionError] = React.useState<Record<string, string | null>>({});
+  const [country, setCountry] = React.useState("");
+  const [timezone, setTimezone] = React.useState("");
+  /** Seeds the controlled fields once, when the profile first arrives. */
+  const seeded = React.useRef(false);
 
   React.useEffect(() => {
-    if (seeded.current || !data) return;
+    // profile is nullable on the bundle, so wait for it rather than seeding
+    // from a half-loaded response.
+    if (seeded.current || !data?.profile) return;
     seeded.current = true;
     setCountry(data.profile.country ?? "");
     setTimezone(data.profile.timezone ?? "");
