@@ -45,13 +45,25 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     pathname.startsWith(p),
   );
 
-  if (!user && isProtected) {
+  /**
+   * Only navigations are redirected.
+   *
+   * A form submission is a POST to the same path, and redirecting it breaks
+   * the server action behind it: Next.js receives a redirect where it
+   * expected an action result and reports "an unexpected response was
+   * received from the server" — which is what a signed-in user saw when they
+   * opened a cached /login page and submitted it. Actions must be allowed to
+   * run and issue their own redirect.
+   */
+  const isNavigation = request.method === "GET" || request.method === "HEAD";
+
+  if (!user && isProtected && isNavigation) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
-  if (user && isAuthPage) {
+  if (user && isAuthPage && isNavigation) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";
