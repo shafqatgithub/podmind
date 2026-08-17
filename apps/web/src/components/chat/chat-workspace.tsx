@@ -26,6 +26,7 @@ import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { projectsApi, type Project } from "@/lib/api/projects";
 import { chatApi, type ChatMessage, type Conversation, type ConversationDetail } from "@/lib/api/chat";
 import { EmptyState } from "@/components/common/empty-state";
+import { ActionToast } from "@/components/common/action-toast";
 
 /* ---------------------------------------------------------- markdown */
 
@@ -163,6 +164,7 @@ export function ChatWorkspace() {
   const [streamingText, setStreamingText] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
   const threadEndRef = React.useRef<HTMLDivElement>(null);
 
   const loadConversations = React.useCallback(async (signal?: AbortSignal) => {
@@ -352,10 +354,8 @@ export function ChatWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // conversation belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that conversation.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that conversation.",
       );
     }
   };
@@ -505,6 +505,8 @@ export function ChatWorkspace() {
           </p>
         </CardContent>
       </Card>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

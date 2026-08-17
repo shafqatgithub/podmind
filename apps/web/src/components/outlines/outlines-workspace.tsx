@@ -45,6 +45,7 @@ import { Appear, Item } from "@/components/motion/motion";
 import { aiApi, type AiStatus } from "@/lib/api/ai";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ActionToast } from "@/components/common/action-toast";
 
 function GeneratingCard({ minutes }: { minutes: number }) {
   const [elapsed, setElapsed] = React.useState(0);
@@ -229,6 +230,8 @@ export function OutlinesWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
   // /?open=<id> — the Export Center links here so a user can confirm they are
   // downloading the right thing before they download it.
   const requestedId = useSearchParams().get("open");
@@ -356,10 +359,8 @@ export function OutlinesWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // outline belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that outline.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that outline.",
       );
     }
   };
@@ -603,6 +604,8 @@ export function OutlinesWorkspace() {
           </ul>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

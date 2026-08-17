@@ -49,6 +49,7 @@ import {
 import { EmptyState } from "@/components/common/empty-state";
 import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ActionToast } from "@/components/common/action-toast";
 
 /* -------------------------------------------------------- verdicts */
 
@@ -234,6 +235,8 @@ export function FactCheckWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
   const loadChecks = React.useCallback(async (project?: string) => {
     try {
@@ -354,10 +357,8 @@ export function FactCheckWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // fact check belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that fact check.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that fact check.",
       );
     }
   };
@@ -595,6 +596,8 @@ export function FactCheckWorkspace() {
           </ul>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

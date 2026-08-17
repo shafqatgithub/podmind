@@ -57,6 +57,7 @@ import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 import { ExportMenu } from "@/components/common/export-menu";
+import { ActionToast } from "@/components/common/action-toast";
 
 function Section({
   icon: Icon,
@@ -431,6 +432,8 @@ export function GuestsWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
   const loadGuests = React.useCallback(async (project?: string) => {
     try {
@@ -598,10 +601,8 @@ export function GuestsWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // guest belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that guest.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that guest.",
       );
     }
   };
@@ -1102,6 +1103,8 @@ export function GuestsWorkspace() {
           </Reveal>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

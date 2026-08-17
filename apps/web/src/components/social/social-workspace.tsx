@@ -50,6 +50,7 @@ import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
 import { ExportMenu } from "@/components/common/export-menu";
+import { ActionToast } from "@/components/common/action-toast";
 
 const PLATFORM_META: Record<SocialPlatform, { label: string; limit: number; accent: string }> =
   Object.fromEntries(
@@ -159,6 +160,8 @@ export function SocialWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
   // /?open=<id> — the Export Center links here so a user can confirm they are
   // downloading the right thing before they download it.
   const requestedId = useSearchParams().get("open");
@@ -297,10 +300,8 @@ export function SocialWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // campaign belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that campaign.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that campaign.",
       );
     }
   };
@@ -569,6 +570,8 @@ export function SocialWorkspace() {
           </Reveal>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

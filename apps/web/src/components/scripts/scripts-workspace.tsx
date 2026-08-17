@@ -50,6 +50,7 @@ import { Appear, Item } from "@/components/motion/motion";
 import { aiApi, type AiStatus } from "@/lib/api/ai";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ActionToast } from "@/components/common/action-toast";
 
 function readabilityLabel(score: number): { label: string; className: string } {
   if (score >= 70) return { label: "Easy to say aloud", className: "bg-success-500/15 text-success-300" };
@@ -189,6 +190,8 @@ export function ScriptsWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
   // /?open=<id> — the Export Center links here so a user can confirm they are
   // downloading the right thing before they download it.
   const requestedId = useSearchParams().get("open");
@@ -306,10 +309,8 @@ export function ScriptsWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // script belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that script.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that script.",
       );
     }
   };
@@ -545,6 +546,8 @@ export function ScriptsWorkspace() {
           </ul>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

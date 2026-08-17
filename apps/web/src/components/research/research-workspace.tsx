@@ -54,6 +54,7 @@ import { ExportMenu } from "@/components/common/export-menu";
 import { Appear, Item } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ActionToast } from "@/components/common/action-toast";
 
 /* --------------------------------------------------------- progress */
 
@@ -399,6 +400,8 @@ export function ResearchWorkspace() {
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
   // /research?open=<id> — linked from the Export Center.
   const requestedId = useSearchParams().get("open");
   const openedRef = React.useRef<string | null>(null);
@@ -564,10 +567,8 @@ export function ResearchWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // research session belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that research session.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that research session.",
       );
     }
   };
@@ -774,6 +775,8 @@ export function ResearchWorkspace() {
           </ul>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }

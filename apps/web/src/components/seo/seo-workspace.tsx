@@ -46,6 +46,7 @@ import { Appear, Item, Reveal } from "@/components/motion/motion";
 import { CreditHint } from "@/components/common/credit-hint";
 import { ExportMenu } from "@/components/common/export-menu";
 import { isOutOfCredits, OutOfCreditsNotice, requiredCredits } from "@/components/common/credit-error";
+import { ActionToast } from "@/components/common/action-toast";
 
 /** Limits that matter when the text is pasted into a real platform. */
 const TITLE_LIMIT = 60;
@@ -367,6 +368,8 @@ export function SeoWorkspace() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [creditError, setCreditError] = React.useState<unknown>(null);
+  /** Shown near the action rather than beside the form at the top. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
   // /?open=<id> — the Export Center links here so a user can confirm they are
   // downloading the right thing before they download it.
   const requestedId = useSearchParams().get("open");
@@ -510,10 +513,8 @@ export function SeoWorkspace() {
       // explanation reads as the app losing the request, when
       // in fact the server refused it — often because this
       // SEO set belongs to someone else.
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not delete that SEO set.",
+      setActionError(
+        err instanceof ApiError ? err.message : "Could not delete that SEO set.",
       );
     }
   };
@@ -682,6 +683,8 @@ export function SeoWorkspace() {
           </Appear>
         )}
       </aside>
+
+      <ActionToast message={actionError} onDismiss={() => setActionError(null)} />
     </div>
   );
 }
