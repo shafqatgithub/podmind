@@ -8,6 +8,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@podmind/ui";
@@ -108,6 +109,60 @@ function Divider() {
   );
 }
 
+/**
+ * A password field with a reveal toggle.
+ *
+ * Typing a password blind is where most sign-up friction comes from — a
+ * mistyped character is invisible, and on a phone keyboard it is common. The
+ * toggle defaults to hidden, so nothing is exposed to someone glancing over a
+ * shoulder unless the person asks for it.
+ */
+function PasswordInput({
+  id,
+  name,
+  autoComplete,
+  minLength,
+  required,
+  autoFocus,
+}: {
+  id: string;
+  name: string;
+  autoComplete?: string;
+  minLength?: number;
+  required?: boolean;
+  autoFocus?: boolean;
+}) {
+  const [visible, setVisible] = React.useState(false);
+
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        name={name}
+        type={visible ? "text" : "password"}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        required={required}
+        autoFocus={autoFocus}
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        aria-pressed={visible}
+        // Excluded from tab order: it sits between the password field and the
+        // submit button, and stopping there on the way to submitting is a
+        // small annoyance repeated on every sign-in.
+        tabIndex={-1}
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
 export function LoginForm() {
   const [state, action, pending] = useActionState(signInAction, INITIAL);
   const params = useSearchParams();
@@ -138,10 +193,9 @@ export function LoginForm() {
                 Forgot password?
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="current-password"
               required
             />
@@ -194,10 +248,9 @@ export function SignupForm() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
@@ -404,10 +457,9 @@ function NewPasswordForm() {
         <form action={action} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
@@ -416,10 +468,9 @@ function NewPasswordForm() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="confirm">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirm"
               name="confirm"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
@@ -447,10 +498,9 @@ export function ResetPasswordForm() {
         <form action={action} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
@@ -458,10 +508,9 @@ export function ResetPasswordForm() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="confirm">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirm"
               name="confirm"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required

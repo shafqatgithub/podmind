@@ -41,14 +41,28 @@ export class TenancyService {
     return this.provision(userId);
   }
 
+  /**
+   * The organization this user works in.
+   *
+   * Membership, not ownership. Looking only at `owner_id` meant an invited
+   * teammate never landed in the organization that invited them — they were
+   * provisioned a private one instead, with their own free credits and none
+   * of the shared work. The invitation appeared to succeed and changed
+   * nothing they could see.
+   *
+   * Where someone belongs to several, the one they own wins, then the oldest
+   * membership: a founder who has also been invited elsewhere should still
+   * open their own studio by default.
+   */
   private async lookup(userId: string): Promise<TenantContext | null> {
     const { rows } = await this.pool.query<{ organization_id: string; workspace_id: string }>(
       `select o.id as organization_id, w.id as workspace_id
-         from public.organizations o
+         from public.organization_members m
+         join public.organizations o on o.id = m.organization_id and o.is_active = true
          join public.workspaces w
            on w.organization_id = o.id and w.is_default = true
-        where o.owner_id = $1 and o.is_active = true
-        order by o.created_at
+        where m.user_id = $1 and m.is_active
+        order by (o.owner_id = $1) desc, m.joined_at
         limit 1`,
       [userId],
     );
@@ -73,12 +87,17 @@ export class TenancyService {
         throw new Error(`Cannot provision tenant: profile ${userId} not found`);
       }
 
-      // Another request may have provisioned while we waited for the lock.
+      // Another request may have provisioned while we waited for the lock —
+      // or the user may have joined an organization by invitation, in which
+      // case they already have somewhere to work and must not be given a
+      // second, private one.
       const { rows: raced } = await client.query<{ organization_id: string; workspace_id: string }>(
         `select o.id as organization_id, w.id as workspace_id
-           from public.organizations o
+           from public.organization_members m
+           join public.organizations o on o.id = m.organization_id and o.is_active = true
            join public.workspaces w on w.organization_id = o.id and w.is_default = true
-          where o.owner_id = $1
+          where m.user_id = $1 and m.is_active
+          order by (o.owner_id = $1) desc, m.joined_at
           limit 1`,
         [userId],
       );

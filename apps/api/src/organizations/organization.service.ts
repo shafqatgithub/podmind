@@ -294,6 +294,32 @@ export class OrganizationService {
             set accepted_at = now(), accepted_by = $2 where id = $1`,
         [invite.id, userId],
       );
+
+      /**
+       * Retire an untouched private studio.
+       *
+       * Signing up provisions everyone a studio of their own, so someone who
+       * joins a team by invitation ends up owning an empty one as well —
+       * complete with its own free credits, which is both confusing and a way
+       * to mint credits by inviting yourself. If that studio has no work in
+       * it, it is deactivated so the team's organization becomes the one they
+       * open. A studio with anything in it is left alone: that is somebody's
+       * work, and no invitation is worth losing it.
+       */
+      await client.query(
+        `update public.organizations o
+            set is_active = false
+          where o.owner_id = $1
+            and o.id <> $2
+            and o.is_active
+            and not exists (
+              select 1 from public.workspaces w
+               where w.organization_id = o.id
+                 and exists (select 1 from public.projects p where p.workspace_id = w.id)
+            )`,
+        [userId, invite.organization_id],
+      );
+
       await client.query("commit");
     } catch (err) {
       await client.query("rollback").catch(() => undefined);
