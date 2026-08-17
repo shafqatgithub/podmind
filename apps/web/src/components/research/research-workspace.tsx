@@ -558,8 +558,17 @@ export function ResearchWorkspace() {
     try {
       await researchApi.remove(id);
       invalidate("research:");
-    } catch {
+    } catch (err) {
       setSessions(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // research session belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that research session.",
+      );
     }
   };
 

@@ -504,8 +504,17 @@ export function SeoWorkspace() {
     if (detail?.id === id) setDetail(null);
     try {
       await seoApi.remove(id);
-    } catch {
+    } catch (err) {
       setSets(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // SEO set belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that SEO set.",
+      );
     }
   };
 

@@ -474,9 +474,15 @@ export function ProjectsWorkspace() {
     try {
       await projectsApi.remove(project.id);
       invalidate("projects");
-    } catch {
+    } catch (err) {
       setProjects(snapshot);
-      setError(new ApiError("DELETE_FAILED", "Could not delete the project.", 0));
+      // Keep the server's reason: "this belongs to someone else" is the
+      // useful answer, and a generic message hides it.
+      setError(
+        err instanceof ApiError
+          ? err
+          : new ApiError("DELETE_FAILED", "Could not delete the project.", 0),
+      );
     }
   };
 

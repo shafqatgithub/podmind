@@ -592,8 +592,17 @@ export function GuestsWorkspace() {
     if (detail?.id === id) setDetail(null);
     try {
       await guestsApi.remove(id);
-    } catch {
+    } catch (err) {
       setGuests(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // guest belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that guest.",
+      );
     }
   };
 

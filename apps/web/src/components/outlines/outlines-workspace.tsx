@@ -350,8 +350,17 @@ export function OutlinesWorkspace() {
     if (detail?.id === id) setDetail(null);
     try {
       await outlinesApi.remove(id);
-    } catch {
+    } catch (err) {
       setOutlines(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // outline belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that outline.",
+      );
     }
   };
 

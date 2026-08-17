@@ -346,8 +346,17 @@ export function ChatWorkspace() {
     if (active?.id === conversation.id) setActive(null);
     try {
       await chatApi.remove(conversation.id);
-    } catch {
+    } catch (err) {
       setConversations(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // conversation belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that conversation.",
+      );
     }
   };
 

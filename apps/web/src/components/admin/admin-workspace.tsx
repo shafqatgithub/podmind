@@ -394,8 +394,17 @@ export function AdminWorkspace() {
     setFlags((all) => all.filter((f) => f.id !== flag.id));
     try {
       await adminApi.deleteFlag(flag.id);
-    } catch {
+    } catch (err) {
       setFlags(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // flag belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that flag.",
+      );
     }
   };
 

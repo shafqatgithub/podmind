@@ -348,8 +348,17 @@ export function FactCheckWorkspace() {
     if (detail?.id === id) setDetail(null);
     try {
       await factChecksApi.remove(id);
-    } catch {
+    } catch (err) {
       setChecks(snapshot);
+      // Say why. A row that vanishes and returns without
+      // explanation reads as the app losing the request, when
+      // in fact the server refused it — often because this
+      // fact check belongs to someone else.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that fact check.",
+      );
     }
   };
 
