@@ -34,6 +34,10 @@ export interface OrganizationInvitation {
 }
 
 export const organizationApi = {
+  /** The caller's own role in the organization they are working in. */
+  me: (signal?: AbortSignal) =>
+    apiRequest<{ role: string; organization_id: string }>("/organization/me", { signal }),
+
   members: (signal?: AbortSignal) =>
     apiRequest<{ members: OrganizationMember[]; invitations: OrganizationInvitation[] }>(
       "/organization/members",

@@ -38,6 +38,7 @@ import { ApiKeyModule } from "./api-keys/api-key.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
+import { RolesGuard } from "./common/guards/roles.guard";
 
 @Module({
   imports: [
@@ -92,6 +93,8 @@ import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
   providers: [
     SupabaseAuthGuard,
     { provide: APP_GUARD, useExisting: SupabaseAuthGuard },
+    // Runs after authentication: it needs to know who is asking.
+    { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: EnvelopeInterceptor },
   ],

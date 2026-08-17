@@ -45,6 +45,19 @@ export class OrganizationController {
     private readonly tenancy: TenancyService,
   ) {}
 
+  /**
+   * The caller's own role.
+   *
+   * Small and separate so the app shell can ask on load without pulling the
+   * whole member list: a view-only user needs to be told that before they
+   * spend time on a form that will be refused.
+   */
+  @Get("me")
+  async me(@CurrentUser() user: AuthUser) {
+    const tenant = await this.tenancy.resolve(user.id);
+    return { role: tenant.role, organization_id: tenant.organizationId };
+  }
+
   @Get("members")
   async members(@CurrentUser() user: AuthUser) {
     const tenant = await this.tenancy.resolve(user.id);

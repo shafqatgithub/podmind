@@ -44,6 +44,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LogoLockup, LogoMark } from "@/components/brand/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ReadOnlyBanner } from "@/components/common/read-only-banner";
 
 /**
  * Navigation is grouped rather than flat: seventeen equal-weight links is a
@@ -482,6 +483,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        <ReadOnlyBanner />
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>

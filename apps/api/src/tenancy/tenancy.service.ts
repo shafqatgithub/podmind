@@ -7,7 +7,18 @@ export interface TenantContext {
   userId: string;
   organizationId: string;
   workspaceId: string;
+  /**
+   * The caller's role in this organization.
+   *
+   * Carried here rather than looked up per check: every request already
+   * resolves its tenant, and a permission that costs an extra query is a
+   * permission people are tempted to skip.
+   */
+  role: OrganizationRole;
 }
+
+export const ORGANIZATION_ROLES = ["owner", "admin", "manager", "member", "viewer"] as const;
+export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
 
 /** Credits granted with the free plan on provisioning. */
 /**
@@ -55,8 +66,12 @@ export class TenancyService {
    * open their own studio by default.
    */
   private async lookup(userId: string): Promise<TenantContext | null> {
-    const { rows } = await this.pool.query<{ organization_id: string; workspace_id: string }>(
-      `select o.id as organization_id, w.id as workspace_id
+    const { rows } = await this.pool.query<{
+      organization_id: string;
+      workspace_id: string;
+      role: OrganizationRole;
+    }>(
+      `select o.id as organization_id, w.id as workspace_id, m.role::text as role
          from public.organization_members m
          join public.organizations o on o.id = m.organization_id and o.is_active = true
          join public.workspaces w
@@ -68,7 +83,12 @@ export class TenancyService {
     );
     const row = rows[0];
     return row
-      ? { userId, organizationId: row.organization_id, workspaceId: row.workspace_id }
+      ? {
+          userId,
+          organizationId: row.organization_id,
+          workspaceId: row.workspace_id,
+          role: row.role,
+        }
       : null;
   }
 
@@ -91,8 +111,12 @@ export class TenancyService {
       // or the user may have joined an organization by invitation, in which
       // case they already have somewhere to work and must not be given a
       // second, private one.
-      const { rows: raced } = await client.query<{ organization_id: string; workspace_id: string }>(
-        `select o.id as organization_id, w.id as workspace_id
+      const { rows: raced } = await client.query<{
+        organization_id: string;
+        workspace_id: string;
+        role: OrganizationRole;
+      }>(
+        `select o.id as organization_id, w.id as workspace_id, m.role::text as role
            from public.organization_members m
            join public.organizations o on o.id = m.organization_id and o.is_active = true
            join public.workspaces w on w.organization_id = o.id and w.is_default = true
@@ -107,6 +131,7 @@ export class TenancyService {
           userId,
           organizationId: raced[0].organization_id,
           workspaceId: raced[0].workspace_id,
+          role: raced[0].role,
         };
       }
 
@@ -159,7 +184,8 @@ export class TenancyService {
 
       await client.query("commit");
       this.logger.log({ userId, organizationId, workspaceId }, "tenant provisioned");
-      return { userId, organizationId, workspaceId };
+      // Freshly provisioned: this person just created the organization.
+      return { userId, organizationId, workspaceId, role: "owner" };
     } catch (err) {
       await client.query("rollback").catch(() => undefined);
       throw err;
