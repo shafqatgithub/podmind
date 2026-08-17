@@ -30,6 +30,7 @@ import {
   ScanSearch,
   Search,
   Settings,
+  ShieldCheck,
   Share2,
   Sun,
   TrendingUp,
@@ -45,6 +46,8 @@ import { createClient } from "@/lib/supabase/client";
 import { LogoLockup, LogoMark } from "@/components/brand/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ReadOnlyBanner } from "@/components/common/read-only-banner";
+import { isApiConfigured } from "@/lib/api/client";
+import { adminApi } from "@/lib/api/admin";
 
 /**
  * Navigation is grouped rather than flat: seventeen equal-weight links is a
@@ -375,10 +378,37 @@ function MobileNav({ pathname }: { pathname: string }) {
 }
 
 function SidebarNav({ pathname }: { pathname: string }) {
+  // Admin is reachable only by people who actually have admin rights. The
+  // page existed but nothing linked to it, so the only way in was to type the
+  // URL — which meant nobody found it.
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isApiConfigured()) return;
+    const controller = new AbortController();
+    void adminApi
+      .dashboard(controller.signal)
+      .then(() => setIsAdmin(true))
+      // A forbidden response is the expected answer for most people, not an
+      // error worth showing.
+      .catch(() => setIsAdmin(false));
+    return () => controller.abort();
+  }, []);
+
+  const groups = isAdmin
+    ? [
+        ...NAV_GROUPS,
+        {
+          label: "Platform",
+          items: [{ href: "/admin", label: "Admin", icon: ShieldCheck }],
+        },
+      ]
+    : NAV_GROUPS;
+
   return (
     <LazyMotion features={domAnimation} strict>
       <nav aria-label="Primary" className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-2">
-        {NAV_GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.label ?? "root"} className="flex flex-col gap-1">
             {group.label ? (
               <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
