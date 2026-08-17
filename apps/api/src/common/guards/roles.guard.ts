@@ -9,6 +9,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { TenancyService, type OrganizationRole } from "../../tenancy/tenancy.service";
 import { IS_PUBLIC_KEY, type AuthedRequest } from "../../auth/supabase-auth.guard";
+import { OwnershipService } from "./ownership.service";
 
 /**
  * Role enforcement.
@@ -58,6 +59,7 @@ export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly tenancy: TenancyService,
+    private readonly ownership: OwnershipService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -89,7 +91,13 @@ export class RolesGuard implements CanActivate {
     if (!userId) return true;
 
     const tenant = await this.tenancy.resolve(userId);
-    if (CAN_WRITE.includes(tenant.role)) return true;
+
+    if (CAN_WRITE.includes(tenant.role)) {
+      // Writing is allowed, but not necessarily to this record: a member may
+      // change their own work and not a colleague's.
+      await this.ownership.assertCanModify({ path, userId, role: tenant.role });
+      return true;
+    }
 
     this.logger.warn({ user: userId, role: tenant.role, method, path }, "write blocked by role");
     throw new ForbiddenException({

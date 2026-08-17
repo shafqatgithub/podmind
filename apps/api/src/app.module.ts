@@ -39,6 +39,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
 import { ProjectsModule } from "./projects/projects.module";
 import { SupabaseAuthGuard } from "./auth/supabase-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
+import { OwnershipService } from "./common/guards/ownership.service";
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
     { provide: APP_GUARD, useExisting: SupabaseAuthGuard },
     // Runs after authentication: it needs to know who is asking.
     { provide: APP_GUARD, useClass: RolesGuard },
+    OwnershipService,
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: EnvelopeInterceptor },
   ],

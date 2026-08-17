@@ -7,9 +7,9 @@ export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
 export const ROLE_DESCRIPTIONS: Record<string, string> = {
   owner: "Full control, including billing and ownership",
   admin: "Everything except transferring ownership",
-  manager: "Create and edit all content; cannot manage members",
-  member: "Create and edit their own content",
-  viewer: "Read-only access",
+  manager: "Create, and edit anyone's work; cannot manage members",
+  member: "Create freely, but only edit or delete their own work",
+  viewer: "Read everything; cannot create or change anything",
 };
 
 export interface OrganizationMember {

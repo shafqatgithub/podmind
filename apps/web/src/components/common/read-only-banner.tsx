@@ -14,8 +14,9 @@
  */
 
 import * as React from "react";
-import { Eye } from "lucide-react";
+import { Eye, UserCheck } from "lucide-react";
 import { organizationApi } from "@/lib/api/organization";
+import { cn } from "@podmind/ui";
 import { isApiConfigured } from "@/lib/api/client";
 
 export function ReadOnlyBanner() {
@@ -33,14 +34,27 @@ export function ReadOnlyBanner() {
     return () => controller.abort();
   }, []);
 
-  if (role !== "viewer") return null;
+  // Owners, admins and managers work without limits and need no notice.
+  if (role !== "viewer" && role !== "member") return null;
+
+  const viewer = role === "viewer";
 
   return (
-    <div className="flex items-center gap-2 border-b border-amber-500/25 bg-amber-500/5 px-4 py-2 sm:px-6">
-      <Eye className="h-4 w-4 shrink-0 text-amber-300" aria-hidden />
-      <p className="text-xs leading-snug text-amber-200">
-        You have view-only access to this organization. You can read everything, but changes
-        are turned off — ask an owner or admin if you need to create or edit.
+    <div
+      className={cn(
+        "flex items-center gap-2 border-b px-4 py-2 sm:px-6",
+        viewer ? "border-amber-500/25 bg-amber-500/5" : "border-border/60 bg-hover/30",
+      )}
+    >
+      {viewer ? (
+        <Eye className="h-4 w-4 shrink-0 text-amber-300" aria-hidden />
+      ) : (
+        <UserCheck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      )}
+      <p className={cn("text-xs leading-snug", viewer ? "text-amber-200" : "text-muted-foreground")}>
+        {viewer
+          ? "You have view-only access to this organization. You can read everything, but changes are turned off — ask an owner or admin if you need to create or edit."
+          : "You're a member here: you can create freely and edit your own work. Changing a colleague's work needs a manager, admin or owner."}
       </p>
     </div>
   );
