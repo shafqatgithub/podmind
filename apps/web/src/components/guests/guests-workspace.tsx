@@ -472,7 +472,10 @@ export function GuestsWorkspace() {
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    // Captured before any await: React clears `currentTarget` once the
+    // handler suspends, and touching it afterwards throws.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const fullName = String(form.get("full_name") ?? "").trim();
 
     if (!projectId) {
@@ -555,7 +558,7 @@ export function GuestsWorkspace() {
             });
       setDetail(guest);
       await loadGuests();
-      event.currentTarget.reset();
+      formElement.reset();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(

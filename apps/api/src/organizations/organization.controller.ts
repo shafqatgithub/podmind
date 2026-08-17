@@ -10,7 +10,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { IsEmail, IsIn } from "class-validator";
-import { CurrentUser, type AuthUser } from "../auth/supabase-auth.guard";
+import { CurrentUser, Public, type AuthUser } from "../auth/supabase-auth.guard";
 import { TenancyService } from "../tenancy/tenancy.service";
 import {
   ORGANIZATION_ROLES,
@@ -79,7 +79,16 @@ export class OrganizationController {
     return this.organizations.removeMember(tenant, id);
   }
 
-  /** What this link is for, shown before anyone commits to joining. */
+  /**
+   * What this link is for, shown before anyone commits to joining.
+   *
+   * Public: the link arrives by email, often opened on a phone that is not
+   * signed in. Demanding a login just to *see* the invitation means the
+   * recipient meets an error instead of an explanation — and the token here
+   * only reveals an organization name and the address it was sent to.
+   * Accepting still requires being signed in as that person.
+   */
+  @Public()
   @Get("invitations/preview")
   async preview(@Query("token") token: string) {
     return this.organizations.previewInvite(token);

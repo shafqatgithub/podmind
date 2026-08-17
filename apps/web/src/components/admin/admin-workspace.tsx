@@ -366,7 +366,10 @@ export function AdminWorkspace() {
 
   const addFlag = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    // Captured before any await: React clears `currentTarget` once the
+    // handler suspends, and touching it afterwards throws.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const name = String(form.get("name") ?? "").trim();
     if (!name) return;
     setBusy(true);
@@ -377,7 +380,7 @@ export function AdminWorkspace() {
         enabled: false,
       });
       setFlags((await adminApi.flags()).items);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch {
       setError("Could not create the flag.");
     } finally {
@@ -398,7 +401,10 @@ export function AdminWorkspace() {
 
   const addAnnouncement = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    // Captured before any await: React clears `currentTarget` once the
+    // handler suspends, and touching it afterwards throws.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setBusy(true);
     try {
       await adminApi.createAnnouncement({
@@ -407,7 +413,7 @@ export function AdminWorkspace() {
         severity: String(form.get("severity") ?? "info"),
       });
       setAnnouncements((await adminApi.announcements()).items);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch {
       setError("Could not publish the announcement.");
     } finally {

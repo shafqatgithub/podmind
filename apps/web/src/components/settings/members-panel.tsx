@@ -72,7 +72,11 @@ export function MembersPanel() {
 
   const invite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    // Captured now: React clears `currentTarget` once the handler awaits, and
+    // reaching for it afterwards threw — inside the try, so a perfectly
+    // successful invitation reported itself as a failure.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const email = String(form.get("email") ?? "").trim();
     const role = String(form.get("role") ?? "member") as OrganizationRole;
     if (!email) return;
@@ -83,7 +87,7 @@ export function MembersPanel() {
       const result = await organizationApi.invite({ email, role });
       setLastLink({ email: result.email, url: result.invite_url });
       setCopied(false);
-      event.currentTarget.reset();
+      formElement.reset();
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not send that invitation.");
