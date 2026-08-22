@@ -28,7 +28,7 @@ const PLANS = [
     featured: false,
     cta: "Start free",
     href: "/signup",
-    points: ["5,000 AI credits", "3 projects", "Every AI tool included"],
+    points: ["150 credits — about 1 full episode", "3 projects", "Every AI tool included"],
   },
   {
     name: "Starter",
@@ -36,7 +36,7 @@ const PLANS = [
     featured: false,
     cta: "Choose Starter",
     href: "/signup",
-    points: ["50,000 AI credits", "25 projects", "Export to every format"],
+    points: ["4,000 credits — around 20 episodes", "25 projects", "Export to every format"],
   },
   {
     name: "Pro",
@@ -44,7 +44,7 @@ const PLANS = [
     featured: true,
     cta: "Choose Pro",
     href: "/signup",
-    points: ["250,000 AI credits", "100 projects", "API access", "Priority support"],
+    points: ["10,000 credits — around 55 episodes", "100 projects", "API access", "Priority support"],
   },
   {
     name: "Business",
@@ -52,7 +52,7 @@ const PLANS = [
     featured: false,
     cta: "Choose Business",
     href: "/signup",
-    points: ["1,000,000 AI credits", "500 projects", "Everything in Pro"],
+    points: ["20,000 credits — around 110 episodes", "500 projects", "Everything in Pro"],
   },
 ] as const;
 
@@ -179,7 +179,9 @@ export default function LandingPage() {
           </Item>
           <Item>
             <p className="max-w-xl text-balance text-center text-muted-foreground">
-              Every AI feature costs a fixed number of credits, shown before you run it. If a
+              You are charged for what each run actually uses, with an estimate shown before you
+              start. A full episode — research, outline, script, SEO and social — is around 190
+              credits. If a
               request fails, the credits come back.
             </p>
           </Item>
@@ -249,6 +251,11 @@ export default function LandingPage() {
             <Link href="/refunds" className="hover:text-foreground">
               Refund Policy
             </Link>
+            {/* A reachable human. Payment providers check for one, and so do
+                customers deciding whether to trust a new product. */}
+            <a href="mailto:support@podmindai.com" className="hover:text-foreground">
+              Contact
+            </a>
           </nav>
           <p>© {new Date().getFullYear()} PodMind AI</p>
         </footer>
