@@ -46,6 +46,9 @@ export function LegalPage({
           <Link href="/refunds" className="hover:text-foreground">
             Refund Policy
           </Link>
+          <Link href="/contact" className="hover:text-foreground">
+            Contact
+          </Link>
         </div>
       </footer>
     </main>

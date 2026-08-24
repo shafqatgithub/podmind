@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fill, LegalPage, List, Section } from "@/components/legal/legal-page";
+import { LegalPage, List, Section } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Refund Policy",
@@ -8,23 +8,18 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title="Refund Policy" updated="July 2026">
-      <p className="rounded border border-warning-500/30 bg-warning-500/5 p-4 text-warning-200">
-        This policy reflects how PodMind actually works, but it is not legal advice. Have it
-        reviewed by a qualified lawyer, and replace every highlighted placeholder, before you
-        rely on it.
-      </p>
-
+    <LegalPage title="Refund Policy" updated="August 2026">
+      
       <Section heading="The short version">
         <p>
-          You have <strong>14 days</strong> from a payment to ask for a refund. If you have
+          You have <strong>7 days</strong> from a payment to ask for a refund. If you have
           used less than <strong>20%</strong> of that period&apos;s credits, we refund in full,
           no questions asked. If you have used more, we will still look at it — see below.
         </p>
       </Section>
 
       <Section heading="Full refund">
-        <p>You get a full refund when you ask within 14 days of the charge and either:</p>
+        <p>You get a full refund when you ask within 7 days of the charge and either:</p>
         <List
           items={[
             "You have used less than 20% of the credits included in that billing period, or",
@@ -33,14 +28,14 @@ export default function Page() {
           ]}
         />
         <p>
-          A billing error is refunded whenever we find it, in or out of the 14-day window. That
+          A billing error is refunded whenever we find it, in or out of the 7-day window. That
           is our mistake, not your deadline.
         </p>
       </Section>
 
       <Section heading="Partial refund">
         <p>
-          Past 20% usage but inside 14 days, we refund the unused portion. The reason is
+          Past 20% usage but inside 7 days, we refund the unused portion. The reason is
           simple: credits spend real money with AI providers the moment a request runs, and we
           cannot get that back. Refunding it in full would mean charging other customers for
           work already delivered to one.
@@ -54,7 +49,7 @@ export default function Page() {
       <Section heading="When we will not refund">
         <List
           items={[
-            "Requests after 14 days, unless it is a billing error on our side.",
+            "Requests after 7 days, unless it is a billing error on our side.",
             "A period whose credits are substantially spent — that work was done and paid for.",
             "Accounts suspended for breaching the Terms of Service.",
             "Dissatisfaction with AI output quality alone, where the service worked as described. Our Terms are explicit that output is a draft requiring review, and the free plan exists so you can judge the quality before paying.",
@@ -81,14 +76,14 @@ export default function Page() {
 
       <Section heading="How to ask">
         <p>
-          Email <Fill>support@yourdomain.com</Fill> from the address on the account, and say
-          which payment you mean. We reply within <Fill>2 business days</Fill> and, once
+          Email <a href="mailto:podmindai.com@gmail.com" className="text-primary-400 hover:text-primary-300">podmindai.com@gmail.com</a> from the address on the account, and say
+          which payment you mean. We reply within 2 business days and, once
           approved, the refund is issued to the original payment method. Your bank usually
-          takes a further <Fill>5–10</Fill> business days to show it.
+          takes a further 5–10 business days to show it.
         </p>
         <p>
-          Payments are processed by our payment provider, so a refund is issued through them
-          and may appear on your statement under their name.
+          Payments are processed by our merchant of record, Paddle, so a refund is issued
+          through Paddle and may appear on your statement under their name.
         </p>
       </Section>
 

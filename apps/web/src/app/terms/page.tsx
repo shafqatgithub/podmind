@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fill, LegalPage, List, Section } from "@/components/legal/legal-page";
+import { LegalPage, List, Section } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -8,16 +8,11 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title="Terms of Service" updated="July 2026">
-      <p className="rounded border border-warning-500/30 bg-warning-500/5 p-4 text-warning-200">
-        These terms describe how PodMind actually operates, but they are not legal advice. Have
-        them reviewed by a qualified lawyer in your jurisdiction, and replace every highlighted
-        placeholder, before you rely on them.
-      </p>
-
+    <LegalPage title="Terms of Service" updated="August 2026">
+      
       <Section heading="The agreement">
         <p>
-          These terms are between you and <Fill>legal entity name</Fill> (&ldquo;PodMind&rdquo;,
+          These terms are between you and Muhammad Shafqat Ali, a sole proprietor trading as PodMind AI (&ldquo;PodMind&rdquo;,
           &ldquo;we&rdquo;). By creating an account you accept them. If you are agreeing on
           behalf of a company, you confirm you may bind it.
         </p>
@@ -111,6 +106,12 @@ export default function Page() {
           </a>
           .
         </p>
+        <p>
+          Our order process and payments are conducted by our merchant of record,{" "}
+          <strong>Paddle</strong> (Paddle.com Market Ltd). Paddle handles the transaction and
+          all applicable sales tax or VAT, so your purchase completes through Paddle and appears
+          on your statement under their name.
+        </p>
       </Section>
 
       <Section heading="Availability">
@@ -152,11 +153,11 @@ export default function Page() {
 
       <Section heading="Governing law">
         <p>
-          These terms are governed by the laws of <Fill>jurisdiction</Fill>, and the courts of{" "}
-          <Fill>jurisdiction</Fill> have exclusive jurisdiction over any dispute.
+          These terms are governed by the laws of the Islamic Republic of Pakistan, and the courts of{" "}
+          Bahawalpur, Punjab, Pakistan have exclusive jurisdiction over any dispute.
         </p>
         <p>
-          Questions? <Fill>legal@yourdomain.com</Fill>
+          Questions? <a href="mailto:podmindai.com@gmail.com" className="text-primary-400 hover:text-primary-300">podmindai.com@gmail.com</a>
         </p>
       </Section>
     </LegalPage>

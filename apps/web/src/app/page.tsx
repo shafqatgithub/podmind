@@ -253,9 +253,9 @@ export default function LandingPage() {
             </Link>
             {/* A reachable human. Payment providers check for one, and so do
                 customers deciding whether to trust a new product. */}
-            <a href="mailto:support@podmindai.com" className="hover:text-foreground">
+            <Link href="/contact" className="hover:text-foreground">
               Contact
-            </a>
+            </Link>
           </nav>
           <p>© {new Date().getFullYear()} PodMind AI</p>
         </footer>

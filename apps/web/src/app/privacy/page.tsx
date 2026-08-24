@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fill, LegalPage, List, Section } from "@/components/legal/legal-page";
+import { LegalPage, List, Section } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -8,18 +8,13 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title="Privacy Policy" updated="July 2026">
-      <p className="rounded border border-warning-500/30 bg-warning-500/5 p-4 text-warning-200">
-        This document describes how PodMind actually handles data, but it is not legal advice.
-        Have it reviewed by a qualified lawyer in your jurisdiction, and replace every
-        highlighted placeholder, before you rely on it.
-      </p>
-
+    <LegalPage title="Privacy Policy" updated="August 2026">
+      
       <Section heading="Who we are">
         <p>
           PodMind AI (&ldquo;PodMind&rdquo;, &ldquo;we&rdquo;) is operated by{" "}
-          <Fill>legal entity name</Fill>, <Fill>registered address</Fill>. For any privacy
-          question, contact <Fill>privacy@yourdomain.com</Fill>.
+          Muhammad Shafqat Ali (a sole proprietor), based at Balouch Colony, Goheer Town, Bahawalpur 63400, Pakistan. For any privacy
+          question, contact <a href="mailto:podmindai.com@gmail.com" className="text-primary-400 hover:text-primary-300">podmindai.com@gmail.com</a>.
         </p>
       </Section>
 
@@ -46,8 +41,8 @@ export default function Page() {
           ]}
         />
         <p>
-          We do not collect payment card details. When paid plans are enabled, our payment
-          provider handles the card and we never see it.
+          We do not collect payment card details. Our merchant of record, Paddle, handles the
+          card and we never see it.
         </p>
       </Section>
 
@@ -90,9 +85,9 @@ export default function Page() {
             </>,
             <>
               <strong>
-                <Fill>payment provider</Fill>
+                Paddle
               </strong>{" "}
-              — payments and invoicing, once paid plans are enabled.
+              — our merchant of record: payments, checkout, invoicing and sales-tax handling.
             </>,
           ]}
         />
@@ -125,8 +120,8 @@ export default function Page() {
         <p>
           Your content stays until you delete it or close your account. Deleting a project,
           document or conversation removes it from the application immediately; residual copies
-          may persist in encrypted backups for up to <Fill>30</Fill> days before being
-          overwritten. Usage and audit records are retained for <Fill>12</Fill> months so we can
+          may persist in encrypted backups for up to 30 days before being
+          overwritten. Usage and audit records are retained for 12 months so we can
           answer billing questions and investigate incidents.
         </p>
       </Section>
@@ -136,8 +131,8 @@ export default function Page() {
           Depending on where you live, you may have the right to access, correct, export or
           delete your personal data, to object to certain processing, or to complain to a data
           protection authority. You can edit or delete most data directly in the application;
-          for anything else, contact us at <Fill>privacy@yourdomain.com</Fill> and we will
-          respond within <Fill>30</Fill> days.
+          for anything else, contact us at <a href="mailto:podmindai.com@gmail.com" className="text-primary-400 hover:text-primary-300">podmindai.com@gmail.com</a> and we will
+          respond within 30 days.
         </p>
       </Section>
 
