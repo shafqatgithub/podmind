@@ -7,6 +7,7 @@ import { Button } from "@podmind/ui";
 import { LogoMark } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 import { AdminWorkspace } from "@/components/admin/admin-workspace";
+import { AdminChangePassword } from "@/components/admin/admin-change-password";
 
 /**
  * Admin home. Middleware guarantees a session before this renders; the
@@ -41,9 +42,12 @@ export default function AdminPage() {
             </p>
           </div>
         </div>
-        <Button variant="secondary" size="sm" loading={signingOut} onClick={() => void signOut()}>
-          <LogOut className="mr-1 size-3.5" /> Sign out
-        </Button>
+        <div className="flex items-center gap-2">
+          <AdminChangePassword />
+          <Button variant="secondary" size="sm" loading={signingOut} onClick={() => void signOut()}>
+            <LogOut className="mr-1 size-3.5" /> Sign out
+          </Button>
+        </div>
       </header>
 
       <AdminWorkspace />

@@ -92,4 +92,12 @@ export class AdminService {
   updateOrganization(id: string, input: { is_active?: boolean; subscription_plan?: string }) {
     return this.repository.updateOrganization(id, input);
   }
+
+  userDetail(userId: string) {
+    return this.repository.userDetail(userId);
+  }
+
+  async deleteUser(userId: string) {
+    return this.repository.deleteUser(userId);
+  }
 }

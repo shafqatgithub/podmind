@@ -121,11 +121,67 @@ export interface AdminUser {
   used_credits: number;
 }
 
+export interface AdminUserDetail {
+  profile: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    is_active: boolean;
+    created_at: string;
+    last_login_at: string | null;
+    organization_id: string | null;
+  };
+  memberships: {
+    organization_id: string;
+    organization_name: string;
+    role: string;
+    is_owner: boolean;
+    is_active: boolean;
+  }[];
+  usage_by_task: {
+    task: string;
+    requests: number;
+    failures: number;
+    tokens: number;
+    cost: number;
+  }[];
+  recent_requests: {
+    id: string;
+    task: string;
+    model_id: string | null;
+    total_tokens: number | null;
+    estimated_cost: number | null;
+    success: boolean | null;
+    error_message: string | null;
+    created_at: string;
+  }[];
+  recent_logins: {
+    login_at: string;
+    ip_address: string | null;
+    city: string | null;
+    country: string | null;
+    browser: string | null;
+    operating_system: string | null;
+  }[];
+  credit_transactions: {
+    amount: number;
+    transaction_type: string;
+    description: string | null;
+    created_at: string;
+  }[];
+}
+
 export const adminApi = {
   dashboard: (signal?: AbortSignal) => apiRequest<AdminDashboard>("/admin", { signal }),
 
   /** Returns the admin record when the caller is an admin; 403 otherwise. */
   me: (signal?: AbortSignal) => apiRequest<AdminMe | null>("/admin/me", { signal }),
+
+  user: (id: string, signal?: AbortSignal) =>
+    apiRequest<AdminUserDetail>(`/admin/users/${id}`, { signal, fresh: true }),
+
+  deleteUser: (id: string) =>
+    apiRequest<{ deleted: boolean }>(`/admin/users/${id}`, { method: "DELETE" }),
 
   users: (
     params: { search?: string; limit?: number; offset?: number } = {},

@@ -15,6 +15,7 @@ import { Ban, Check, Coins, Loader2, Search, ShieldAlert, UserMinus, Users } fro
 import { Badge, Button, Card, CardContent, Input, cn } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { adminApi, type AdminUser } from "@/lib/api/admin";
+import { AdminUserDetail } from "@/components/admin/admin-user-detail";
 import { EmptyState } from "@/components/common/empty-state";
 
 function planTone(plan: string | null): string {
@@ -39,6 +40,7 @@ export function AdminUsers() {
   const [busyId, setBusyId] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [amounts, setAmounts] = React.useState<Record<string, string>>({});
+  const [detailId, setDetailId] = React.useState<string | null>(null);
 
   const load = React.useCallback(async (q: string) => {
     setLoading(true);
@@ -245,6 +247,14 @@ export function AdminUsers() {
                     <div className="ml-auto flex items-center gap-2">
                       <Button
                         size="sm"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => setDetailId(u.id)}
+                      >
+                        Details
+                      </Button>
+                      <Button
+                        size="sm"
                         variant={u.is_active ? "secondary" : "primary"}
                         disabled={busy}
                         onClick={() => void toggleAccess(u)}
@@ -277,6 +287,14 @@ export function AdminUsers() {
           })}
         </div>
       )}
+
+      {detailId ? (
+        <AdminUserDetail
+          userId={detailId}
+          onClose={() => setDetailId(null)}
+          onChanged={() => void load(search.trim())}
+        />
+      ) : null}
     </div>
   );
 }

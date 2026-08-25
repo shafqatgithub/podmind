@@ -480,4 +480,139 @@ export class AdminRepository {
     }
     return rows[0];
   }
+
+  /**
+   * Everything an operator needs about one user in a single call: who they
+   * are, which organizations they belong to, how their primary organization
+   * has actually used the product (AI work is tracked per organization, not
+   * per user, so usage is org-scoped), recent sign-ins and credit movements.
+   */
+  async userDetail(userId: string) {
+    const prof = await this.pool.query(
+      `select p.id, p.email::text as email, p.full_name, p.is_active,
+              p.created_at, p.last_login_at, p.organization_id
+         from public.profiles p where p.id = $1`,
+      [userId],
+    );
+    if (!prof.rows[0]) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "User not found" });
+    }
+    const profile = prof.rows[0];
+    const orgId = profile.organization_id as string | null;
+
+    const [memberships, usageByTask, recentRequests, recentLogins, credits] =
+      await Promise.all([
+        this.pool.query(
+          `select m.organization_id, o.name as organization_name,
+                  m.role::text as role, (o.owner_id = $1) as is_owner,
+                  m.is_active
+             from public.organization_members m
+             join public.organizations o on o.id = m.organization_id
+            where m.user_id = $1
+            order by is_owner desc, o.name`,
+          [userId],
+        ),
+        orgId
+          ? this.pool.query(
+              `select task::text as task,
+                      count(*) as requests,
+                      count(*) filter (where success is not true) as failures,
+                      coalesce(sum(total_tokens),0) as tokens,
+                      round(coalesce(sum(estimated_cost),0)::numeric,4) as cost
+                 from public.ai_requests
+                where organization_id = $1
+                group by 1 order by requests desc`,
+              [orgId],
+            )
+          : Promise.resolve({ rows: [] as unknown[] }),
+        orgId
+          ? this.pool.query(
+              `select id, task::text as task, model_id, total_tokens, estimated_cost,
+                      success, error_message, created_at
+                 from public.ai_requests
+                where organization_id = $1
+                order by created_at desc limit 20`,
+              [orgId],
+            )
+          : Promise.resolve({ rows: [] as unknown[] }),
+        this.pool.query(
+          `select login_at, ip_address::text as ip_address, city, country, browser, operating_system
+             from public.login_history where user_id = $1
+            order by login_at desc limit 10`,
+          [userId],
+        ),
+        orgId
+          ? this.pool.query(
+              `select amount, transaction_type::text as transaction_type, description, created_at
+                 from public.ai_credit_transactions
+                where organization_id = $1
+                order by created_at desc limit 15`,
+              [orgId],
+            )
+          : Promise.resolve({ rows: [] as unknown[] }),
+      ]);
+
+    return {
+      profile,
+      memberships: memberships.rows,
+      usage_by_task: usageByTask.rows,
+      recent_requests: recentRequests.rows,
+      recent_logins: recentLogins.rows,
+      credit_transactions: credits.rows,
+    };
+  }
+
+  /**
+   * Permanently delete a user. Refused when the user owns an organization that
+   * has other members or real content, so an operator can never wipe a shared
+   * workspace by removing one person — that organization must be reassigned or
+   * deleted first. For a solo/empty account the delete cascades cleanly, and
+   * any foreign-key that would be violated is turned into a clear message
+   * rather than a 500.
+   */
+  async deleteUser(userId: string) {
+    const risky = await this.pool.query(
+      `select 1
+         from public.organizations o
+        where o.owner_id = $1
+          and (
+            (select count(*) from public.organization_members m
+              where m.organization_id = o.id and m.is_active) > 1
+            or exists (
+              select 1 from public.projects p
+                join public.workspaces w on w.id = p.workspace_id
+               where w.organization_id = o.id)
+          )
+        limit 1`,
+      [userId],
+    );
+    if (risky.rows[0]) {
+      throw new BadRequestException({
+        code: "USER_OWNS_ORGANIZATION",
+        message:
+          "This user owns an organization that has other members or content. Reassign or delete that organization first, or just disable the user instead.",
+      });
+    }
+    try {
+      const { rowCount } = await this.pool.query(
+        `delete from auth.users where id = $1`,
+        [userId],
+      );
+      if (!rowCount) {
+        throw new NotFoundException({ code: "NOT_FOUND", message: "User not found" });
+      }
+    } catch (err: unknown) {
+      if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
+      // 23503 = foreign_key_violation: the account still owns referenced data.
+      if (typeof err === "object" && err !== null && (err as { code?: string }).code === "23503") {
+        throw new BadRequestException({
+          code: "USER_HAS_DATA",
+          message:
+            "This user still owns data that must be removed first. Disable the user instead if you want to block access.",
+        });
+      }
+      throw err;
+    }
+    return { deleted: true };
+  }
 }
