@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import { AdminResetForm } from "@/components/admin/admin-reset-form";
+import { Suspense } from "react";
+import { AdminForgotForm } from "@/components/admin/admin-forgot-form";
 
-export const metadata: Metadata = { title: "Set new password" };
+export const metadata: Metadata = { title: "Reset password" };
 export const dynamic = "force-dynamic";
 
 export default function Page() {
-  return <AdminResetForm />;
+  return (
+    <Suspense>
+      <AdminForgotForm />
+    </Suspense>
+  );
 }

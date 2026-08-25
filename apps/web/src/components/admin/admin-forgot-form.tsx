@@ -2,26 +2,36 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, MailCheck } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { Button, Card, CardContent, Input, Label } from "@podmind/ui";
 import { LogoMark } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Admin password reset — request step. Sends a recovery email whose link
- * lands the operator on the admin reset page (routed through /auth/confirm so
- * the recovery session is established the same proven way the rest of the app
- * uses).
+ * Admin password reset — code based.
+ *
+ * The project's email templates send a numeric code rather than a magic link,
+ * so recovery is a two-step flow on one screen: request a code, then enter the
+ * code together with the new password. verifyOtp(type: "recovery") establishes
+ * the recovery session, after which the password can be updated.
  */
 export function AdminForgotForm() {
-  const [email, setEmail] = React.useState("");
-  const [sent, setSent] = React.useState(false);
+  const router = useRouter();
+  const params = useSearchParams();
+  const [step, setStep] = React.useState<"request" | "verify">("request");
+  const [email, setEmail] = React.useState(params.get("email") ?? "");
+  const [code, setCode] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirm, setConfirm] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setPending(true);
     try {
       const supabase = createClient();
@@ -29,14 +39,55 @@ export function AdminForgotForm() {
         setError("Authentication is not configured yet.");
         return;
       }
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/confirm?next=/admin/reset-password`,
-      });
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim());
       if (resetError) {
         setError(resetError.message);
         return;
       }
-      setSent(true);
+      setNotice("We emailed a 6-digit code. Enter it below with your new password.");
+      setStep("verify");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const verifyAndSet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (code.trim().length < 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Use at least 8 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setPending(true);
+    try {
+      const supabase = createClient();
+      if (!supabase) {
+        setError("Authentication is not configured yet.");
+        return;
+      }
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code.trim(),
+        type: "recovery",
+      });
+      if (otpError) {
+        setError("That code is invalid or expired. Request a new one.");
+        return;
+      }
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+      router.replace("/admin");
     } finally {
       setPending(false);
     }
@@ -54,26 +105,20 @@ export function AdminForgotForm() {
             </div>
             <h1 className="font-display text-xl font-semibold">Reset admin password</h1>
             <p className="text-sm text-muted-foreground">
-              We&apos;ll email a link to set a new password.
+              {step === "request"
+                ? "We'll email a 6-digit code to your admin address."
+                : "Enter the code from your email and choose a new password."}
             </p>
           </div>
 
-          {sent ? (
-            <div className="flex flex-col items-center gap-3 text-center">
-              <MailCheck className="size-8 text-primary-300" aria-hidden />
-              <p className="text-sm text-muted-foreground">
-                If an admin account uses that email, a reset link is on its way. Open it on this
-                device to continue.
-              </p>
-              <Link
-                href="/admin/login"
-                className="text-sm text-primary-400 hover:text-primary-300"
-              >
-                Back to sign in
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          {notice ? (
+            <p className="rounded-md border border-primary-500/30 bg-primary-500/5 px-3 py-2 text-sm text-primary-200">
+              {notice}
+            </p>
+          ) : null}
+
+          {step === "request" ? (
+            <form onSubmit={sendCode} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -91,14 +136,90 @@ export function AdminForgotForm() {
                 </p>
               ) : null}
               <Button type="submit" loading={pending}>
-                Send reset link
+                Send code
               </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setStep("verify");
+                }}
+                className="text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                Already have a code? Enter it
+              </button>
               <Link
                 href="/admin/login"
                 className="inline-flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="size-3.5" /> Back to sign in
               </Link>
+            </form>
+          ) : (
+            <form onSubmit={verifyAndSet} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="email-v">Email</Label>
+                <Input
+                  id="email-v"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="code">6-digit code</Label>
+                <Input
+                  id="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="password">New password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="confirm">Confirm password</Label>
+                <Input
+                  id="confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                />
+              </div>
+              {error ? (
+                <p role="alert" className="text-sm text-error-400">
+                  {error}
+                </p>
+              ) : null}
+              <Button type="submit" loading={pending}>
+                Update password
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setStep("request");
+                }}
+                className="text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                Send a new code
+              </button>
             </form>
           )}
         </CardContent>
