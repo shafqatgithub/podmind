@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@podmind/ui";
+import { LogoMark } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 import { AdminWorkspace } from "@/components/admin/admin-workspace";
 
@@ -27,8 +28,12 @@ export default function AdminPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between border-b border-border pb-4">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="size-5 text-primary-300" aria-hidden />
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-9 items-center justify-center rounded-full bg-brand-gradient p-[1.5px]">
+            <span className="flex size-full items-center justify-center rounded-full bg-card">
+              <LogoMark size={22} priority />
+            </span>
+          </span>
           <div>
             <h1 className="font-display text-lg font-semibold leading-none">PodMind Admin</h1>
             <p className="mt-1 text-xs text-muted-foreground">

@@ -49,7 +49,11 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
    * out, is sent to the admin login rather than the customer one. Handled
    * before the generic rules so admin never falls through to /login.
    */
-  if (pathname === "/admin/login") {
+  if (
+    pathname === "/admin/login" ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password"
+  ) {
     return response;
   }
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {

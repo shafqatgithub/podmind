@@ -12,7 +12,16 @@ export async function GET(request: Request) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
-  const next = type === "recovery" ? "/reset-password" : "/dashboard";
+
+  // A caller may request a specific landing page (e.g. the admin reset page,
+  // which lives in the separate admin app). Only same-site paths are honoured.
+  const requestedNext = searchParams.get("next");
+  const safeNext =
+    requestedNext && requestedNext.startsWith("/") ? requestedNext : null;
+  const next = safeNext ?? (type === "recovery" ? "/reset-password" : "/dashboard");
+  const failure = next.startsWith("/admin")
+    ? "/admin/login?error=verification"
+    : "/login?error=verification";
 
   const supabase = await createClient();
 
@@ -33,5 +42,5 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (user) return NextResponse.redirect(`${origin}/dashboard`);
 
-  return NextResponse.redirect(`${origin}/login?error=verification`);
+  return NextResponse.redirect(`${origin}${failure}`);
 }

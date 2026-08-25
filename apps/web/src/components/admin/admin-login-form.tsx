@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
 import { Button, Card, CardContent, Input, Label } from "@podmind/ui";
+import { LogoMark } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 import { adminApi } from "@/lib/api/admin";
 
@@ -67,8 +68,8 @@ export function AdminLoginForm() {
         <CardContent className="flex flex-col gap-6 p-6">
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="rounded-full bg-brand-gradient p-[1.5px] shadow-glow-blue">
-              <div className="rounded-full bg-card p-3">
-                <ShieldCheck className="size-6 text-primary-300" aria-hidden />
+              <div className="flex size-16 items-center justify-center rounded-full bg-card">
+                <LogoMark size={40} priority />
               </div>
             </div>
             <h1 className="font-display text-xl font-semibold">PodMind Admin</h1>
@@ -90,7 +91,15 @@ export function AdminLoginForm() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="/admin/forgot-password"
+                  className="text-xs text-primary-400 hover:text-primary-300"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
