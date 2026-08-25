@@ -72,3 +72,50 @@ export class UsageQueryDto {
   @Transform(({ value }) => (value === undefined ? undefined : Number(value)))
   days?: number;
 }
+
+export class UsersQueryDto {
+  @IsOptional()
+  @IsString()
+  @Length(0, 200)
+  search?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  @Transform(({ value }) => (value === undefined ? undefined : Number(value)))
+  limit?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Transform(({ value }) => (value === undefined ? undefined : Number(value)))
+  offset?: number;
+}
+
+export class SetAccessDto {
+  @IsBoolean()
+  is_active!: boolean;
+}
+
+export class AdjustCreditsDto {
+  /** Positive grants credits, negative deducts. Never zero. */
+  @IsInt()
+  @Transform(({ value }) => (value === undefined ? undefined : Number(value)))
+  amount!: number;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 300)
+  reason?: string;
+}
+
+export class UpdateOrgDto {
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
+
+  @IsOptional()
+  @IsIn(["free", "starter", "pro", "business", "enterprise"])
+  subscription_plan?: string;
+}

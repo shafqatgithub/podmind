@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { Pool } from "pg";
 import { PG_POOL } from "../database/database.module";
 
@@ -297,5 +302,182 @@ export class AdminRepository {
       [limit],
     );
     return rows;
+  }
+
+  /* ---------------------------------------------------- user management */
+
+  /**
+   * The caller's admin record. Behind AdminGuard, so reaching this at all
+   * means the user is an admin — it exists so the separate admin login can
+   * confirm that and refuse everyone else.
+   */
+  async me(userId: string) {
+    const { rows } = await this.pool.query(
+      `select user_id, role, is_super_admin
+         from public.admin_users
+        where user_id = $1 and is_active = true`,
+      [userId],
+    );
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Every user with their primary organization, role there, plan, credit
+   * balance and status. This is the one operator view that is per-user rather
+   * than aggregate, because managing people is the whole point of it.
+   */
+  async users(search = "", limit = 50, offset = 0) {
+    const like = `%${search}%`;
+    const { rows } = await this.pool.query(
+      `select
+         p.id,
+         p.email::text                     as email,
+         p.full_name,
+         p.is_active,
+         p.created_at,
+         p.last_login_at,
+         p.organization_id,
+         o.name                            as organization_name,
+         o.subscription_plan::text         as plan,
+         (o.owner_id = p.id)               as is_owner,
+         m.role::text                      as org_role,
+         coalesce(b.available_credits, 0)  as available_credits,
+         coalesce(b.used_credits, 0)       as used_credits
+       from public.profiles p
+       left join public.organizations o       on o.id = p.organization_id
+       left join public.organization_members m on m.organization_id = p.organization_id
+                                              and m.user_id = p.id
+       left join public.ai_credit_balances b   on b.organization_id = p.organization_id
+       where ($1 = ''
+              or p.email::text ilike $2
+              or p.full_name ilike $2
+              or o.name ilike $2)
+       order by p.created_at desc
+       limit $3 offset $4`,
+      [search, like, limit, offset],
+    );
+    const { rows: countRows } = await this.pool.query(
+      `select count(*)::int as total
+         from public.profiles p
+         left join public.organizations o on o.id = p.organization_id
+        where ($1 = '' or p.email::text ilike $2 or p.full_name ilike $2 or o.name ilike $2)`,
+      [search, like],
+    );
+    return { items: rows, total: Number(countRows[0]!.total) };
+  }
+
+  /**
+   * Enable or disable a user everywhere at once: the profile flag the app
+   * reads, and a ban at the auth layer so an already-issued session cannot
+   * keep working. Clearing the ban re-enables sign-in.
+   */
+  async setUserAccess(userId: string, isActive: boolean) {
+    const { rows } = await this.pool.query(
+      `update public.profiles set is_active = $2, updated_at = now()
+        where id = $1 returning id`,
+      [userId, isActive],
+    );
+    if (!rows[0]) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "User not found" });
+    }
+    await this.pool.query(
+      `update auth.users
+          set banned_until = case when $2 then null else 'infinity'::timestamptz end
+        where id = $1`,
+      [userId, isActive],
+    );
+    return { id: userId, is_active: isActive };
+  }
+
+  /**
+   * Adjust an organization's credit balance and record the movement in the
+   * ledger. A positive amount grants, a negative amount deducts, and a
+   * balance never goes below zero.
+   */
+  async adjustCredits(organizationId: string, amount: number, reason: string) {
+    if (!Number.isInteger(amount) || amount === 0) {
+      throw new BadRequestException({
+        code: "INVALID_AMOUNT",
+        message: "Amount must be a non-zero whole number.",
+      });
+    }
+    const org = await this.pool.query(
+      `select 1 from public.organizations where id = $1`,
+      [organizationId],
+    );
+    if (!org.rows[0]) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "Organization not found" });
+    }
+    const { rows } = await this.pool.query(
+      `insert into public.ai_credit_balances
+         (organization_id, available_credits, used_credits, purchased_credits)
+       values ($1, greatest($2, 0), 0, greatest($2, 0))
+       on conflict (organization_id) do update
+         set available_credits = greatest(0, public.ai_credit_balances.available_credits + $2),
+             purchased_credits  = public.ai_credit_balances.purchased_credits + greatest($2, 0),
+             updated_at = now()
+       returning available_credits`,
+      [organizationId, amount],
+    );
+    await this.pool.query(
+      `insert into public.ai_credit_transactions
+         (organization_id, amount, transaction_type, description)
+       values ($1, $2, $3, $4)`,
+      [
+        organizationId,
+        amount,
+        amount >= 0 ? "admin_grant" : "admin_deduction",
+        reason || `Manual ${amount >= 0 ? "grant" : "deduction"} by an administrator`,
+      ],
+    );
+    return {
+      organization_id: organizationId,
+      available_credits: Number(rows[0]!.available_credits),
+    };
+  }
+
+  /** Remove a member from an organization. Owners cannot be removed. */
+  async removeMember(organizationId: string, userId: string) {
+    const owner = await this.pool.query(
+      `select 1 from public.organizations where id = $1 and owner_id = $2`,
+      [organizationId, userId],
+    );
+    if (owner.rows[0]) {
+      throw new BadRequestException({
+        code: "CANNOT_REMOVE_OWNER",
+        message: "The organization owner cannot be removed from their own organization.",
+      });
+    }
+    const { rows } = await this.pool.query(
+      `update public.organization_members
+          set is_active = false
+        where organization_id = $1 and user_id = $2
+        returning id`,
+      [organizationId, userId],
+    );
+    if (!rows[0]) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "Membership not found" });
+    }
+    return { removed: true };
+  }
+
+  /** Activate/deactivate an organization or change its plan. */
+  async updateOrganization(
+    id: string,
+    input: { is_active?: boolean; subscription_plan?: string },
+  ) {
+    const { rows } = await this.pool.query(
+      `update public.organizations
+          set is_active         = coalesce($2, is_active),
+              subscription_plan = coalesce($3::public.subscription_plan, subscription_plan),
+              updated_at        = now()
+        where id = $1
+        returning id, name, is_active, subscription_plan::text as subscription_plan`,
+      [id, input.is_active ?? null, input.subscription_plan ?? null],
+    );
+    if (!rows[0]) {
+      throw new NotFoundException({ code: "NOT_FOUND", message: "Organization not found" });
+    }
+    return rows[0];
   }
 }

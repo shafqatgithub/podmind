@@ -99,8 +99,70 @@ export interface SupportTicket {
   user_email: string | null;
 }
 
+export interface AdminMe {
+  user_id: string;
+  role: string;
+  is_super_admin: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  organization_id: string | null;
+  organization_name: string | null;
+  plan: string | null;
+  is_owner: boolean;
+  org_role: string | null;
+  available_credits: number;
+  used_credits: number;
+}
+
 export const adminApi = {
   dashboard: (signal?: AbortSignal) => apiRequest<AdminDashboard>("/admin", { signal }),
+
+  /** Returns the admin record when the caller is an admin; 403 otherwise. */
+  me: (signal?: AbortSignal) => apiRequest<AdminMe | null>("/admin/me", { signal }),
+
+  users: (
+    params: { search?: string; limit?: number; offset?: number } = {},
+    signal?: AbortSignal,
+  ) =>
+    apiRequest<{ items: AdminUser[]; total: number }>("/admin/users", {
+      query: { search: params.search, limit: params.limit, offset: params.offset },
+      signal,
+      fresh: true,
+    }),
+
+  setUserAccess: (userId: string, is_active: boolean) =>
+    apiRequest<{ id: string; is_active: boolean }>(`/admin/users/${userId}/access`, {
+      method: "PATCH",
+      body: { is_active },
+    }),
+
+  adjustCredits: (organizationId: string, amount: number, reason?: string) =>
+    apiRequest<{ organization_id: string; available_credits: number }>(
+      `/admin/organizations/${organizationId}/credits`,
+      { method: "POST", body: { amount, reason } },
+    ),
+
+  removeMember: (organizationId: string, userId: string) =>
+    apiRequest<{ removed: boolean }>(
+      `/admin/organizations/${organizationId}/members/${userId}`,
+      { method: "DELETE" },
+    ),
+
+  updateOrganization: (
+    id: string,
+    body: { is_active?: boolean; subscription_plan?: string },
+  ) =>
+    apiRequest<{ id: string; name: string; is_active: boolean; subscription_plan: string }>(
+      `/admin/organizations/${id}`,
+      { method: "PATCH", body },
+    ),
 
   organizations: (signal?: AbortSignal) =>
     apiRequest<{ items: AdminOrganization[] }>("/admin/organizations", { signal }),

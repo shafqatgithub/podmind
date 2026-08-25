@@ -40,6 +40,28 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  const isNavigationEarly = request.method === "GET" || request.method === "HEAD";
+
+  /**
+   * The admin panel is a separate application with its own login. Its login
+   * page is public; every other /admin path needs a session and, when signed
+   * out, is sent to the admin login rather than the customer one. Handled
+   * before the generic rules so admin never falls through to /login.
+   */
+  if (pathname === "/admin/login") {
+    return response;
+  }
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    if (!user && isNavigationEarly) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    return response;
+  }
+
   const isProtected = isProtectedPath(pathname);
   const isAuthPage = ["/login", "/signup", "/forgot-password"].some((p) =>
     pathname.startsWith(p),

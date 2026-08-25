@@ -66,4 +66,30 @@ export class AdminService {
   updateTicket(id: string, adminId: string, dto: UpdateTicketDto) {
     return this.repository.updateTicketStatus(id, dto.status, adminId);
   }
+
+  /* ---------------------------------------------------- user management */
+
+  me(userId: string) {
+    return this.repository.me(userId);
+  }
+
+  users(search?: string, limit?: number, offset?: number) {
+    return this.repository.users(search ?? "", limit ?? 50, offset ?? 0);
+  }
+
+  setUserAccess(userId: string, isActive: boolean) {
+    return this.repository.setUserAccess(userId, isActive);
+  }
+
+  adjustCredits(organizationId: string, amount: number, reason?: string) {
+    return this.repository.adjustCredits(organizationId, amount, reason ?? "");
+  }
+
+  removeMember(organizationId: string, userId: string) {
+    return this.repository.removeMember(organizationId, userId);
+  }
+
+  updateOrganization(id: string, input: { is_active?: boolean; subscription_plan?: string }) {
+    return this.repository.updateOrganization(id, input);
+  }
 }

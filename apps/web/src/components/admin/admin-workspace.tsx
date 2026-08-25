@@ -25,6 +25,7 @@ import {
   ShieldAlert,
   Ticket,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import {
@@ -49,12 +50,14 @@ import {
   type SupportTicket,
 } from "@/lib/api/admin";
 import { EmptyState } from "@/components/common/empty-state";
+import { AdminUsers } from "@/components/admin/admin-users";
 import { Item, Reveal } from "@/components/motion/motion";
 
-type Tab = "overview" | "organizations" | "flags" | "announcements" | "tickets";
+type Tab = "overview" | "users" | "organizations" | "flags" | "announcements" | "tickets";
 
 const TABS: { value: Tab; label: string; icon: typeof Activity }[] = [
   { value: "overview", label: "Overview", icon: Activity },
+  { value: "users", label: "Users", icon: Users },
   { value: "organizations", label: "Organizations", icon: Building2 },
   { value: "flags", label: "Feature flags", icon: Flag },
   { value: "announcements", label: "Announcements", icon: Megaphone },
@@ -493,6 +496,8 @@ export function AdminWorkspace() {
       ) : null}
 
       {tab === "overview" && dashboard ? <Overview data={dashboard} /> : null}
+
+      {tab === "users" ? <AdminUsers /> : null}
 
       {tab === "organizations" ? (
         orgs.length ? (

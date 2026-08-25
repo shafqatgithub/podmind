@@ -14,11 +14,15 @@ import { CurrentUser, type AuthUser } from "../auth/supabase-auth.guard";
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
 import {
+  AdjustCreditsDto,
   CreateAnnouncementDto,
+  SetAccessDto,
   SetActiveDto,
+  UpdateOrgDto,
   UpdateTicketDto,
   UpsertFlagDto,
   UsageQueryDto,
+  UsersQueryDto,
 } from "./dto/admin.dto";
 
 /**
@@ -98,5 +102,51 @@ export class AdminController {
     @Body() dto: UpdateTicketDto,
   ) {
     return this.admin.updateTicket(id, user.id, dto);
+  }
+
+  /* ---------------------------------------------------- user management */
+
+  /** The caller's admin record — the separate admin login calls this to
+   *  confirm the account is an administrator before letting them in. */
+  @Get("me")
+  me(@CurrentUser() user: AuthUser) {
+    return this.admin.me(user.id);
+  }
+
+  @Get("users")
+  users(@Query() query: UsersQueryDto) {
+    return this.admin.users(query.search, query.limit, query.offset);
+  }
+
+  @Patch("users/:id/access")
+  setUserAccess(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: SetAccessDto,
+  ) {
+    return this.admin.setUserAccess(id, dto.is_active);
+  }
+
+  @Post("organizations/:id/credits")
+  adjustCredits(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: AdjustCreditsDto,
+  ) {
+    return this.admin.adjustCredits(id, dto.amount, dto.reason);
+  }
+
+  @Delete("organizations/:orgId/members/:userId")
+  removeMember(
+    @Param("orgId", ParseUUIDPipe) orgId: string,
+    @Param("userId", ParseUUIDPipe) userId: string,
+  ) {
+    return this.admin.removeMember(orgId, userId);
+  }
+
+  @Patch("organizations/:id")
+  updateOrganization(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOrgDto,
+  ) {
+    return this.admin.updateOrganization(id, dto);
   }
 }

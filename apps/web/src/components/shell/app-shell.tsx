@@ -30,7 +30,6 @@ import {
   ScanSearch,
   Search,
   Settings,
-  ShieldCheck,
   Share2,
   Sun,
   TrendingUp,
@@ -46,8 +45,6 @@ import { createClient } from "@/lib/supabase/client";
 import { LogoLockup, LogoMark } from "@/components/brand/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ReadOnlyBanner } from "@/components/common/read-only-banner";
-import { isApiConfigured } from "@/lib/api/client";
-import { adminApi } from "@/lib/api/admin";
 
 /**
  * Navigation is grouped rather than flat: seventeen equal-weight links is a
@@ -378,32 +375,10 @@ function MobileNav({ pathname }: { pathname: string }) {
 }
 
 function SidebarNav({ pathname }: { pathname: string }) {
-  // Admin is reachable only by people who actually have admin rights. The
-  // page existed but nothing linked to it, so the only way in was to type the
-  // URL — which meant nobody found it.
-  const [isAdmin, setIsAdmin] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!isApiConfigured()) return;
-    const controller = new AbortController();
-    void adminApi
-      .dashboard(controller.signal)
-      .then(() => setIsAdmin(true))
-      // A forbidden response is the expected answer for most people, not an
-      // error worth showing.
-      .catch(() => setIsAdmin(false));
-    return () => controller.abort();
-  }, []);
-
-  const groups = isAdmin
-    ? [
-        ...NAV_GROUPS,
-        {
-          label: "Platform",
-          items: [{ href: "/admin", label: "Admin", icon: ShieldCheck }],
-        },
-      ]
-    : NAV_GROUPS;
+  // The admin panel is a separate application with its own login at
+  // /admin/login — it is deliberately not linked from the customer app, so
+  // this sidebar only ever shows customer navigation.
+  const groups = NAV_GROUPS;
 
   return (
     <LazyMotion features={domAnimation} strict>
