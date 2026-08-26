@@ -32,6 +32,7 @@ export const PROTECTED_PREFIXES = [
   "/settings",
   "/admin",
   "/onboarding",
+  "/guide",
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {

@@ -389,12 +389,20 @@ export function DashboardWorkspace() {
               Let&apos;s create something worth listening to.
             </p>
           </div>
-          <Button asChild>
-            <Link href="/projects">
-              <Plus className="h-4 w-4" />
-              New project
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/guide">
+                <BookOpen className="h-4 w-4" />
+                User guide
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/projects">
+                <Plus className="h-4 w-4" />
+                New project
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {error ? (

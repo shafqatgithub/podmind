@@ -54,7 +54,10 @@ import { ReadOnlyBanner } from "@/components/common/read-only-banner";
 const NAV_GROUPS = [
   {
     label: null,
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/guide", label: "User Guide", icon: BookOpen },
+    ],
   },
   {
     label: "AI Tools",
