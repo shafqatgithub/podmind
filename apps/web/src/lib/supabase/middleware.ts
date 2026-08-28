@@ -35,9 +35,27 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   );
 
   // IMPORTANT: do not run code between client creation and getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  //
+  // getUser() makes a network call to Supabase. If that call ever hangs
+  // (Supabase having a slow moment, a network blip), middleware has no
+  // built-in timeout of its own and will run until Vercel force-kills the
+  // function after 25s — which is a 504 for every visitor, not just the
+  // person mid-request. Racing it against a short local timeout means a
+  // slow auth check fails open (treated as "unknown, let the request
+  // through") instead of taking the whole site down with it. Real page-
+  // and API-level auth checks still apply once the request lands.
+  const AUTH_CHECK_TIMEOUT_MS = 4000;
+  const authResult = await Promise.race([
+    supabase.auth.getUser().then((r) => r.data.user),
+    new Promise<"timeout">((resolve) =>
+      setTimeout(() => resolve("timeout"), AUTH_CHECK_TIMEOUT_MS),
+    ),
+  ]).catch(() => "timeout" as const);
+
+  if (authResult === "timeout") {
+    return response;
+  }
+  const user = authResult;
 
   const { pathname } = request.nextUrl;
 
