@@ -65,8 +65,12 @@ export class GuestService {
   async research(tenant: TenantContext, dto: CreateGuestDto) {
     const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
     const normalizedName = dto.full_name.trim().toLowerCase();
+    // Empty when no context is given, so plain "search by name only" people
+    // still get a single shared record rather than needing an exact context
+    // match every time.
+    const normalizedTitle = (str(dto.context) ?? "").toLowerCase();
 
-    const cached = await this.repository.findCachedBriefing(normalizedName);
+    const cached = await this.repository.findCachedBriefing(normalizedName, normalizedTitle);
     if (cached) {
       const guest = await this.repository.saveBriefing(
         tenant,
@@ -234,8 +238,10 @@ export class GuestService {
     // the next lookup is instant and free instead of spending credits again.
     await this.repository.cacheBriefing(
       normalizedName,
+      normalizedTitle,
       dto.full_name,
       str(dto.context),
+      { userId: tenant.userId, organizationId: tenant.organizationId },
       {
         headline: str(parsed.headline),
         biography: str(parsed.biography),

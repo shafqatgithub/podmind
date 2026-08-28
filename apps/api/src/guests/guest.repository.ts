@@ -530,35 +530,41 @@ export class GuestRepository {
   /* ---------------------------------------------------- research cache */
 
   /**
-   * Platform-wide: has anyone, on any project, already researched this
-   * person? Looked up by exact normalized name before spending AI credits.
+   * Platform-wide: has anyone, on any project, already researched this exact
+   * person? Keyed on name + title/context so "John Smith the chef" and
+   * "John Smith the physicist" are looked up — and stored — separately.
    * Bumps hit_count/last_used_at on every hit so the cache also doubles as a
    * "most looked-up guests" signal.
    */
-  async findCachedBriefing(normalizedName: string): Promise<CachedBriefingRow | null> {
+  async findCachedBriefing(
+    normalizedName: string,
+    normalizedTitle: string,
+  ): Promise<CachedBriefingRow | null> {
     const { rows } = await this.pool.query(
       `update public.guest_research_cache
           set hit_count = hit_count + 1, last_used_at = now()
-        where normalized_name = $1
+        where normalized_name = $1 and normalized_title = $2
         returning full_name, headline, biography, company, job_title, industry,
                   country, companies, books, interviews, social, questions, tags,
                   metadata, hit_count`,
-      [normalizedName],
+      [normalizedName, normalizedTitle],
     );
     return (rows[0] as CachedBriefingRow | undefined) ?? null;
   }
 
   /**
    * Adds a freshly researched person to the shared cache so the next search
-   * for the same name — by anyone, on any project — is instant and free.
-   * The first successful research for a name wins; later ones do not
-   * overwrite it (a good existing entry should not be clobbered by a
-   * thinner one from a differently-worded search).
+   * for the same name + title — by anyone, on any project — is instant and
+   * free. Records which user's search first created the entry. The first
+   * successful research for a name+title wins; later ones do not overwrite
+   * it (a good existing entry should not be clobbered by a thinner one).
    */
   async cacheBriefing(
     normalizedName: string,
+    normalizedTitle: string,
     fullName: string,
     contextHint: string | null,
+    createdBy: { userId: string; organizationId: string },
     fields: {
       headline: string | null;
       biography: string | null;
@@ -572,15 +578,19 @@ export class GuestRepository {
   ): Promise<void> {
     await this.pool.query(
       `insert into public.guest_research_cache
-         (normalized_name, full_name, context_hint, headline, biography, company,
-          job_title, industry, country, companies, books, interviews, social,
-          questions, tags, metadata)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-       on conflict (normalized_name) do nothing`,
+         (normalized_name, normalized_title, full_name, context_hint,
+          created_by_user_id, created_by_organization_id,
+          headline, biography, company, job_title, industry, country,
+          companies, books, interviews, social, questions, tags, metadata)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+       on conflict (normalized_name, normalized_title) do nothing`,
       [
         normalizedName,
+        normalizedTitle,
         fullName,
         contextHint,
+        createdBy.userId,
+        createdBy.organizationId,
         fields.headline,
         fields.biography,
         fields.company,
