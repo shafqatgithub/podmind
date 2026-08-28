@@ -61,9 +61,38 @@ export class GuestService {
       private readonly knowledge: KnowledgeService,
   ) {}
 
-  /** Research a person and store the full briefing. Consumes 8 credits. */
+  /** Research a person and store the full briefing. Consumes 8 credits — unless this person has already been researched before, anywhere on the platform, in which case the cached briefing is reused for free. */
   async research(tenant: TenantContext, dto: CreateGuestDto) {
     const project = await this.repository.assertProjectInTenant(tenant, dto.project_id);
+    const normalizedName = dto.full_name.trim().toLowerCase();
+
+    const cached = await this.repository.findCachedBriefing(normalizedName);
+    if (cached) {
+      const guest = await this.repository.saveBriefing(
+        tenant,
+        {
+          projectId: project.id,
+          fullName: cached.full_name,
+          headline: cached.headline,
+          biography: cached.biography,
+          company: cached.company,
+          jobTitle: cached.job_title,
+          industry: cached.industry,
+          country: cached.country,
+          metadata: { ...cached.metadata, from_cache: true, cache_hit_count: cached.hit_count },
+        },
+        {
+          companies: cached.companies,
+          books: cached.books,
+          interviews: cached.interviews,
+          social: cached.social,
+          questions: cached.questions,
+          tags: cached.tags,
+        },
+      );
+      this.logger.log({ guest: guest.id, cache_hit: true, hit_count: cached.hit_count });
+      return this.repository.findOne(tenant, guest.id);
+    }
 
     // The host's own documents, when they have any.
     const guestKnowledge = renderKnowledgeContext(
@@ -190,6 +219,24 @@ export class GuestService {
       {
         projectId: project.id,
         fullName: dto.full_name,
+        headline: str(parsed.headline),
+        biography: str(parsed.biography),
+        company: str(parsed.company),
+        jobTitle: str(parsed.job_title),
+        industry: str(parsed.industry),
+        country: str(parsed.country),
+        metadata,
+      },
+      related,
+    );
+
+    // Available to every future search for this name, on any project —
+    // the next lookup is instant and free instead of spending credits again.
+    await this.repository.cacheBriefing(
+      normalizedName,
+      dto.full_name,
+      str(dto.context),
+      {
         headline: str(parsed.headline),
         biography: str(parsed.biography),
         company: str(parsed.company),

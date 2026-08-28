@@ -66,6 +66,25 @@ export interface GuestBriefingInput {
   tags: string[];
 }
 
+/** A row served back out of the platform-wide guest research cache. */
+export interface CachedBriefingRow {
+  full_name: string;
+  headline: string | null;
+  biography: string | null;
+  company: string | null;
+  job_title: string | null;
+  industry: string | null;
+  country: string | null;
+  companies: GuestBriefingInput["companies"];
+  books: GuestBriefingInput["books"];
+  interviews: GuestBriefingInput["interviews"];
+  social: GuestBriefingInput["social"];
+  questions: GuestBriefingInput["questions"];
+  tags: string[];
+  metadata: Record<string, unknown>;
+  hit_count: number;
+}
+
 @Injectable()
 export class GuestRepository {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
@@ -508,4 +527,74 @@ export class GuestRepository {
     );
   }
 
+  /* ---------------------------------------------------- research cache */
+
+  /**
+   * Platform-wide: has anyone, on any project, already researched this
+   * person? Looked up by exact normalized name before spending AI credits.
+   * Bumps hit_count/last_used_at on every hit so the cache also doubles as a
+   * "most looked-up guests" signal.
+   */
+  async findCachedBriefing(normalizedName: string): Promise<CachedBriefingRow | null> {
+    const { rows } = await this.pool.query(
+      `update public.guest_research_cache
+          set hit_count = hit_count + 1, last_used_at = now()
+        where normalized_name = $1
+        returning full_name, headline, biography, company, job_title, industry,
+                  country, companies, books, interviews, social, questions, tags,
+                  metadata, hit_count`,
+      [normalizedName],
+    );
+    return (rows[0] as CachedBriefingRow | undefined) ?? null;
+  }
+
+  /**
+   * Adds a freshly researched person to the shared cache so the next search
+   * for the same name — by anyone, on any project — is instant and free.
+   * The first successful research for a name wins; later ones do not
+   * overwrite it (a good existing entry should not be clobbered by a
+   * thinner one from a differently-worded search).
+   */
+  async cacheBriefing(
+    normalizedName: string,
+    fullName: string,
+    contextHint: string | null,
+    fields: {
+      headline: string | null;
+      biography: string | null;
+      company: string | null;
+      jobTitle: string | null;
+      industry: string | null;
+      country: string | null;
+      metadata: Record<string, unknown>;
+    },
+    related: GuestBriefingInput,
+  ): Promise<void> {
+    await this.pool.query(
+      `insert into public.guest_research_cache
+         (normalized_name, full_name, context_hint, headline, biography, company,
+          job_title, industry, country, companies, books, interviews, social,
+          questions, tags, metadata)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       on conflict (normalized_name) do nothing`,
+      [
+        normalizedName,
+        fullName,
+        contextHint,
+        fields.headline,
+        fields.biography,
+        fields.company,
+        fields.jobTitle,
+        fields.industry,
+        fields.country,
+        JSON.stringify(related.companies),
+        JSON.stringify(related.books),
+        JSON.stringify(related.interviews),
+        JSON.stringify(related.social),
+        JSON.stringify(related.questions),
+        JSON.stringify(related.tags),
+        JSON.stringify(fields.metadata),
+      ],
+    );
+  }
 }
