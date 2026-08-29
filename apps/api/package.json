@@ -19,6 +19,7 @@
     "@podmind/types": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "dodopayments": "^2.48.0",
     "helmet": "^8.0.0",
     "jose": "^4.15.9",
     "mammoth": "^1.12.1",

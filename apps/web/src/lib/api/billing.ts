@@ -15,6 +15,8 @@ export interface Plan {
   features: string[] | Record<string, unknown> | null;
   paddle_price_id_monthly: string | null;
   paddle_price_id_yearly: string | null;
+  dodo_product_id_monthly: string | null;
+  dodo_product_id_yearly: string | null;
 }
 
 export interface Subscription {
@@ -64,4 +66,10 @@ export interface BillingOverview {
 export const billingApi = {
   overview: (signal?: AbortSignal) => apiRequest<BillingOverview>("/billing", { signal }),
   plans: (signal?: AbortSignal) => apiRequest<Plan[]>("/billing/plans", { signal }),
+  /** Creates a hosted Dodo checkout session; redirect the browser to the returned URL. */
+  checkout: (planSlug: string, billingCycle: "monthly" | "yearly") =>
+    apiRequest<{ checkout_url: string }>("/billing/dodo/checkout", {
+      method: "POST",
+      body: { plan_slug: planSlug, billing_cycle: billingCycle },
+    }),
 };

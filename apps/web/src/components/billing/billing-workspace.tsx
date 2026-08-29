@@ -15,7 +15,6 @@ import { Badge, Button, Card, CardContent, Skeleton, cn } from "@podmind/ui";
 import { ApiError, isApiConfigured } from "@/lib/api/client";
 import { billingApi, type BillingOverview, type Plan } from "@/lib/api/billing";
 import { EmptyState } from "@/components/common/empty-state";
-import { openCheckout } from "@/lib/paddle";
 import { Item, Reveal } from "@/components/motion/motion";
 
 function money(amount: number | null, currency: string | null): string {
@@ -64,10 +63,9 @@ function PlanCard({
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // A plan is only purchasable once it has been mapped to a Paddle price and
-  // we know who is buying; otherwise the button would open an empty checkout.
-  const priceId = plan.paddle_price_id_monthly;
-  const purchasable = Boolean(priceId && organizationId);
+  // A plan is only purchasable once it has been mapped to a Dodo product and
+  // we know who is buying; otherwise checkout would have nothing to sell.
+  const purchasable = Boolean(plan.dodo_product_id_monthly && organizationId);
 
   return (
     <Card className={cn("h-full", current && "border-primary-500/60 shadow-glow-blue")}>
@@ -106,20 +104,25 @@ function PlanCard({
             <Button variant="secondary" disabled className="w-full">
               Your plan
             </Button>
-          ) : paymentsEnabled && purchasable && priceId && organizationId ? (
+          ) : paymentsEnabled && purchasable ? (
             <Button
               className="w-full"
               loading={busy}
               onClick={() => {
                 setBusy(true);
                 setError(null);
-                openCheckout({ priceId, organizationId })
-                  .catch(() =>
-                    setError("Could not open checkout. Please try again."),
-                  )
-                  // Paddle takes over the screen from here; the webhook is
-                  // what actually applies the plan, so nothing is assumed.
-                  .finally(() => setBusy(false));
+                billingApi
+                  .checkout(plan.slug, "monthly")
+                  .then(({ checkout_url }) => {
+                    // Dodo's hosted page takes over from here; the webhook
+                    // is what actually grants the plan, so nothing here is
+                    // assumed to have succeeded yet.
+                    window.location.href = checkout_url;
+                  })
+                  .catch(() => {
+                    setError("Could not open checkout. Please try again.");
+                    setBusy(false);
+                  });
               }}
             >
               Choose {plan.name}

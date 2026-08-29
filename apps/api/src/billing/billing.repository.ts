@@ -12,7 +12,8 @@ export class BillingRepository {
     const { rows } = await this.pool.query(
       `select id, name, slug::text as slug, description, monthly_price, yearly_price,
               currency, ai_credits, max_projects, max_team_members, max_storage_gb, features,
-              paddle_price_id_monthly, paddle_price_id_yearly
+              paddle_price_id_monthly, paddle_price_id_yearly,
+              dodo_product_id_monthly, dodo_product_id_yearly
          from public.subscription_plans
         where is_public = true and is_active = true
         order by monthly_price asc nulls first`,

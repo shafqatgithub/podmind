@@ -29,6 +29,7 @@ import { TopicModule } from "./topics/topic.module";
 import { CalendarModule } from "./calendar/calendar.module";
 import { AdminModule } from "./admin/admin.module";
 import { PaddleModule } from "./billing/paddle/paddle.module";
+import { DodoModule } from "./billing/dodo/dodo.module";
 import { SeoModule } from "./seo/seo.module";
 import { SocialModule } from "./social/social.module";
 import { MemoryModule } from "./memory/memory.module";
@@ -84,6 +85,7 @@ import { OwnershipService } from "./common/guards/ownership.service";
     CalendarModule,
     AdminModule,
     PaddleModule,
+    DodoModule,
     SeoModule,
     SocialModule,
     MemoryModule,

@@ -16,13 +16,14 @@ export class BillingService {
    * button that leads nowhere.
    */
   private paymentsEnabled(): boolean {
-    // Paddle is the merchant of record for PodMind. Checkout needs the
-    // client token in the browser and the webhook secret on the server —
-    // without both, a purchase could be started but never confirmed, so the
-    // UI must say plainly that paid plans are not available yet.
+    // Dodo Payments is the merchant of record for PodMind — Paddle rejected
+    // this product category. Checkout needs the API key on the server and
+    // the webhook secret to confirm purchases; without both, a purchase
+    // could start but never be granted, so the UI must say plainly that
+    // paid plans are not available yet.
     return Boolean(
-      this.config.get<string>("PADDLE_CLIENT_TOKEN") &&
-        this.config.get<string>("PADDLE_WEBHOOK_SECRET"),
+      this.config.get<string>("DODO_PAYMENTS_API_KEY") &&
+        this.config.get<string>("DODO_PAYMENTS_WEBHOOK_SECRET"),
     );
   }
 
