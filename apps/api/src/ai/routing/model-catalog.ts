@@ -90,19 +90,27 @@ export class ModelCatalog {
       .sort((a, b) => b.modelName.localeCompare(a.modelName));
     if (prefixed[0]) return prefixed[0];
 
-    // Family aliases: documented names vs catalog naming.
-    const alias: Record<string, string[]> = {
-      "gemini-pro": ["gemini-2.5-pro", "gemini-pro"],
-      "gemini-flash": ["gemini-2.5-flash", "gemini-flash"],
-      "claude-opus": ["claude-opus"],
-      "claude-sonnet": ["claude-sonnet"],
-      "gpt-5": ["gpt-5"],
-      "gpt-5-mini": ["gpt-5-mini"],
+    // Google's naming puts the version before the tier — "gemini-3.1-pro",
+    // "gemini-3.5-flash-lite" — the opposite of Anthropic/OpenAI, where the
+    // family is a true prefix ("claude-opus-4-8", "gpt-5-mini"). A prefix
+    // match therefore never matches a Gemini model, and a hardcoded alias
+    // list of exact past version strings (the previous approach here) goes
+    // stale every time Google ships a new version — which is exactly what
+    // silently broke this: the catalog moved to gemini-3.x while the alias
+    // list still pointed at "gemini-2.5-pro". Matching on the tier keyword
+    // anywhere in the name survives future renames without a code change.
+    const tierKeyword: Record<string, string> = {
+      "gemini-pro": "pro",
+      "gemini-flash": "flash",
     };
-    for (const candidate of alias[family] ?? []) {
-      const match = forProvider.find((m) => m.modelName.startsWith(candidate));
-      if (match) return match;
+    const keyword = tierKeyword[family];
+    if (keyword) {
+      const byTier = forProvider
+        .filter((m) => m.modelName.includes(keyword))
+        .sort((a, b) => b.modelName.localeCompare(a.modelName));
+      if (byTier[0]) return byTier[0];
     }
+
     return null;
   }
 
